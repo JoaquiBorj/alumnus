@@ -58,14 +58,10 @@ function alumnus_get_event_info( $event_id ) {
  * Render badge helper.
  */
 function alumnus_event_badge( $text, $color = 'default' ) {
-	$colors = array(
-		'green'  => '#4CAF50',
-		'orange' => '#F37F3C',
-		'teal'   => '#00A6C7',
-		'default'=> '#E0E0E0',
-	);
-	$bg = isset( $colors[ $color ] ) ? $colors[ $color ] : $colors['default'];
-	return '<span class="alumnus-badge alumnus-badge-' . esc_attr( $color ) . '" style="display:inline-block;padding:6px 14px;border-radius:8px;font-size:13px;font-weight:600;color:#fff;background:' . esc_attr( $bg ) . ';line-height:1;">' . esc_html( $text ) . '</span>';
+	// Return a badge element which styling is handled in CSS by the color class.
+	$allowed = array( 'green', 'orange', 'teal', 'default' );
+	$color   = in_array( $color, $allowed, true ) ? $color : 'default';
+	return '<span class="alumnus-badge alumnus-badge-' . esc_attr( $color ) . '">' . esc_html( $text ) . '</span>';
 }
 
 /**
