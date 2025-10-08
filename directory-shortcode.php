@@ -33,31 +33,35 @@ function alumnus_render_directory_shortcode() {
 			<div class="adh-icon-bg">
 				<!-- Network connection icon overlay -->
 				<svg class="adh-icon adh-icon-1" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-					<circle cx="50" cy="50" r="35" fill="white" opacity="0.9"/>
-					<circle cx="50" cy="45" r="15" fill="#04324d"/>
-					<path d="M 20 80 Q 50 65 80 80" stroke="#04324d" stroke-width="4" fill="none"/>
+					<circle cx="50" cy="50" r="42" fill="white" opacity="0.9"/>
+					<circle cx="50" cy="38" r="18" fill="#04324d"/>
+					<path d="M 20 80 Q 50 50 80 80" stroke="#04324d" stroke-width="4" fill="none"/>
 				</svg>
 				<svg class="adh-icon adh-icon-2" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-					<circle cx="50" cy="50" r="35" fill="white" opacity="0.9"/>
-					<circle cx="50" cy="45" r="15" fill="#04324d"/>
-					<path d="M 20 80 Q 50 65 80 80" stroke="#04324d" stroke-width="4" fill="none"/>
+					<circle cx="50" cy="50" r="42" fill="white" opacity="0.9"/>
+					<circle cx="50" cy="38" r="18" fill="#04324d"/>
+					<path d="M 20 80 Q 50 50 80 80" stroke="#04324d" stroke-width="4" fill="none"/>
 				</svg>
 				<svg class="adh-icon adh-icon-3" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-					<circle cx="50" cy="50" r="35" fill="white" opacity="0.9"/>
-					<circle cx="50" cy="45" r="15" fill="#04324d"/>
-					<path d="M 20 80 Q 50 65 80 80" stroke="#04324d" stroke-width="4" fill="none"/>
+					<circle cx="50" cy="50" r="42" fill="white" opacity="0.9"/>
+					<circle cx="50" cy="38" r="18" fill="#04324d"/>
+					<path d="M 20 80 Q 50 50 80 80" stroke="#04324d" stroke-width="4" fill="none"/>
 				</svg>
 				<svg class="adh-icon adh-icon-4" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-					<circle cx="50" cy="50" r="35" fill="white" opacity="0.9"/>
-					<circle cx="50" cy="45" r="15" fill="#04324d"/>
-					<path d="M 20 80 Q 50 65 80 80" stroke="#04324d" stroke-width="4" fill="none"/>
+					<circle cx="50" cy="50" r="42" fill="white" opacity="0.9"/>
+					<circle cx="50" cy="38" r="18" fill="#04324d"/>
+					<path d="M 20 80 Q 50 50 80 80" stroke="#04324d" stroke-width="4" fill="none"/>
 				</svg>
-				<!-- Connection lines between icons -->
-				<svg class="adh-network-lines" viewBox="0 0 800 400" xmlns="http://www.w3.org/2000/svg">
-					<line x1="100" y1="250" x2="200" y2="150" stroke="white" stroke-width="3" opacity="0.6"/>
-					<line x1="200" y1="150" x2="300" y2="200" stroke="white" stroke-width="3" opacity="0.6"/>
-					<line x1="100" y1="250" x2="150" y2="350" stroke="white" stroke-width="3" opacity="0.6"/>
-				</svg>
+                <svg class="adh-icon adh-icon-5" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="50" cy="50" r="42" fill="white" opacity="0.9"/>
+                    <circle cx="50" cy="38" r="18" fill="#04324d"/>
+                    <path d="M 20 80 Q 50 50 80 80" stroke="#04324d" stroke-width="4" fill="none"/>
+                </svg>
+                <svg class="adh-icon adh-icon-6" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="50" cy="50" r="42" fill="white" opacity="0.9"/>
+                    <circle cx="50" cy="38" r="18" fill="#04324d"/>
+                    <path d="M 20 80 Q 50 50 80 80" stroke="#04324d" stroke-width="4" fill="none"/>
+                </svg>
 			</div>
 			
 			<div class="adh-content">
