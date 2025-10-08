@@ -1,0 +1,178 @@
+/* phpcs:ignore */
+
+/* ============================================
+   ALUMNI DIRECTORY STYLES
+   ============================================ */
+
+/* Directory Wrapper */
+.alumnus-directory-wrapper {
+	font-family: "Helvetica Neue", Arial, sans-serif;
+	color: #102a43;
+}
+
+/* Hero Section with Search */
+.alumnus-directory-hero {
+	position: relative;
+	background: linear-gradient(135deg, rgba(4, 50, 77, 0.95) 0%, rgba(6, 66, 102, 0.9) 100%),
+	            url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 600"><rect fill="%23d4d4c8" width="1200" height="600"/></svg>');
+	background-size: cover;
+	background-position: center;
+	padding: 80px 24px 100px;
+	overflow: hidden;
+	backdrop-filter: blur(8px);
+}
+
+/* Icon Background Animation */
+.adh-icon-bg {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	overflow: hidden;
+	opacity: 0.15;
+}
+
+.adh-icon {
+	position: absolute;
+	width: 120px;
+	height: 120px;
+	animation: float 6s ease-in-out infinite;
+}
+
+.adh-icon-1 {left: 5%; top: 15%; animation-delay: 0s;}
+.adh-icon-2 {right: 10%; top: 20%; animation-delay: 1.5s;}
+.adh-icon-3 {left: 15%; bottom: 20%; animation-delay: 3s;}
+.adh-icon-4 {right: 20%; bottom: 25%; animation-delay: 4.5s;}
+
+.adh-network-lines {
+	position: absolute;
+	width: 100%;
+	height: 100%;
+	top: 0;
+	left: 0;
+}
+
+@keyframes float {
+	0%, 100% {transform: translateY(0px);}
+	50% {transform: translateY(-20px);}
+}
+
+/* Hero Content */
+.adh-content {
+	position: relative;
+	z-index: 2;
+	max-width: 800px;
+	margin: 0 auto;
+	text-align: center;
+}
+
+.adh-title {
+	font-size: 72px;
+	font-weight: 300;
+	color: #fff;
+	margin: 0 0 12px;
+	letter-spacing: -1px;
+	text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.adh-tagline {
+	font-size: 24px;
+	color: #dfe9f3;
+	margin: 0 0 48px;
+	font-weight: 300;
+	letter-spacing: 0.5px;
+}
+
+/* Search Box */
+.alumnus-search-box {
+	max-width: 600px;
+	margin: 0 auto;
+}
+
+.asb-inner {
+	position: relative;
+	display: flex;
+	align-items: center;
+	background: #ffffff;
+	border-radius: 50px;
+	padding: 8px 24px;
+	box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2),
+	            0 2px 8px rgba(0, 0, 0, 0.1);
+	transition: all 0.3s ease;
+}
+
+.asb-inner:hover {
+	box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25),
+	            0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.asb-icon {
+	width: 24px;
+	height: 24px;
+	margin-right: 8px;
+	flex-shrink: 0;
+}
+
+.asb-input,
+.alumnus-search-box input[type="text"],
+#alumnus-directory-search {
+	flex: 1;
+	border: none !important;
+	outline: none !important;
+	box-shadow: none !important;
+	font-size: 18px;
+	padding: 12px 8px;
+	background: transparent !important;
+	color: #334e68;
+	width: 100%;
+	-webkit-appearance: none;
+	-moz-appearance: none;
+	appearance: none;
+}
+
+.asb-input:focus,
+.alumnus-search-box input[type="text"]:focus,
+#alumnus-directory-search:focus {
+	border: none !important;
+	outline: none !important;
+	box-shadow: none !important;
+}
+
+.asb-input::placeholder,
+.alumnus-search-box input[type="text"]::placeholder,
+#alumnus-directory-search::placeholder {
+	color: #94a3b8;
+	font-weight: 300;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+	.adh-title {
+		font-size: 48px;
+	}
+	
+	.adh-tagline {
+		font-size: 18px;
+		margin-bottom: 32px;
+	}
+}
+
+@media (max-width: 480px) {
+	.alumnus-directory-hero {
+		padding: 60px 16px 80px;
+	}
+	
+	.adh-title {
+		font-size: 36px;
+	}
+	
+	.adh-tagline {
+		font-size: 16px;
+	}
+	
+	.asb-input {
+		font-size: 16px;
+	}
+}
+
