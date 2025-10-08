@@ -1,0 +1,19 @@
+/* Header Bar Styles */
+.alumnus-header-bar {background:#004568; color:#d8b847; font-family: "Helvetica Neue", Arial, sans-serif; width:100%;}
+.alumnus-header-inner {max-width:1200px; margin:0 auto; display:flex; align-items:center; justify-content:space-between; gap:32px; padding:6px 28px 4px; position:relative;}
+.ahb-left {display:flex; align-items:center; gap:28px;}
+.ahb-logo {display:inline-flex; align-items:center; justify-content:center; font-size:22px; text-decoration:none; color:#d8b847; padding:4px 2px;}
+.ahb-nav ul {margin:0; padding:0; list-style:none; display:flex; gap:34px; font-size:13px; font-weight:600; letter-spacing:.5px; text-transform:uppercase;}
+.ahb-nav a {text-decoration:none; color:#d8b847; position:relative; padding:18px 0 10px; display:inline-block;}
+.ahb-nav li.current > a, .ahb-nav a.active {text-decoration:underline; text-underline-offset:6px;}
+.ahb-nav li.current .ahb-indicator {position:absolute; left:0; right:0; bottom:-2px; width:6px; height:6px; background:#d8b847; border-radius:50%; margin:0 auto;}
+.ahb-right {display:flex; align-items:center; gap:16px;}
+.ahb-icon-btn {background:transparent; border:2px solid transparent; color:#d8b847; width:32px; height:32px; display:inline-flex; align-items:center; justify-content:center; border-radius:50%; cursor:not-allowed; font-size:18px;}
+.ahb-icon-btn:disabled {opacity:.85;}
+@media (max-width:880px){
+  .ahb-nav ul {gap:22px; font-size:12px;}
+}
+@media (max-width:680px){
+  .ahb-nav {display:none;}
+  .alumnus-header-inner {padding:6px 16px;}
+}
