@@ -197,6 +197,9 @@ class WordPress_Plugin_Template {
 		// Community feed dedicated stylesheet (always enqueued for now).
 		wp_register_style( $this->_token . '-community-feed', esc_url( $this->assets_url ) . 'css/community-feed.css', array(), $this->_version );
 		wp_enqueue_style( $this->_token . '-community-feed' );
+		// Header stylesheet.
+		wp_register_style( $this->_token . '-header', esc_url( $this->assets_url ) . 'css/header.css', array(), $this->_version );
+		wp_enqueue_style( $this->_token . '-header' );
 	} // End enqueue_styles ()
 
 	/**
