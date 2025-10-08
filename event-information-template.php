@@ -87,11 +87,14 @@ function alumnus_event_info_shortcode( $atts ) {
 	$event = get_post( $event_id );
 	$data  = alumnus_get_event_info( $event_id );
 
+	// Ensure stylesheet is loaded.
+	wp_enqueue_style( 'alumnus-event-info', plugin_dir_url( __FILE__ ) . 'assets/css/event-information.css', array(), '1.0.0' );
+
 	$image_html = '';
 	if ( $data['image_id'] ) {
 		$image_html = wp_get_attachment_image( $data['image_id'], 'large', false, array( 'class' => 'alumnus-event-image' ) );
 	} else {
-		$image_html = '<div class="alumnus-event-image alumnus-event-image--placeholder" style="width:100%;height:100%;background:#f1f1f1;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;color:#777;">No Image</div>';
+		$image_html = '<div class="alumnus-event-image alumnus-event-image--placeholder">No Image</div>';
 	}
 
 	$organizers_html = '';
@@ -110,44 +113,35 @@ function alumnus_event_info_shortcode( $atts ) {
 
 	ob_start();
 	?>
-	<div class="alumnus-event-wrapper" style="--alumnus-gap:40px;display:grid;grid-template-columns:320px 1fr;gap:var(--alumnus-gap);align-items:start;margin:40px 0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;">
-		<div class="alumnus-event-left" style="text-align:center;">
-			<div class="alumnus-event-image-wrapper" style="width:310px;height:310px;border-radius:50%;overflow:hidden;box-shadow:0 4px 18px rgba(0,0,0,.12);margin:0 auto 30px;position:relative;background:#fff;">
+	<div class="alumnus-event-wrapper">
+		<div class="alumnus-event-left">
+			<div class="alumnus-event-image-wrapper">
 				<?php echo $image_html; //phpcs:ignore ?>
 			</div>
-			<a href="#" class="alumnus-event-join" style="display:inline-flex;align-items:center;gap:8px;background:#06b365;color:#fff;text-decoration:none;padding:14px 34px;border-radius:40px;font-size:18px;font-weight:600;transition:.25s;box-shadow:0 6px 16px -4px rgba(6,179,101,.45);">Join Event <span style="font-size:20px;line-height:0;">→</span></a>
+			<a href="#" class="alumnus-event-join">Join Event <span class="alumnus-icon">→</span></a>
 		</div>
-		<div class="alumnus-event-right" style="border-left:3px solid #111;padding-left:50px;">
-			<h2 style="font-size:38px;margin:0 0 14px;font-weight:700;line-height:1.15;"><?php echo esc_html( get_the_title( $event ) ); ?></h2>
-			<p style="margin:0 0 26px;font-size:14px;font-weight:500;color:#222;"><?php echo esc_html( $interested ); ?> people interested</p>
-			<div class="alumnus-event-meta" style="display:grid;grid-template-columns:140px 1fr;row-gap:18px;column-gap:10px;font-size:16px;">
-				<div style="font-weight:700;">Organizers:</div>
-				<div><?php echo $organizers_html; //phpcs:ignore ?></div>
-				<div style="font-weight:700;">When:</div>
-				<div><?php echo $date_badge; //phpcs:ignore ?></div>
-				<div style="font-weight:700;">Where:</div>
-				<div><?php echo $location_badge; //phpcs:ignore ?></div>
+		<div class="alumnus-event-right">
+			<h2 class="alumnus-event-title"><?php echo esc_html( get_the_title( $event ) ); ?></h2>
+			<p class="alumnus-event-interested"><?php echo esc_html( $interested ); ?> people interested</p>
+			<div class="alumnus-event-meta">
+				<div class="alumnus-event-meta-label">Organizers:</div>
+				<div class="alumnus-event-meta-value organizers"><?php echo $organizers_html; //phpcs:ignore ?></div>
+				<div class="alumnus-event-meta-label">When:</div>
+				<div class="alumnus-event-meta-value when"><?php echo $date_badge; //phpcs:ignore ?></div>
+				<div class="alumnus-event-meta-label">Where:</div>
+				<div class="alumnus-event-meta-value where"><?php echo $location_badge; //phpcs:ignore ?></div>
 			</div>
-			<div class="alumnus-event-description" style="margin-top:34px;">
-				<h3 style="font-size:34px;margin:0 0 14px;font-weight:700;">About The Event</h3>
-				<div style="font-size:18px;line-height:1.55;color:#111;max-width:760px;">
+			<div class="alumnus-event-description">
+				<h3 class="alumnus-event-description-heading">About The Event</h3>
+				<div class="alumnus-event-description-text">
 					<?php echo wpautop( esc_html( $data['description'] ? $data['description'] : $event->post_excerpt ) ); ?>
 				</div>
-				<div style="margin-top:40px;">
-					<a href="<?php echo esc_url( get_permalink( $event ) ); ?>" class="alumnus-event-readmore" style="display:inline-flex;align-items:center;gap:6px;padding:20px 32px;border:2px solid #111;border-radius:40px;font-weight:600;font-size:18px;text-decoration:none;color:#111;transition:.25s;">Read More <span style="font-size:22px;line-height:0;">↓</span></a>
+				<div class="alumnus-event-readmore-wrap">
+					<a href="<?php echo esc_url( get_permalink( $event ) ); ?>" class="alumnus-event-readmore">Read More <span class="alumnus-icon">↓</span></a>
 				</div>
 			</div>
 		</div>
 	</div>
-	<style>
-		@media (max-width: 900px){
-			.alumnus-event-wrapper{grid-template-columns:1fr;}
-			.alumnus-event-right{border-left:none;padding-left:0;}
-			.alumnus-event-left{margin-bottom:20px;}
-		}
-		.alumnus-event-join:hover{background:#049250;}
-		.alumnus-event-readmore:hover{background:#111;color:#fff;}
-	</style>
 	<?php
 	return ob_get_clean();
 }
