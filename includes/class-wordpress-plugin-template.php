@@ -194,6 +194,9 @@ class WordPress_Plugin_Template {
 	public function enqueue_styles() {
 		wp_register_style( $this->_token . '-frontend', esc_url( $this->assets_url ) . 'css/frontend.css', array(), $this->_version );
 		wp_enqueue_style( $this->_token . '-frontend' );
+		// Community feed dedicated stylesheet (always enqueued for now).
+		wp_register_style( $this->_token . '-community-feed', esc_url( $this->assets_url ) . 'css/community-feed.css', array(), $this->_version );
+		wp_enqueue_style( $this->_token . '-community-feed' );
 	} // End enqueue_styles ()
 
 	/**
