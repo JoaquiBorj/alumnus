@@ -33,6 +33,10 @@ require_once 'includes/lib/class-wordpress-plugin-template-taxonomy.php';
 // Shortcodes.
 require_once 'community-feed-shortcode.php';
 require_once 'directory-shortcode.php';
+// Event information template & shortcode.
+require_once 'event-information-template.php';
+// Event list view shortcode.
+require_once 'event-list-shortcode.php';
 
 /**
  * Returns the main instance of WordPress_Plugin_Template to prevent the need to use globals.
