@@ -40,18 +40,13 @@
 	animation: float 6s ease-in-out infinite;
 }
 
-.adh-icon-1 {left: 5%; top: 15%; animation-delay: 0s;}
-.adh-icon-2 {right: 10%; top: 20%; animation-delay: 1.5s;}
-.adh-icon-3 {left: 15%; bottom: 20%; animation-delay: 3s;}
-.adh-icon-4 {right: 20%; bottom: 25%; animation-delay: 4.5s;}
-
-.adh-network-lines {
-	position: absolute;
-	width: 100%;
-	height: 100%;
-	top: 0;
-	left: 0;
-}
+/* Icon Positions */
+.adh-icon-1 {left: 2%; top: 18%; animation-delay: 0s;}
+.adh-icon-2 {right: 53%; top: -2%; animation-delay: 1.5s;}
+.adh-icon-3 {right: 14%; top: 16%; animation-delay: 2.5s;}
+.adh-icon-4 {left: 12%; bottom: 9%; animation-delay: 3.5s;}
+.adh-icon-5 {left: 51%; bottom: -11%; animation-delay: 4.5s;}
+.adh-icon-6 {right: 5%; bottom: 12%; animation-delay: 5.5s;}
 
 @keyframes float {
 	0%, 100% {transform: translateY(0px);}
