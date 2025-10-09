@@ -29,6 +29,8 @@ require_once 'includes/class-wordpress-plugin-template-settings.php';
 require_once 'includes/lib/class-wordpress-plugin-template-admin-api.php';
 require_once 'includes/lib/class-wordpress-plugin-template-post-type.php';
 require_once 'includes/lib/class-wordpress-plugin-template-taxonomy.php';
+// Alumnus CPTs (Batch and Course).
+require_once 'includes/class-alumnus-directory-cpt.php';
 
 // Shortcodes.
 require_once 'community-feed-shortcode.php';
@@ -56,3 +58,14 @@ function wordpress_plugin_template() {
 }
 
 wordpress_plugin_template();
+
+// Bootstrap the Alumnus CPTs.
+if ( class_exists( 'Alumnus_Directory_CPT' ) ) {
+	// Initialize once plugins are loaded to ensure core APIs are ready.
+	add_action( 'plugins_loaded', function () {
+		static $alumnus_cpt = null;
+		if ( null === $alumnus_cpt ) {
+			$alumnus_cpt = new Alumnus_Directory_CPT();
+		}
+	} );
+}
