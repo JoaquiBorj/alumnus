@@ -4,15 +4,32 @@
    ALUMNI DIRECTORY STYLES
    ============================================ */
 
-/* Directory Wrapper */
-.alumnus-directory-wrapper {
-	font-family: "Helvetica Neue", Arial, sans-serif;
-	color: #102a43;
+/* Override parent container constraints */
+.alumnus-directory-wrapper,
+.alumnus-directory-wrapper * {
+	box-sizing: border-box;
 }
 
-/* Hero Section with Search */
+/* Force parent containers to allow overflow */
+body:has(.alumnus-directory-wrapper),
+html:has(.alumnus-directory-wrapper) {
+	overflow-x: hidden !important;
+}
+
+/* Directory Wrapper */
+.alumnus-directory-wrapper,
+div.alumnus-directory-wrapper,
+body .alumnus-directory-wrapper {
+	font-family: "Helvetica Neue", Arial, sans-serif !important;
+	color: #102a43 !important;
+	margin: 0 !important;
+	padding: 0 !important;
+	width: 100% !important;
+	overflow: visible !important;
+}
+
+/* Hero Section with Search - Full Width */
 .alumnus-directory-hero {
-	position: relative;
 	background: linear-gradient(135deg, rgba(4, 50, 77, 0.95) 0%, rgba(6, 66, 102, 0.9) 100%),
 	            url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 600"><rect fill="%23d4d4c8" width="1200" height="600"/></svg>');
 	background-size: cover;
@@ -20,6 +37,16 @@
 	padding: 80px 24px 100px;
 	overflow: hidden;
 	backdrop-filter: blur(8px);
+	box-sizing: border-box;
+	/* Full-width styling */
+	width: 100vw !important;
+	max-width: none !important;
+	min-width: 100vw !important;
+	position: relative !important;
+	left: 50% !important;
+	right: 50% !important;
+	margin-left: -50vw !important;
+	margin-right: -50vw !important;
 }
 
 /* Icon Background Animation */
@@ -141,6 +168,231 @@
 	font-weight: 300;
 }
 
+/* ============================================
+   ALUMNI GRID & CARDS
+   ============================================ */
+
+/* Reset all elements inside grid container to prevent theme interference */
+.alumnus-grid-container *,
+.alumnus-grid-container *::before,
+.alumnus-grid-container *::after {
+	box-sizing: border-box !important;
+}
+
+/* Grid Container */
+.alumnus-grid-container,
+.alumnus-directory-wrapper .alumnus-grid-container {
+	max-width: 1200px !important;
+	margin: 0 auto !important;
+	padding: 60px 24px !important;
+	width: 100% !important;
+	box-sizing: border-box !important;
+	position: relative !important;
+	left: auto !important;
+	right: auto !important;
+	transform: none !important;
+	background: #f8f9fa !important;
+}
+
+/* Alumni Grid */
+.alumnus-grid,
+.alumnus-grid-container .alumnus-grid {
+	display: grid !important;
+	grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)) !important;
+	gap: 32px !important;
+	width: 100% !important;
+	list-style: none !important;
+	margin: 0 !important;
+	padding: 0 !important;
+}
+
+/* Alumni Card */
+.alumni-card,
+.alumnus-grid .alumni-card {
+	background: #ffffff !important;
+	border-radius: 16px !important;
+	padding: 32px 24px !important;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08), 0 1px 4px rgba(0, 0, 0, 0.04) !important;
+	transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+	border: 1px solid #e2e8f0 !important;
+	display: flex !important;
+	flex-direction: column !important;
+	align-items: center !important;
+	text-align: center !important;
+	position: relative !important;
+	overflow: hidden !important;
+	font-family: "Helvetica Neue", Arial, sans-serif !important;
+	box-sizing: border-box !important;
+	width: 100% !important;
+	min-height: 400px !important;
+	max-width: 100% !important;
+}
+
+/* Prevent SVG scaling issues in cards */
+.alumni-card svg {
+	max-width: 100% !important;
+	height: auto !important;
+}
+
+.alumni-card::before {
+	content: '';
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	height: 4px;
+	background: linear-gradient(90deg, #04324d 0%, #064266 100%);
+	transform: scaleX(0);
+	transition: transform 0.3s ease;
+}
+
+.alumni-card:hover {
+	transform: translateY(-8px);
+	box-shadow: 0 12px 24px rgba(0, 0, 0, 0.12),
+	            0 4px 12px rgba(0, 0, 0, 0.08);
+	border-color: #cbd5e0;
+}
+
+.alumni-card:hover::before {
+	transform: scaleX(1);
+}
+
+/* Avatar */
+.ac-avatar,
+.alumni-card .ac-avatar {
+	width: 96px !important;
+	height: 96px !important;
+	min-width: 96px !important;
+	min-height: 96px !important;
+	max-width: 96px !important;
+	max-height: 96px !important;
+	border-radius: 50% !important;
+	background: linear-gradient(135deg, #04324d 0%, #064266 100%) !important;
+	display: flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	margin: 0 auto 20px !important;
+	box-shadow: 0 4px 12px rgba(4, 50, 77, 0.2) !important;
+	position: relative !important;
+	overflow: hidden !important;
+	flex-shrink: 0 !important;
+}
+
+.ac-avatar::after {
+	content: '';
+	position: absolute;
+	inset: 0;
+	border-radius: 50%;
+	padding: 2px;
+	background: linear-gradient(135deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0) 100%);
+	-webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+	-webkit-mask-composite: xor;
+	mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+	mask-composite: exclude;
+}
+
+.ac-initials,
+.ac-avatar .ac-initials {
+	font-size: 32px !important;
+	font-weight: 600 !important;
+	color: #ffffff !important;
+	letter-spacing: 1px !important;
+	line-height: 1 !important;
+	font-family: "Helvetica Neue", Arial, sans-serif !important;
+}
+
+/* Card Content */
+.ac-content,
+.alumni-card .ac-content {
+	width: 100% !important;
+	max-width: 100% !important;
+	box-sizing: border-box !important;
+}
+
+.ac-name,
+.alumni-card h3 {
+	font-size: 22px !important;
+	font-weight: 600 !important;
+	color: #102a43 !important;
+	margin: 0 0 8px !important;
+	letter-spacing: -0.3px !important;
+	font-family: "Helvetica Neue", Arial, sans-serif !important;
+	line-height: 1.3 !important;
+}
+
+.ac-year,
+.ac-degree,
+.ac-position,
+.ac-company,
+.ac-location,
+.alumni-card p {
+	font-family: "Helvetica Neue", Arial, sans-serif !important;
+	line-height: 1.5 !important;
+}
+
+.ac-year {
+	font-size: 14px !important;
+	font-weight: 500 !important;
+	color: #04324d !important;
+	margin: 0 0 4px !important;
+	text-transform: uppercase !important;
+	letter-spacing: 0.5px !important;
+}
+
+.ac-degree {
+	font-size: 15px !important;
+	color: #486581 !important;
+	margin: 0 0 16px !important;
+	font-weight: 400 !important;
+}
+
+/* Divider */
+.ac-divider,
+.alumni-card .ac-divider {
+	width: 60px !important;
+	height: 2px !important;
+	background: linear-gradient(90deg, transparent 0%, #cbd5e0 50%, transparent 100%) !important;
+	margin: 16px auto !important;
+	border: none !important;
+}
+
+/* Position & Company */
+.ac-position {
+	font-size: 16px !important;
+	font-weight: 600 !important;
+	color: #334e68 !important;
+	margin: 0 0 4px !important;
+}
+
+.ac-company {
+	font-size: 14px !important;
+	color: #627d98 !important;
+	margin: 0 0 12px !important;
+	font-weight: 400 !important;
+}
+
+/* Location */
+.ac-location {
+	font-size: 14px !important;
+	color: #64748b !important;
+	margin: 0 !important;
+	display: flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	gap: 6px !important;
+}
+
+.ac-location-icon,
+.ac-location .ac-location-icon {
+	width: 16px !important;
+	height: 16px !important;
+	min-width: 16px !important;
+	min-height: 16px !important;
+	max-width: 16px !important;
+	max-height: 16px !important;
+	flex-shrink: 0 !important;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
 	.adh-title {
@@ -150,6 +402,19 @@
 	.adh-tagline {
 		font-size: 18px;
 		margin-bottom: 32px;
+	}
+	
+	.alumnus-grid-container {
+		padding: 40px 20px;
+	}
+	
+	.alumnus-grid {
+		grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+		gap: 24px;
+	}
+	
+	.alumni-card {
+		padding: 28px 20px;
 	}
 }
 
@@ -168,6 +433,28 @@
 	
 	.asb-input {
 		font-size: 16px;
+	}
+	
+	.alumnus-grid-container {
+		padding: 32px 16px;
+	}
+	
+	.alumnus-grid {
+		grid-template-columns: 1fr;
+		gap: 20px;
+	}
+	
+	.ac-avatar {
+		width: 80px;
+		height: 80px;
+	}
+	
+	.ac-initials {
+		font-size: 28px;
+	}
+	
+	.ac-name {
+		font-size: 20px;
 	}
 }
 
