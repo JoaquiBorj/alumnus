@@ -169,8 +169,111 @@ body .alumnus-directory-wrapper {
 }
 
 /* ============================================
+   FILTER SECTION
+   ============================================ */
+
+/* Filter Container */
+.alumnus-filters {
+	display: flex;
+	gap: 20px;
+	margin-bottom: 40px;
+	flex-wrap: wrap;
+	align-items: flex-end;
+}
+
+/* Filter Group */
+.af-filter-group {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	min-width: 220px;
+	flex: 1;
+	max-width: 300px;
+}
+
+/* Filter Label */
+.af-label {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	font-size: 13px;
+	font-weight: 600;
+	color: #04324d;
+	text-transform: uppercase;
+	letter-spacing: 1px;
+	font-family: "Helvetica Neue", Arial, sans-serif;
+	margin: 0;
+}
+
+.af-icon {
+	width: 20px;
+	height: 20px;
+	flex-shrink: 0;
+}
+
+/* Filter Select */
+.af-select,
+select#filter-year,
+select#filter-course {
+	padding: 5px 10px !important;
+	font-size: 15px !important;
+	font-weight: 500 !important;
+	border: 2px solid #cbd5e0 !important;
+	border-radius: 8px !important;
+	background: #ffffff !important;
+	color: #102a43 !important;
+	font-family: "Helvetica Neue", Arial, sans-serif !important;
+	cursor: pointer !important;
+	transition: all 0.3s ease !important;
+	appearance: none !important;
+	-webkit-appearance: none !important;
+	-moz-appearance: none !important;
+	background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="%2304324d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>') !important;
+	background-repeat: no-repeat !important;
+	background-position: right 12px center !important;
+	background-size: 20px !important;
+	padding-right: 40px !important;
+	outline: none !important;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+	width: 100% !important;
+	box-sizing: border-box !important;
+	line-height: 1.4 !important;
+}
+
+.af-select:hover,
+select#filter-year:hover,
+select#filter-course:hover {
+	border-color: #04324d !important;
+	box-shadow: 0 2px 6px rgba(4, 50, 77, 0.1) !important;
+}
+
+.af-select:focus,
+select#filter-year:focus,
+select#filter-course:focus {
+	border-color: #04324d !important;
+	box-shadow: 0 0 0 3px rgba(4, 50, 77, 0.1) !important;
+	outline: none !important;
+}
+
+/* ============================================
    ALUMNI GRID & CARDS
    ============================================ */
+
+/* No Results Message */
+.no-results-message {
+	grid-column: 1 / -1;
+	text-align: center;
+	padding: 60px 20px;
+	color: #64748b;
+	font-size: 18px;
+	font-family: "Helvetica Neue", Arial, sans-serif;
+}
+
+.no-results-message p {
+	margin: 0;
+	font-size: 18px !important;
+	color: #64748b !important;
+}
 
 /* Reset all elements inside grid container to prevent theme interference */
 .alumnus-grid-container *,
@@ -404,6 +507,16 @@ body .alumnus-directory-wrapper {
 		margin-bottom: 32px;
 	}
 	
+	.alumnus-filters {
+		gap: 16px;
+		margin-bottom: 32px;
+	}
+	
+	.af-filter-group {
+		min-width: 180px;
+		max-width: 100%;
+	}
+	
 	.alumnus-grid-container {
 		padding: 40px 20px;
 	}
@@ -433,6 +546,23 @@ body .alumnus-directory-wrapper {
 	
 	.asb-input {
 		font-size: 16px;
+	}
+	
+	.alumnus-filters {
+		flex-direction: column;
+		gap: 16px;
+		margin-bottom: 24px;
+	}
+	
+	.af-filter-group {
+		min-width: 100%;
+		max-width: 100%;
+	}
+	
+	.af-select,
+	select#filter-year,
+	select#filter-course {
+		font-size: 15px !important;
 	}
 	
 	.alumnus-grid-container {
