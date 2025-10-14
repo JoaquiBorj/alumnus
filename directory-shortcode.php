@@ -13,16 +13,26 @@ function alumnus_enqueue_directory_styles() {
 		'alumnus-directory',
 		plugin_dir_url( __FILE__ ) . 'assets/css/directory.css',
 		array(),
-		'1.0.2' // Updated to include filters
+		'1.1.0'
 	);
-	
+
 	wp_enqueue_script(
 		'alumnus-directory-filters',
 		plugin_dir_url( __FILE__ ) . 'assets/js/directory-filters.js',
 		array(),
-		'1.0.0',
-		true // Load in footer
+		'1.1.0',
+		true
 	);
+
+	// Localize AJAX settings
+	wp_localize_script('alumnus-directory-filters', 'AlumnusDirectory', array(
+		'ajax_url' => admin_url('admin-ajax.php'),
+		'nonce'    => wp_create_nonce('alumnus_directory'),
+		'i18n'     => array(
+			'loading' => __('Loading alumni...', 'alumnus'),
+			'noResults' => __('No alumni found matching your filters.', 'alumnus'),
+		)
+	));
 }
 
 /**
@@ -31,9 +41,15 @@ function alumnus_enqueue_directory_styles() {
  * @return string
  */
 function alumnus_render_directory_shortcode() {
-	// Enqueue the directory stylesheet
+	// Enqueue CSS/JS
 	alumnus_enqueue_directory_styles();
-	
+
+	// Fetch filter data from DB
+	global $wpdb;
+	$tables = function_exists('alumnus_get_table_names') ? alumnus_get_table_names() : array('courses' => $wpdb->prefix.'courses', 'alumni' => $wpdb->prefix.'alumni');
+	$courses = $wpdb->get_results( "SELECT id, course_name FROM {$tables['courses']} ORDER BY course_name ASC" );
+	$years   = $wpdb->get_col( "SELECT DISTINCT batch_year FROM {$tables['alumni']} WHERE batch_year IS NOT NULL ORDER BY batch_year DESC" );
+
 	ob_start();
 	?>
 	<div class="alumnus-directory-wrapper">
@@ -85,19 +101,10 @@ function alumnus_render_directory_shortcode() {
 						Year
 					</label>
 					<select id="filter-year" class="af-select">
-						<option value="">All Years</option>
-						<option value="2024">2024</option>
-						<option value="2023">2023</option>
-						<option value="2022">2022</option>
-						<option value="2021">2021</option>
-						<option value="2020">2020</option>
-						<option value="2019">2019</option>
-						<option value="2018">2018</option>
-						<option value="2017">2017</option>
-						<option value="2016">2016</option>
-						<option value="2015">2015</option>
-						<option value="2014">2014</option>
-						<option value="2013">2013</option>
+						<option value=""><?php echo esc_html__('All Years', 'alumnus'); ?></option>
+						<?php if (!empty($years)) : foreach ($years as $year) : ?>
+							<option value="<?php echo esc_attr((string) $year); ?>"><?php echo esc_html((string) $year); ?></option>
+						<?php endforeach; endif; ?>
 					</select>
 				</div>
 				
@@ -110,61 +117,18 @@ function alumnus_render_directory_shortcode() {
 						Course
 					</label>
 					<select id="filter-course" class="af-select">
-						<option value="">All Courses</option>
-						<option value="Chemical Engineering">Chemical Engineering</option>
-						<option value="Civil Engineering">Civil Engineering</option>
-						<option value="Electrical Engineering">Electrical Engineering</option>
-						<option value="Electronics Engineering">Electronics Engineering</option>
-						<option value="Industrial Engineering">Industrial Engineering</option>
-						<option value="Mechanical Engineering">Mechanical Engineering</option>
+						<option value=""><?php echo esc_html__('All Courses', 'alumnus'); ?></option>
+						<?php if (!empty($courses)) : foreach ($courses as $course) : ?>
+							<option value="<?php echo esc_attr((string) $course->id); ?>"><?php echo esc_html($course->course_name); ?></option>
+						<?php endforeach; endif; ?>
 					</select>
 				</div>
 			</div>
 			
-			<div class="alumnus-grid">
-				<?php
-				// TODO: Replace with actual database query to fetch alumni profiles
-				// This should query a custom post type or user meta data
-				// Sample alumni data for demonstration purposes
-				$sample_alumni = array(
-					array('name' => 'Sarah Johnson', 'year' => '2015', 'degree' => 'Electrical Engineering', 'position' => 'Senior Electrical Engineer', 'company' => 'Power Systems Inc', 'location' => 'San Francisco, CA'),
-					array('name' => 'Michael Chen', 'year' => '2016', 'degree' => 'Mechanical Engineering', 'position' => 'Design Engineer', 'company' => 'Auto Innovations', 'location' => 'New York, NY'),
-					array('name' => 'Emily Rodriguez', 'year' => '2014', 'degree' => 'Chemical Engineering', 'position' => 'Process Engineer', 'company' => 'ChemTech Solutions', 'location' => 'Los Angeles, CA'),
-					array('name' => 'David Kim', 'year' => '2017', 'degree' => 'Mechanical Engineering', 'position' => 'Lead Engineer', 'company' => 'Aerospace Corp', 'location' => 'Seattle, WA'),
-					array('name' => 'Jessica Martinez', 'year' => '2015', 'degree' => 'Industrial Engineering', 'position' => 'Operations Manager', 'company' => 'Manufacturing Co', 'location' => 'Chicago, IL'),
-					array('name' => 'Robert Taylor', 'year' => '2013', 'degree' => 'Civil Engineering', 'position' => 'Project Engineer', 'company' => 'BuildRight Construction', 'location' => 'Boston, MA'),
-					array('name' => 'Amanda Wilson', 'year' => '2016', 'degree' => 'Electronics Engineering', 'position' => 'Hardware Engineer', 'company' => 'Tech Devices', 'location' => 'Austin, TX'),
-					array('name' => 'James Anderson', 'year' => '2018', 'degree' => 'Electrical Engineering', 'position' => 'Control Systems Engineer', 'company' => 'Smart Grid Tech', 'location' => 'Denver, CO'),
-					array('name' => 'Sophia Lee', 'year' => '2014', 'degree' => 'Civil Engineering', 'position' => 'Structural Engineer', 'company' => 'Design Build', 'location' => 'Portland, OR'),
-				);
-				
-				foreach ($sample_alumni as $alum) {
-					// Generate initials for avatar
-					$name_parts = explode(' ', $alum['name']);
-					$initials = strtoupper(substr($name_parts[0], 0, 1) . substr($name_parts[1], 0, 1));
-					?>
-					<div class="alumni-card">
-						<div class="ac-avatar">
-							<span class="ac-initials"><?php echo esc_html($initials); ?></span>
-						</div>
-						<div class="ac-content">
-							<h3 class="ac-name"><?php echo esc_html($alum['name']); ?></h3>
-							<p class="ac-year">Class of <?php echo esc_html($alum['year']); ?></p>
-							<p class="ac-degree"><?php echo esc_html($alum['degree']); ?></p>
-							<div class="ac-divider"></div>
-							<p class="ac-position"><?php echo esc_html($alum['position']); ?></p>
-							<p class="ac-company"><?php echo esc_html($alum['company']); ?></p>
-							<p class="ac-location">
-								<svg class="ac-location-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-									<path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" fill="#64748b"/>
-								</svg>
-								<?php echo esc_html($alum['location']); ?>
-							</p>
-						</div>
-					</div>
-					<?php
-				}
-				?>
+			<div class="alumnus-grid" id="alumnus-grid">
+				<div class="no-results-message" data-initial="1">
+					<p><?php echo esc_html__('Loading alumni...', 'alumnus'); ?></p>
+				</div>
 			</div>
 		</div>
 	</div>
@@ -173,4 +137,111 @@ function alumnus_render_directory_shortcode() {
 }
 
 add_shortcode( 'alumni_directory', 'alumnus_render_directory_shortcode' );
+
+/**
+ * Helper: Render a single alumni card as HTML
+ */
+function alumnus_render_alumni_card($row) {
+	$full_name = trim($row->first_name . ' ' . $row->last_name);
+	$initials = '';
+	if ($row->first_name) { $initials .= strtoupper(substr($row->first_name, 0, 1)); }
+	if ($row->last_name) { $initials .= strtoupper(substr($row->last_name, 0, 1)); }
+	if ($initials === '' && $full_name !== '') { $initials = strtoupper(substr($full_name, 0, 1)); }
+
+	ob_start();
+	?>
+	<div class="alumni-card">
+		<div class="ac-avatar"><span class="ac-initials"><?php echo esc_html($initials); ?></span></div>
+		<div class="ac-content">
+			<h3 class="ac-name"><?php echo esc_html($full_name ?: $row->id); ?></h3>
+			<?php if (!empty($row->batch_year)) : ?>
+				<p class="ac-year"><?php echo esc_html(sprintf(__('Class of %d', 'alumnus'), (int)$row->batch_year)); ?></p>
+			<?php endif; ?>
+			<?php if (!empty($row->course_name)) : ?>
+				<p class="ac-degree"><?php echo esc_html($row->course_name); ?></p>
+			<?php endif; ?>
+			<div class="ac-divider"></div>
+			<?php if (!empty($row->email)) : ?>
+				<p class="ac-company"><?php echo esc_html($row->email); ?></p>
+			<?php endif; ?>
+			<?php if (!empty($row->phone)) : ?>
+				<p class="ac-position"><?php echo esc_html($row->phone); ?></p>
+			<?php endif; ?>
+		</div>
+	</div>
+	<?php
+	return ob_get_clean();
+}
+
+/**
+ * AJAX: Fetch alumni with filters
+ */
+function alumnus_directory_fetch_alumni() {
+	check_ajax_referer('alumnus_directory', 'nonce');
+
+	global $wpdb;
+	$tables = function_exists('alumnus_get_table_names') ? alumnus_get_table_names() : array('courses' => $wpdb->prefix.'courses', 'alumni' => $wpdb->prefix.'alumni');
+
+	$year      = isset($_POST['year']) ? intval($_POST['year']) : 0;
+	$course_id = isset($_POST['course_id']) && $_POST['course_id'] !== '' ? intval($_POST['course_id']) : 0;
+	$search    = isset($_POST['search']) ? sanitize_text_field(wp_unslash($_POST['search'])) : '';
+
+	$where = array();
+	$params = array();
+
+	if ($year > 0) {
+		$where[] = "a.batch_year = %d";
+		$params[] = $year;
+	}
+	if ($course_id > 0) {
+		$where[] = "a.course_id = %d";
+		$params[] = $course_id;
+	}
+
+	$search_sql = '';
+	if ($search !== '') {
+		$like = '%' . $wpdb->esc_like($search) . '%';
+		$search_sql = "(a.first_name LIKE %s OR a.last_name LIKE %s OR a.id LIKE %s OR c.course_name LIKE %s)";
+		array_push($params, $like, $like, $like, $like);
+		$where[] = $search_sql;
+	}
+
+	$where_clause = '';
+	if (!empty($where)) {
+		$where_clause = 'WHERE ' . implode(' AND ', $where);
+	}
+
+	$sql = "SELECT a.id, a.first_name, a.last_name, a.batch_year, a.email, a.phone, c.course_name
+			FROM {$tables['alumni']} a
+			LEFT JOIN {$tables['courses']} c ON a.course_id = c.id
+			$where_clause
+			ORDER BY a.batch_year DESC, a.last_name ASC, a.first_name ASC";
+
+	if (!empty($params)) {
+		// Build prepared statement with correct placeholders
+		$types = array();
+		foreach ($where as $clause) {
+			if (strpos($clause, '%d') !== false) { $types[] = '%d'; }
+			if (strpos($clause, 'LIKE %s') !== false) { $types[] = '%s'; $types[] = '%s'; $types[] = '%s'; $types[] = '%s'; break; }
+		}
+		// Prepare using $wpdb->prepare with flat params
+		$query = $wpdb->prepare($sql, $params);
+		$rows = $wpdb->get_results($query);
+	} else {
+		$rows = $wpdb->get_results($sql);
+	}
+
+	if (empty($rows)) {
+		wp_send_json_success('<div class="no-results-message"><p>'. esc_html__('No alumni found matching your filters.', 'alumnus') .'</p></div>');
+	}
+
+	$html = '';
+	foreach ($rows as $row) {
+		$html .= alumnus_render_alumni_card($row);
+	}
+
+	wp_send_json_success($html);
+}
+add_action('wp_ajax_alumnus_fetch_alumni', 'alumnus_directory_fetch_alumni');
+add_action('wp_ajax_nopriv_alumnus_fetch_alumni', 'alumnus_directory_fetch_alumni');
 
