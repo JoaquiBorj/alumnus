@@ -41,6 +41,9 @@ require_once 'event-list-shortcode.php';
 
 require_once 'add-alumni.php';
 
+require_once 'register-alumni.php';
+require_once 'login-alumni.php';
+
 /**
  * Returns the main instance of WordPress_Plugin_Template to prevent the need to use globals.
  *
