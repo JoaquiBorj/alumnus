@@ -39,6 +39,8 @@ require_once 'event-information-template.php';
 // Event list view shortcode.
 require_once 'event-list-shortcode.php';
 
+require_once 'add-alumni.php';
+
 /**
  * Returns the main instance of WordPress_Plugin_Template to prevent the need to use globals.
  *
