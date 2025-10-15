@@ -9,18 +9,26 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
  * Enqueue directory styles and scripts
  */
 function alumnus_enqueue_directory_styles() {
+	// Cache-bust styles/scripts by using file modification time as the version
+	$css_rel_path = 'assets/css/directory.css';
+	$js_rel_path  = 'assets/js/directory-filters.js';
+	$css_path     = plugin_dir_path( __FILE__ ) . $css_rel_path;
+	$js_path      = plugin_dir_path( __FILE__ ) . $js_rel_path;
+	$css_ver      = file_exists( $css_path ) ? filemtime( $css_path ) : '1.1.0';
+	$js_ver       = file_exists( $js_path ) ? filemtime( $js_path ) : '1.1.0';
+
 	wp_enqueue_style(
 		'alumnus-directory',
-		plugin_dir_url( __FILE__ ) . 'assets/css/directory.css',
+		plugin_dir_url( __FILE__ ) . $css_rel_path,
 		array(),
-		'1.1.0'
+		$css_ver
 	);
 
 	wp_enqueue_script(
 		'alumnus-directory-filters',
-		plugin_dir_url( __FILE__ ) . 'assets/js/directory-filters.js',
-		array(),
-		'1.1.0',
+		plugin_dir_url( __FILE__ ) . $js_rel_path,
+		array('jquery'),
+		$js_ver,
 		true
 	);
 
@@ -46,9 +54,9 @@ function alumnus_render_directory_shortcode() {
 
 	// Fetch filter data from DB
 	global $wpdb;
-	$tables = function_exists('alumnus_get_table_names') ? alumnus_get_table_names() : array('courses' => $wpdb->prefix.'courses', 'alumni' => $wpdb->prefix.'alumni');
-	$courses = $wpdb->get_results( "SELECT id, course_name FROM {$tables['courses']} ORDER BY course_name ASC" );
-	$years   = $wpdb->get_col( "SELECT DISTINCT batch_year FROM {$tables['alumni']} WHERE batch_year IS NOT NULL ORDER BY batch_year DESC" );
+	// Using actual tables from schema: course, alumni
+	$courses = $wpdb->get_results( "SELECT course_id, course FROM course ORDER BY course ASC" );
+	$years   = $wpdb->get_col( "SELECT DISTINCT `year` FROM alumni WHERE `year` IS NOT NULL ORDER BY `year` DESC" );
 
 	ob_start();
 	?>
@@ -119,7 +127,7 @@ function alumnus_render_directory_shortcode() {
 					<select id="filter-course" class="af-select">
 						<option value=""><?php echo esc_html__('All Courses', 'alumnus'); ?></option>
 						<?php if (!empty($courses)) : foreach ($courses as $course) : ?>
-							<option value="<?php echo esc_attr((string) $course->id); ?>"><?php echo esc_html($course->course_name); ?></option>
+							<option value="<?php echo esc_attr((string) $course->course_id); ?>"><?php echo esc_html($course->course); ?></option>
 						<?php endforeach; endif; ?>
 					</select>
 				</div>
@@ -142,10 +150,10 @@ add_shortcode( 'alumni_directory', 'alumnus_render_directory_shortcode' );
  * Helper: Render a single alumni card as HTML
  */
 function alumnus_render_alumni_card($row) {
-	$full_name = trim($row->first_name . ' ' . $row->last_name);
+	$full_name = trim(($row->firstname ?? '') . ' ' . ($row->lastname ?? ''));
 	$initials = '';
-	if ($row->first_name) { $initials .= strtoupper(substr($row->first_name, 0, 1)); }
-	if ($row->last_name) { $initials .= strtoupper(substr($row->last_name, 0, 1)); }
+	if (!empty($row->firstname)) { $initials .= strtoupper(substr($row->firstname, 0, 1)); }
+	if (!empty($row->lastname)) { $initials .= strtoupper(substr($row->lastname, 0, 1)); }
 	if ($initials === '' && $full_name !== '') { $initials = strtoupper(substr($full_name, 0, 1)); }
 
 	ob_start();
@@ -153,19 +161,12 @@ function alumnus_render_alumni_card($row) {
 	<div class="alumni-card">
 		<div class="ac-avatar"><span class="ac-initials"><?php echo esc_html($initials); ?></span></div>
 		<div class="ac-content">
-			<h3 class="ac-name"><?php echo esc_html($full_name ?: $row->id); ?></h3>
-			<?php if (!empty($row->batch_year)) : ?>
-				<p class="ac-year"><?php echo esc_html(sprintf(__('Class of %d', 'alumnus'), (int)$row->batch_year)); ?></p>
+			<h3 class="ac-name"><?php echo esc_html($full_name ?: ($row->user_id ?? '')); ?></h3>
+			<?php if (!empty($row->year)) : ?>
+				<p class="ac-year"><?php echo esc_html(sprintf(__('Class of %d', 'alumnus'), (int)$row->year)); ?></p>
 			<?php endif; ?>
 			<?php if (!empty($row->course_name)) : ?>
 				<p class="ac-degree"><?php echo esc_html($row->course_name); ?></p>
-			<?php endif; ?>
-			<div class="ac-divider"></div>
-			<?php if (!empty($row->email)) : ?>
-				<p class="ac-company"><?php echo esc_html($row->email); ?></p>
-			<?php endif; ?>
-			<?php if (!empty($row->phone)) : ?>
-				<p class="ac-position"><?php echo esc_html($row->phone); ?></p>
 			<?php endif; ?>
 		</div>
 	</div>
@@ -180,7 +181,6 @@ function alumnus_directory_fetch_alumni() {
 	check_ajax_referer('alumnus_directory', 'nonce');
 
 	global $wpdb;
-	$tables = function_exists('alumnus_get_table_names') ? alumnus_get_table_names() : array('courses' => $wpdb->prefix.'courses', 'alumni' => $wpdb->prefix.'alumni');
 
 	$year      = isset($_POST['year']) ? intval($_POST['year']) : 0;
 	$course_id = isset($_POST['course_id']) && $_POST['course_id'] !== '' ? intval($_POST['course_id']) : 0;
@@ -190,7 +190,7 @@ function alumnus_directory_fetch_alumni() {
 	$params = array();
 
 	if ($year > 0) {
-		$where[] = "a.batch_year = %d";
+		$where[] = "a.`year` = %d";
 		$params[] = $year;
 	}
 	if ($course_id > 0) {
@@ -201,8 +201,8 @@ function alumnus_directory_fetch_alumni() {
 	$search_sql = '';
 	if ($search !== '') {
 		$like = '%' . $wpdb->esc_like($search) . '%';
-		$search_sql = "(a.first_name LIKE %s OR a.last_name LIKE %s OR a.id LIKE %s OR c.course_name LIKE %s)";
-		array_push($params, $like, $like, $like, $like);
+		$search_sql = "(a.firstname LIKE %s OR a.lastname LIKE %s OR a.user_id LIKE %s OR c.course LIKE %s OR a.email LIKE %s)";
+		array_push($params, $like, $like, $like, $like, $like);
 		$where[] = $search_sql;
 	}
 
@@ -211,25 +211,14 @@ function alumnus_directory_fetch_alumni() {
 		$where_clause = 'WHERE ' . implode(' AND ', $where);
 	}
 
-	$sql = "SELECT a.id, a.first_name, a.last_name, a.batch_year, a.email, a.phone, c.course_name
-			FROM {$tables['alumni']} a
-			LEFT JOIN {$tables['courses']} c ON a.course_id = c.id
+	$sql = "SELECT a.user_id, a.firstname, a.lastname, a.`year`, a.email, a.contact_info, c.course AS course_name
+			FROM alumni a
+			LEFT JOIN course c ON a.course_id = c.course_id
 			$where_clause
-			ORDER BY a.batch_year DESC, a.last_name ASC, a.first_name ASC";
+			ORDER BY a.`year` DESC, a.lastname ASC, a.firstname ASC";
 
-	if (!empty($params)) {
-		// Build prepared statement with correct placeholders
-		$types = array();
-		foreach ($where as $clause) {
-			if (strpos($clause, '%d') !== false) { $types[] = '%d'; }
-			if (strpos($clause, 'LIKE %s') !== false) { $types[] = '%s'; $types[] = '%s'; $types[] = '%s'; $types[] = '%s'; break; }
-		}
-		// Prepare using $wpdb->prepare with flat params
-		$query = $wpdb->prepare($sql, $params);
-		$rows = $wpdb->get_results($query);
-	} else {
-		$rows = $wpdb->get_results($sql);
-	}
+	// Prepare if we have parameters; otherwise run raw
+	$rows = !empty($params) ? $wpdb->get_results($wpdb->prepare($sql, $params)) : $wpdb->get_results($sql);
 
 	if (empty($rows)) {
 		wp_send_json_success('<div class="no-results-message"><p>'. esc_html__('No alumni found matching your filters.', 'alumnus') .'</p></div>');

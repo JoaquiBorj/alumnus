@@ -327,7 +327,6 @@ select#filter-course:focus {
 	font-family: "Helvetica Neue", Arial, sans-serif !important;
 	box-sizing: border-box !important;
 	width: 100% !important;
-	min-height: 400px !important;
 	max-width: 100% !important;
 }
 
