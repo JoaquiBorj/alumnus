@@ -29,7 +29,7 @@ function adm_create_alumni_tables() {
 
     // === ALUMNI TABLE ===
     $sql_alumni = "CREATE TABLE IF NOT EXISTS alumni (
-        user_id INT(11) NOT NULL,
+        user_id VARCHAR(100) NOT NULL,
         year INT(11) NOT NULL,
         course_id INT(11) NOT NULL,
         firstname VARCHAR(150) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
@@ -43,7 +43,7 @@ function adm_create_alumni_tables() {
 
     // === USER ACCOUNT TABLE ===
     $sql_user_account = "CREATE TABLE IF NOT EXISTS user (
-        user INT(11) NOT NULL,
+        user VARCHAR(100) NOT NULL,
         course_id INT(11) NOT NULL,
         year INT(11) NOT NULL,
         password VARCHAR(150) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
