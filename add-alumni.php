@@ -47,6 +47,20 @@ function alumnus_get_table_names() {
 }
 
 /**
+ * Detect if a provided password string already looks like a hash (bcrypt/argon2, WordPress portable, md5, sha1).
+ */
+function alumnus_is_password_hash($value) {
+	if (!is_string($value) || $value === '') return false;
+	// bcrypt or argon2
+	if (preg_match('/^\$(2y|2a|argon2id|argon2i)\$/', $value)) return true;
+	// WordPress portable hashes ($P$ or $H$)
+	if (preg_match('/^\$(P|H)\$/', $value)) return true;
+	// md5 / sha1 hex digests
+	if (ctype_xdigit($value) && (strlen($value) === 32 || strlen($value) === 40)) return true;
+	return false;
+}
+
+/**
  * Add top-level admin menu
  */
 function alumnus_admin_menu() {
@@ -126,7 +140,8 @@ function alumnus_handle_post() {
 		$first_name = isset($_POST['first_name']) ? sanitize_text_field(wp_unslash($_POST['first_name'])) : '';
 		$last_name  = isset($_POST['last_name']) ? sanitize_text_field(wp_unslash($_POST['last_name'])) : '';
 		$batch_year = isset($_POST['batch_year']) ? intval($_POST['batch_year']) : 0;
-		$password   = isset($_POST['password']) ? (string) wp_unslash($_POST['password']) : '';
+	$password   = isset($_POST['password']) ? (string) wp_unslash($_POST['password']) : '';
+	$password_looks_hashed = alumnus_is_password_hash($password);
 
 		// Basic validation
 		$errors = [];
@@ -136,7 +151,9 @@ function alumnus_handle_post() {
 		if ($last_name === '') $errors[] = __('Last name is required.', 'alumnus');
 		$current_year = (int) date('Y');
 		if ($batch_year < 1900 || $batch_year > $current_year) $errors[] = __('Batch year must be between 1900 and current year.', 'alumnus');
-		if ($password === '' || strlen($password) < 6) $errors[] = __('Password must be at least 6 characters.', 'alumnus');
+		if (!$password_looks_hashed && ($password === '' || strlen($password) < 6)) {
+			$errors[] = __('Password must be at least 6 characters.', 'alumnus');
+		}
 
 		// Validate course exists
         $course_exists = $wpdb->get_var(
@@ -155,11 +172,15 @@ function alumnus_handle_post() {
 			return;
 		}
 
-		// Hash password
-		if (function_exists('wp_hash_password')) {
-			$password_hash = wp_hash_password($password);
+		// Hash password if it isn't already a hash (prevents double-hashing when a hash is pasted intentionally)
+		if ($password_looks_hashed) {
+			$password_hash = $password;
 		} else {
-			$password_hash = password_hash($password, PASSWORD_DEFAULT);
+			if (function_exists('wp_hash_password')) {
+				$password_hash = wp_hash_password($password);
+			} else {
+				$password_hash = password_hash($password, PASSWORD_DEFAULT);
+			}
 		}
 
 		// Insert into alumni (fill required non-null fields with safe defaults)
@@ -202,7 +223,11 @@ function alumnus_handle_post() {
 			return;
 		}
 
-		add_settings_error('alumnus', 'alumni_insert_ok', __('Alumni added successfully.', 'alumnus'), 'updated');
+		if ($password_looks_hashed) {
+			add_settings_error('alumnus', 'alumni_insert_ok', __('Alumni added successfully. Note: The provided password looks like a hash and was stored as-is (no re-hashing).', 'alumnus'), 'updated');
+		} else {
+			add_settings_error('alumnus', 'alumni_insert_ok', __('Alumni added successfully.', 'alumnus'), 'updated');
+		}
 	}
 }
 add_action('admin_init', 'alumnus_handle_post');
@@ -233,7 +258,7 @@ function alumnus_render_admin_page() {
 	echo '<table class="form-table" role="presentation">';
 	echo '  <tr valign="top">';
 	echo '    <th scope="row"><label for="course_id">' . esc_html__('Course ID', 'alumnus') . '</label></th>';
-	echo '    <td><input name="course_id" id="course_id" type="text" inputmode="numeric" pattern="[0-9]*" class="small-text" required /></td>';
+	echo '    <td><input name="course_id" id="course_id" type="number" class="small-text" required /></td>';
 	echo '  </tr>';
 	echo '  <tr valign="top">';
 	echo '    <th scope="row"><label for="course_name">' . esc_html__('Course Name', 'alumnus') . '</label></th>';
@@ -254,7 +279,7 @@ function alumnus_render_admin_page() {
 	echo '<table class="form-table" role="presentation">';
 	echo '  <tr valign="top">';
 	echo '    <th scope="row"><label for="alumni_id">' . esc_html__('User ID', 'alumnus') . '</label></th>';
-	echo '    <td><input name="alumni_id" id="alumni_id" type="text" inputmode="numeric" pattern="[0-9]*" class="regular-text" required /></td>';
+	echo '    <td><input name="alumni_id" id="alumni_id" type="number" class="regular-text" required /></td>';
 	echo '  </tr>';
 
 	echo '  <tr valign="top">';
@@ -285,7 +310,7 @@ function alumnus_render_admin_page() {
 
 	echo '  <tr valign="top">';
 	echo '    <th scope="row"><label for="batch_year">' . esc_html__('Year', 'alumnus') . '</label></th>';
-	echo '    <td><input name="batch_year" id="batch_year" type="text" inputmode="numeric" pattern="[0-9]*" class="small-text" required /> <span class="description">' . esc_html__('e.g., 2024', 'alumnus') . '</span></td>';
+	echo '    <td><input name="batch_year" id="batch_year" type="number" min="1900" max="' . esc_attr(date('Y')) . '" class="small-text" required /> <span class="description">' . esc_html__('e.g., 2024', 'alumnus') . '</span></td>';
 	echo '  </tr>';
 
 	echo '  <tr valign="top">';
