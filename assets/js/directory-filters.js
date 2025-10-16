@@ -30,6 +30,7 @@
 			formData.append('year', selectedYear);
 			formData.append('course_id', selectedCourse);
 			formData.append('search', searchTerm);
+			formData.append('profile_url', AlumnusDirectory.profile_url || '');
 			
 			if (currentRequest && typeof currentRequest.abort === 'function') {
 				try { currentRequest.abort(); } catch(e) {}

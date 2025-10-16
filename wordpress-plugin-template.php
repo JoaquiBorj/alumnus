@@ -34,6 +34,7 @@
 	require_once 'community-feed-shortcode.php';
 	require_once 'header-shortcode.php';
 	require_once 'directory-shortcode.php';
+	require_once 'profile-shortcode.php';
 	// Event information template & shortcode.
 	require_once 'event-information-template.php';
 	// Event list view shortcode.
