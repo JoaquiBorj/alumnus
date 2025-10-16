@@ -32,10 +32,15 @@ function alumnus_enqueue_directory_styles() {
 		true
 	);
 
+	// Determine the profile page URL
+	// By default, use current page. Can be overridden with 'alumnus_profile_page_url' filter
+	$profile_page_url = apply_filters('alumnus_profile_page_url', get_permalink());
+	
 	// Localize AJAX settings
 	wp_localize_script('alumnus-directory-filters', 'AlumnusDirectory', array(
 		'ajax_url' => admin_url('admin-ajax.php'),
 		'nonce'    => wp_create_nonce('alumnus_directory'),
+		'profile_url' => $profile_page_url, // URL for building profile links
 		'i18n'     => array(
 			'loading' => __('Loading alumni...', 'alumnus'),
 			'noResults' => __('No alumni found matching your filters.', 'alumnus'),
@@ -56,7 +61,7 @@ function alumnus_render_directory_shortcode() {
 	global $wpdb;
 	// Using actual tables from schema: course, alumni
 	$courses = $wpdb->get_results( "SELECT course_id, course FROM course ORDER BY course ASC" );
-	$years   = $wpdb->get_col( "SELECT DISTINCT `year` FROM alumni WHERE `year` IS NOT NULL ORDER BY `year` DESC" );
+	$years   = $wpdb->get_col( "SELECT DISTINCT year FROM alumni WHERE year IS NOT NULL ORDER BY year DESC" );
 
 	ob_start();
 	?>
@@ -149,16 +154,23 @@ add_shortcode( 'alumni_directory', 'alumnus_render_directory_shortcode' );
 /**
  * Helper: Render a single alumni card as HTML
  */
-function alumnus_render_alumni_card($row) {
+function alumnus_render_alumni_card($row, $base_profile_url = '') {
 	$full_name = trim(($row->firstname ?? '') . ' ' . ($row->lastname ?? ''));
 	$initials = '';
 	if (!empty($row->firstname)) { $initials .= strtoupper(substr($row->firstname, 0, 1)); }
 	if (!empty($row->lastname)) { $initials .= strtoupper(substr($row->lastname, 0, 1)); }
 	if ($initials === '' && $full_name !== '') { $initials = strtoupper(substr($full_name, 0, 1)); }
 
+	// Generate profile URL using helper function
+	// If base_profile_url is provided (from AJAX), use it; otherwise use current page
+	if (empty($base_profile_url)) {
+		$base_profile_url = get_permalink();
+	}
+	$profile_url = alumnus_get_profile_url($row->user_id, $base_profile_url);
+
 	ob_start();
 	?>
-	<div class="alumni-card">
+	<a href="<?php echo esc_url($profile_url); ?>" class="alumni-card" data-user-id="<?php echo esc_attr($row->user_id); ?>">
 		<div class="ac-avatar"><span class="ac-initials"><?php echo esc_html($initials); ?></span></div>
 		<div class="ac-content">
 			<h3 class="ac-name"><?php echo esc_html($full_name ?: ($row->user_id ?? '')); ?></h3>
@@ -169,7 +181,7 @@ function alumnus_render_alumni_card($row) {
 				<p class="ac-degree"><?php echo esc_html($row->course_name); ?></p>
 			<?php endif; ?>
 		</div>
-	</div>
+	</a>
 	<?php
 	return ob_get_clean();
 }
@@ -185,12 +197,13 @@ function alumnus_directory_fetch_alumni() {
 	$year      = isset($_POST['year']) ? intval($_POST['year']) : 0;
 	$course_id = isset($_POST['course_id']) && $_POST['course_id'] !== '' ? intval($_POST['course_id']) : 0;
 	$search    = isset($_POST['search']) ? sanitize_text_field(wp_unslash($_POST['search'])) : '';
+	$profile_url = isset($_POST['profile_url']) ? esc_url_raw(wp_unslash($_POST['profile_url'])) : '';
 
 	$where = array();
 	$params = array();
 
 	if ($year > 0) {
-		$where[] = "a.`year` = %d";
+		$where[] = "a.year = %d";
 		$params[] = $year;
 	}
 	if ($course_id > 0) {
@@ -226,7 +239,7 @@ function alumnus_directory_fetch_alumni() {
 
 	$html = '';
 	foreach ($rows as $row) {
-		$html .= alumnus_render_alumni_card($row);
+		$html .= alumnus_render_alumni_card($row, $profile_url);
 	}
 
 	wp_send_json_success($html);
