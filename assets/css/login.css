@@ -2,6 +2,26 @@
  * Alumni Login Page Styles
  */
 
+/* Theme Container Overrides */
+/* Override Astra theme and other theme containers */
+body:has(.coenect-login-wrapper) .ast-container,
+body:has(.coenect-login-wrapper) .container,
+body:has(.coenect-login-wrapper) .site-content,
+body:has(.coenect-login-wrapper) .entry-content {
+	max-width: 100% !important;
+	padding-left: 0 !important;
+	padding-right: 0 !important;
+	margin: 0 !important;
+}
+
+/* Remove theme padding/margin from parent containers */
+.coenect-login-wrapper:is(.ast-container *, .container *, .site-content *, .entry-content *) {
+	margin-left: calc(-50vw + 50%) !important;
+	margin-right: calc(-50vw + 50%) !important;
+	width: 100vw !important;
+	max-width: 100vw !important;
+}
+
 /* Reset and Base */
 .coenect-login-wrapper * {
 	margin: 0;
@@ -69,6 +89,8 @@
 	justify-content: center;
 	padding: 40px 20px;
 	position: relative;
+	width: 100%;
+	box-sizing: border-box;
 }
 
 /* Split Layout */
@@ -79,6 +101,7 @@
 	max-width: 1200px;
 	width: 100%;
 	gap: 80px;
+	box-sizing: border-box;
 }
 
 /* Left Side - Logo */
@@ -88,6 +111,8 @@
 	align-items: center;
 	justify-content: center;
 	padding: 40px;
+	width: 100%;
+	box-sizing: border-box;
 }
 
 .coenect-logo-text {
@@ -96,6 +121,7 @@
 	color: #0A5F7F;
 	text-align: center;
 	line-height: 1.2;
+	word-break: break-word;
 }
 
 /* Vertical Divider */
@@ -113,6 +139,8 @@
 	align-items: center;
 	justify-content: center;
 	padding: 40px;
+	width: 100%;
+	box-sizing: border-box;
 }
 
 .coenect-login-form {
@@ -121,6 +149,7 @@
 	display: flex;
 	flex-direction: column;
 	gap: 20px;
+	box-sizing: border-box;
 }
 
 /* Form Inputs */
@@ -136,6 +165,10 @@
 	outline: none;
 	transition: all 0.3s ease;
 	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+	box-sizing: border-box;
+	-webkit-appearance: none;
+	-moz-appearance: none;
+	appearance: none;
 }
 
 .coenect-form-input::placeholder {
@@ -203,7 +236,6 @@
 
 .coenect-forgot-link:hover {
 	color: #084A61;
-	text-decoration: underline;
 }
 
 /* Login Button */
@@ -222,10 +254,20 @@
 	transition: all 0.3s ease;
 	box-shadow: 0 4px 12px rgba(10, 95, 127, 0.3);
 	margin-top: 10px;
+	box-sizing: border-box;
+	-webkit-appearance: none;
+	-moz-appearance: none;
+	appearance: none;
+	touch-action: manipulation;
+	-webkit-tap-highlight-color: transparent;
 }
 
 .coenect-login-btn:hover {
 	background: #084A61;
+	color: #F4D03F;
+	text-decoration: underline;
+	text-decoration-color: #F4D03F;
+	text-underline-offset: 3px;
 	transform: translateY(-2px);
 	box-shadow: 0 6px 16px rgba(10, 95, 127, 0.4);
 }
@@ -333,29 +375,41 @@
 }
 
 /* Responsive Design */
+
+/* Tablets and below (portrait) */
 @media (max-width: 968px) {
+	.coenect-login-container {
+		padding: 30px 20px;
+	}
+
 	.coenect-login-split {
 		flex-direction: column;
 		gap: 40px;
 	}
 
 	.coenect-login-divider {
-		width: 300px;
+		width: 80%;
+		max-width: 300px;
 		height: 4px;
 		background: linear-gradient(90deg, transparent 0%, #F4D03F 20%, #F4D03F 80%, transparent 100%);
 	}
 
 	.coenect-logo-text {
-		font-size: 36px;
+		font-size: 40px;
 	}
 
 	.coenect-login-left,
 	.coenect-login-right {
 		padding: 20px;
 	}
+
+	.coenect-login-form {
+		max-width: 100%;
+	}
 }
 
-@media (max-width: 480px) {
+/* Small tablets and large phones */
+@media (max-width: 768px) {
 	.coenect-login-home-btn {
 		top: 20px;
 		left: 20px;
@@ -373,12 +427,87 @@
 	}
 
 	.coenect-logo-text {
-		font-size: 28px;
+		font-size: 36px;
+	}
+
+	.coenect-login-divider {
+		width: 70%;
+		max-width: 250px;
+	}
+
+	.coenect-form-options {
+		flex-wrap: wrap;
+		gap: 12px;
+	}
+}
+
+/* Mobile phones */
+@media (max-width: 480px) {
+	.coenect-login-wrapper {
+		min-height: 100vh;
+	}
+
+	.coenect-login-container {
+		padding: 20px 16px;
+	}
+
+	.coenect-login-split {
+		gap: 30px;
+	}
+
+	.coenect-login-home-btn {
+		top: 16px;
+		left: 16px;
+		padding: 8px 16px 8px 8px;
+	}
+
+	.coenect-login-home-icon {
+		width: 32px;
+		height: 32px;
+		font-size: 16px;
+	}
+
+	.coenect-login-home-text {
+		font-size: 13px;
+	}
+
+	.coenect-login-left,
+	.coenect-login-right {
+		padding: 10px;
+	}
+
+	.coenect-logo-text {
+		font-size: 32px;
+	}
+
+	.coenect-login-divider {
+		width: 60%;
+		max-width: 200px;
+		height: 3px;
+	}
+
+	.coenect-login-form {
+		gap: 16px;
 	}
 
 	.coenect-form-input {
 		padding: 16px 20px;
 		font-size: 15px;
+	}
+
+	.coenect-form-options {
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 12px;
+		padding: 0;
+	}
+
+	.coenect-remember-me {
+		width: 100%;
+	}
+
+	.coenect-forgot-link {
+		font-size: 14px;
 	}
 
 	.coenect-login-btn {
@@ -388,6 +517,44 @@
 
 	.coenect-modal {
 		padding: 30px 20px;
+		width: 95%;
+		max-width: 350px;
+	}
+
+	.coenect-modal h3 {
+		font-size: 20px;
+		margin-bottom: 20px;
+	}
+
+	.coenect-error-message {
+		font-size: 13px;
+		padding: 10px 16px;
+	}
+}
+
+/* Extra small devices */
+@media (max-width: 360px) {
+	.coenect-logo-text {
+		font-size: 28px;
+	}
+
+	.coenect-login-home-text {
+		font-size: 12px;
+	}
+
+	.coenect-form-input {
+		padding: 14px 18px;
+		font-size: 14px;
+	}
+
+	.coenect-login-btn {
+		padding: 14px 18px;
+		font-size: 15px;
+	}
+
+	.coenect-modal {
+		padding: 24px 16px;
+		width: 95%;
 	}
 }
 
