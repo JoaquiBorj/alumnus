@@ -330,6 +330,21 @@ select#filter-course:focus {
 	max-width: 100% !important;
 }
 
+/* Ensure card links never show underline or purple visited color */
+.alumni-card,
+.alumnus-grid .alumni-card:link,
+.alumnus-grid .alumni-card:visited,
+.alumnus-grid .alumni-card:hover,
+.alumnus-grid .alumni-card:active,
+.alumnus-grid .alumni-card:focus {
+    text-decoration: none !important;
+    color: inherit !important;
+}
+.alumnus-grid .alumni-card:focus-visible {
+    outline: none !important;
+    box-shadow: 0 0 0 3px rgba(4, 50, 77, 0.15), 0 2px 8px rgba(0,0,0,0.08) !important;
+}
+
 /* Prevent SVG scaling issues in cards */
 .alumni-card svg {
 	max-width: 100% !important;

@@ -46,8 +46,13 @@ function alumnus_render_profile_shortcode($atts = array()) {
 		// Use shortcode attribute if provided
 		$user_id = $atts['user_id'];
 	} else {
-		// Default to current logged-in user
-		$user_id = get_current_user_id();
+		// Default to current logged-in user's alumni ID = WP user_login (fallback to numeric ID)
+		$current_user_obj = wp_get_current_user();
+		if ($current_user_obj && $current_user_obj->exists() && !empty($current_user_obj->user_login)) {
+			$user_id = (string) $current_user_obj->user_login;
+		} else {
+			$user_id = (string) get_current_user_id();
+		}
 	}
 
 	// If no user ID, show login message
@@ -89,9 +94,16 @@ function alumnus_render_profile_shortcode($atts = array()) {
 		return '<div class="alumnus-profile-error"><p>' . $debug_msg . '</p></div>';
 	}
 
-	// Check if viewing own profile (compare as strings since user_id is VARCHAR)
+	// Check if viewing own profile. Alumni ID is typically the current user's login; also allow numeric ID match.
 	$current_user_id = get_current_user_id();
-	$is_own_profile = (!empty($current_user_id) && (string)$current_user_id === (string)$user_id);
+	$current_user_obj = wp_get_current_user();
+	$current_user_login = ($current_user_obj && $current_user_obj->exists()) ? (string) $current_user_obj->user_login : '';
+	$is_own_profile = is_user_logged_in() && (
+		(string)$user_id === $current_user_login || (string)$user_id === (string)$current_user_id
+	);
+
+	// Feature flag: control Recent Posts visibility (disabled by default; enable via filter)
+	$alumnus_show_recent_posts = apply_filters('alumnus_profile_show_posts', false, $alumni_data, $is_own_profile);
 
 	// Generate initials for avatar
 	$initials = '';
@@ -119,10 +131,10 @@ function alumnus_render_profile_shortcode($atts = array()) {
 			<div class="aph-gradient-bg"></div>
 			<div class="aph-nav">
 				<?php if ($is_own_profile): ?>
-					<button class="aph-nav-btn" onclick="alert('Edit Profile feature coming soon')">Edit Profile</button>
-					<button class="aph-nav-btn" onclick="alert('Settings feature coming soon')">Settings</button>
+					<button class="aph-nav-btn" type="button" onclick="document.dispatchEvent(new CustomEvent('alumnus:editProfile')); alert('Edit feature coming soon');"><?php echo esc_html__('Edit', 'alumnus'); ?></button>
+					<a class="aph-nav-btn" href="<?php echo esc_url( home_url('/') ); ?>"><?php echo esc_html__('Home', 'alumnus'); ?></a>
 				<?php endif; ?>
-				<button class="aph-nav-btn" onclick="window.history.back()">Back</button>
+				<button class="aph-nav-btn" type="button" onclick="window.history.back()"><?php echo esc_html__('Back', 'alumnus'); ?></button>
 			</div>
 		</div>
 
@@ -189,46 +201,47 @@ function alumnus_render_profile_shortcode($atts = array()) {
 					</div>
 				<?php endif; ?>
 
-				<!-- Recent Posts Section -->
-				<div class="apc-posts-section">
-					<h2 class="apc-section-title">Recent Posts</h2>
-					
-					<?php if (empty($posts)): ?>
-						<div class="apc-empty-state">
-							<div class="apc-empty-icon">📝</div>
-							<p class="apc-empty-text"><?php echo esc_html__('No posts yet.', 'alumnus'); ?></p>
-							<?php if ($is_own_profile): ?>
-								<p class="apc-empty-subtext"><?php echo esc_html__('Share your thoughts with the community!', 'alumnus'); ?></p>
-							<?php endif; ?>
-						</div>
-					<?php else: ?>
-						<?php foreach ($posts as $post): ?>
-							<div class="apc-post">
-								<div class="apc-post-header">
-									<div class="apc-post-title"><?php echo esc_html($post['title']); ?></div>
-									<div class="apc-post-time"><?php echo esc_html($post['time']); ?></div>
-								</div>
-								<?php if (!empty($post['content'])): ?>
-									<div class="apc-post-content"><?php echo wp_kses_post($post['content']); ?></div>
+				<?php if ( $alumnus_show_recent_posts ) : ?>
+					<!-- Recent Posts Section -->
+					<div class="apc-posts-section">
+						<h2 class="apc-section-title">Recent Posts</h2>
+						<?php if (empty($posts)): ?>
+							<div class="apc-empty-state">
+								<div class="apc-empty-icon">📝</div>
+								<p class="apc-empty-text"><?php echo esc_html__('No posts yet.', 'alumnus'); ?></p>
+								<?php if ($is_own_profile): ?>
+									<p class="apc-empty-subtext"><?php echo esc_html__('Share your thoughts with the community!', 'alumnus'); ?></p>
 								<?php endif; ?>
-								<div class="apc-post-actions">
-									<button class="apc-action-btn" onclick="alumnus_toggleLike(this)">
-										<span class="apc-action-icon">👍</span>
-										<span class="apc-action-text">Like</span>
-									</button>
-									<button class="apc-action-btn" onclick="alert('Comment feature coming soon')">
-										<span class="apc-action-icon">💬</span>
-										<span class="apc-action-text">Comment</span>
-									</button>
-									<button class="apc-action-btn" onclick="alert('Share feature coming soon')">
-										<span class="apc-action-icon">🔗</span>
-										<span class="apc-action-text">Share</span>
-									</button>
-								</div>
 							</div>
-						<?php endforeach; ?>
-					<?php endif; ?>
-				</div>
+						<?php else: ?>
+							<?php foreach ($posts as $post): ?>
+								<div class="apc-post">
+									<div class="apc-post-header">
+										<div class="apc-post-title"><?php echo esc_html($post['title']); ?></div>
+										<div class="apc-post-time"><?php echo esc_html($post['time']); ?></div>
+									</div>
+									<?php if (!empty($post['content'])): ?>
+										<div class="apc-post-content"><?php echo wp_kses_post($post['content']); ?></div>
+									<?php endif; ?>
+									<div class="apc-post-actions">
+										<button class="apc-action-btn" onclick="alumnus_toggleLike(this)">
+											<span class="apc-action-icon">👍</span>
+											<span class="apc-action-text">Like</span>
+										</button>
+										<button class="apc-action-btn" onclick="alert('Comment feature coming soon')">
+											<span class="apc-action-icon">💬</span>
+											<span class="apc-action-text">Comment</span>
+										</button>
+										<button class="apc-action-btn" onclick="alert('Share feature coming soon')">
+											<span class="apc-action-icon">🔗</span>
+											<span class="apc-action-text">Share</span>
+										</button>
+									</div>
+								</div>
+							<?php endforeach; ?>
+						<?php endif; ?>
+					</div>
+				<?php endif; ?>
 			</div>
 		</div>
 	</div>
