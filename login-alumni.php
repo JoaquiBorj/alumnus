@@ -1,10 +1,20 @@
 <?php
+// ===== Enqueue Login Styles =====
+function coenect_login_enqueue_styles() {
+    wp_enqueue_style(
+        'coenect-login-styles',
+        plugin_dir_url(__FILE__) . 'assets/css/login.css',
+        array(),
+        '1.0.0'
+    );
+}
+add_action('wp_enqueue_scripts', 'coenect_login_enqueue_styles');
+
 // ===== Shortcode: User Login with Redirect and Data Passing =====
 function coenect_login_form_shortcode() {
     ob_start();
 
     global $wpdb;
-    // Use the same DB connection/config as WordPress (same as create-db.php)
     $db = $wpdb;
 
     // Ensure password helper functions are available
@@ -17,10 +27,8 @@ function coenect_login_form_shortcode() {
     // --- Handle login submission ---
     if (isset($_POST['login_submit'])) {
         $username = sanitize_text_field($_POST['username']);
-        // Do not sanitize password; keep exact characters
         $password = isset($_POST['password']) ? wp_unslash($_POST['password']) : '';
 
-        // Query user data from the `user` table (primary key `user` references alumni.user_id)
         $user = $db->get_row(
             $db->prepare(
                 "SELECT * FROM `user` WHERE `user` = %s LIMIT 1",
@@ -29,7 +37,6 @@ function coenect_login_form_shortcode() {
         );
 
         if ($user) {
-            // Verify password supporting multiple legacy formats
             $stored = (string) $user->password;
             $verified = false;
             $should_upgrade_hash = false;
@@ -50,7 +57,7 @@ function coenect_login_form_shortcode() {
                 $hash_type = 'wp-portable';
                 if (function_exists('wp_check_password') && wp_check_password($password, $stored)) {
                     $verified = true;
-                    $should_upgrade_hash = true; // migrate to bcrypt in our table
+                    $should_upgrade_hash = true;
                 }
             }
             // 3) md5 legacy
@@ -87,23 +94,21 @@ function coenect_login_form_shortcode() {
                 }
             }
 
-            // Minimal server-side log (no password) for debugging
             if (defined('WP_DEBUG') && WP_DEBUG) {
                 error_log('[alumnus-login] user=' . $username . ' type=' . $hash_type . ' verified=' . ($verified ? '1' : '0'));
             }
 
             if ($verified) {
-                // Upgrade legacy hashes to bcrypt transparently
+                // Upgrade legacy hashes to bcrypt
                 if ($should_upgrade_hash) {
                     $newHash = password_hash($password, PASSWORD_DEFAULT);
                     $db->query(
                         $db->prepare("UPDATE `user` SET `password` = %s WHERE `user` = %s", $newHash, $username)
                     );
                 }
-                // Get course_id and year for redirect
+
                 $course_id = urlencode(isset($user->course_id) ? $user->course_id : '');
                 $year = urlencode(isset($user->year) ? $user->year : '');
-                // In this schema, `user` equals the user's ID (FK to alumni.user_id)
                 $username_encoded = urlencode($user->user);
 
                 // If password is default 12345 -> show reset modal
@@ -111,35 +116,33 @@ function coenect_login_form_shortcode() {
                     ?>
                     <script>
                         document.addEventListener("DOMContentLoaded", function() {
-                            document.getElementById("resetModal").style.display = "block";
+                            document.getElementById("resetModal").classList.add("active");
                         });
                     </script>
                     <?php
                 } else {
-                    // Redirect to shortcode page (for example: [user_dashboard])
+                    // Redirect to dashboard
                     $redirect_url = add_query_arg([
                         'user' => $username_encoded,
                         'course_id' => $course_id,
                         'year' => $year
-                    ], get_permalink()); // same page OR change to your shortcode page permalink
+                    ], get_permalink());
                     echo "<script>window.location.href='" . esc_url($redirect_url) . "';</script>";
                 }
             } else {
-                echo '<div class="error">Incorrect password.</div>';
+                echo '<div class="coenect-error-message">Incorrect password. Please try again.</div>';
             }
         } else {
-            $db_error = !empty($db->last_error) ? ' DB error: ' . esc_html($db->last_error) : '';
-            echo '<div class="error">User not found.' . $db_error . '</div>';
+            echo '<div class="coenect-error-message">User not found. Please check your username.</div>';
         }
     }
 
-    // --- Handle password reset --
+    // --- Handle password reset ---
     if (isset($_POST['reset_submit'])) {
         $username = sanitize_text_field($_POST['reset_username']);
         $new_password = sanitize_text_field($_POST['new_password']);
         $hashed_password = password_hash($new_password, PASSWORD_DEFAULT);
 
-        // Update matched user by `user` (same identifier used on login)
         $updated = $db->query(
             $db->prepare(
                 "UPDATE `user` SET `password` = %s WHERE `user` = %s",
@@ -149,7 +152,6 @@ function coenect_login_form_shortcode() {
         );
 
         if ($updated !== false) {
-            // Get updated user data for redirect
             $user = $db->get_row(
                 $db->prepare(
                     "SELECT * FROM `user` WHERE `user` = %s LIMIT 1",
@@ -161,52 +163,116 @@ function coenect_login_form_shortcode() {
                 $year = urlencode(isset($user->year) ? $user->year : '');
                 $username_encoded = urlencode($user->user);
 
-                // Redirect to shortcode page with query params
                 $redirect_url = add_query_arg([
                     'user' => $username_encoded,
                     'course_id' => $course_id,
                     'year' => $year
                 ], get_permalink());
                 echo "<script>alert('Password reset successfully! Redirecting...'); window.location.href='" . esc_url($redirect_url) . "';</script>";
-            } else {
-                echo "<div class='error'>Password updated, but user lookup failed.</div>";
             }
         } else {
-            echo "<div class='error'>Failed to reset password.</div>";
+            echo "<div class='coenect-error-message'>Failed to reset password.</div>";
         }
     }
     ?>
 
-    <!-- ===== Login Form ===== -->
-    <form method="post" class="coenect-login-form" style="max-width:400px;margin:auto;">
-        <h3>Login</h3>
-    <label>Username / User ID</label>
-        <input type="text" name="username" required class="widefat">
+    <div class="coenect-login-wrapper">
+        <!-- Home Button -->
+        <a href="<?php echo esc_url(home_url('/')); ?>" class="coenect-login-home-btn">
+            <div class="coenect-login-home-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                    <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                </svg>
+            </div>
+            <span class="coenect-login-home-text">Home Page</span>
+        </a>
 
-        <label>Password</label>
-        <input type="password" name="password" required class="widefat">
+        <!-- Main Container -->
+        <div class="coenect-login-container">
+            <div class="coenect-login-split">
+                <!-- Left Side - Logo -->
+                <div class="coenect-login-left">
+                    <h1 class="coenect-logo-text">Logo of COE</h1>
+                </div>
 
-        <button type="submit" name="login_submit" class="button button-primary" style="margin-top:10px;">Login</button>
-    </form>
+                <!-- Vertical Divider -->
+                <div class="coenect-login-divider"></div>
 
-    <!-- ===== Password Reset Modal ===== -->
-    <div id="resetModal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.6); z-index:9999;">
-        <div style="background:#fff; width:300px; margin:100px auto; padding:20px; border-radius:8px; position:relative;">
-            <h3>Reset Password</h3>
-            <form method="post">
-                <input type="hidden" name="reset_username" value="<?php echo isset($username) ? esc_attr($username) : ''; ?>">
-                <label>New Password</label>
-                <input type="password" name="new_password" required class="widefat">
+                <!-- Right Side - Login Form -->
+                <div class="coenect-login-right">
+                    <form method="post" class="coenect-login-form">
+                        <input 
+                            type="text" 
+                            name="username" 
+                            class="coenect-form-input" 
+                            placeholder="Username / User ID" 
+                            required
+                        >
+                        
+                        <input 
+                            type="password" 
+                            name="password" 
+                            class="coenect-form-input" 
+                            placeholder="Password" 
+                            required
+                        >
 
-                <button type="submit" name="reset_submit" class="button button-primary" style="margin-top:10px;">Update Password</button>
-            </form>
-            <button onclick="document.getElementById('resetModal').style.display='none'" style="position:absolute; top:10px; right:10px;">✖</button>
+                        <div class="coenect-form-options">
+                            <label class="coenect-remember-me">
+                                <div class="coenect-remember-checkbox checked"></div>
+                                <span class="coenect-remember-label">Remember me</span>
+                            </label>
+                            
+                            <a href="#" class="coenect-forgot-link">Forgot password</a>
+                        </div>
+
+                        <button type="submit" name="login_submit" class="coenect-login-btn">
+                            Log in
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Password Reset Modal -->
+        <div id="resetModal" class="coenect-modal-overlay">
+            <div class="coenect-modal">
+                <button type="button" class="coenect-modal-close" onclick="document.getElementById('resetModal').classList.remove('active')">
+                    ✖
+                </button>
+                <h3>Reset Password</h3>
+                <form method="post" class="coenect-modal-form">
+                    <input type="hidden" name="reset_username" value="<?php echo isset($username) ? esc_attr($username) : ''; ?>">
+                    
+                    <label class="coenect-modal-label">New Password</label>
+                    <input 
+                        type="password" 
+                        name="new_password" 
+                        class="coenect-form-input" 
+                        placeholder="Enter new password" 
+                        required
+                    >
+
+                    <button type="submit" name="reset_submit" class="coenect-login-btn">
+                        Update Password
+                    </button>
+                </form>
+            </div>
         </div>
     </div>
 
-    <style>
-        .error { color: red; margin: 10px 0; }
-    </style>
+    <script>
+    // Remember me checkbox toggle
+    document.addEventListener('DOMContentLoaded', function() {
+        const checkbox = document.querySelector('.coenect-remember-checkbox');
+        if (checkbox) {
+            checkbox.addEventListener('click', function() {
+                this.classList.toggle('checked');
+            });
+        }
+    });
+    </script>
 
     <?php
     return ob_get_clean();
