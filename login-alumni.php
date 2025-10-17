@@ -1,15 +1,4 @@
 <?php
-// ===== Enqueue Login Styles =====
-function coenect_login_enqueue_styles() {
-    wp_enqueue_style(
-        'coenect-login-styles',
-        plugin_dir_url(__FILE__) . 'assets/css/login.css',
-        array(),
-        '1.0.0'
-    );
-}
-add_action('wp_enqueue_scripts', 'coenect_login_enqueue_styles');
-
 // ===== Shortcode: User Login with real WordPress authentication =====
 function coenect_login_form_shortcode() {
     ob_start();
