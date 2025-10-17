@@ -287,9 +287,17 @@ function coenect_login_form_shortcode() {
         </div>
     </div>
 
-    <style>
-        .error { color: red; margin: 10px 0; }
-    </style>
+    <script>
+    // Remember me checkbox toggle
+    document.addEventListener('DOMContentLoaded', function() {
+        const checkbox = document.querySelector('.coenect-remember-checkbox');
+        if (checkbox) {
+            checkbox.addEventListener('click', function() {
+                this.classList.toggle('checked');
+            });
+        }
+    });
+    </script>
 
     <?php
     return ob_get_clean();
