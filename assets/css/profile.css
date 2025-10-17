@@ -9,6 +9,7 @@
 	box-sizing: border-box;
 }
 
+/* Base wrapper */
 .alumnus-profile-wrapper {
 	font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
 	background: #f5f7fa;
@@ -54,6 +55,31 @@
 	font-weight: 500;
 	transition: all 0.3s ease;
 	backdrop-filter: blur(10px);
+	text-decoration: none;
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+}
+.aph-nav-btn:link,
+.aph-nav-btn:visited,
+.aph-nav-btn:hover,
+.aph-nav-btn:active,
+.aph-nav-btn:focus {
+	color: #ffffff;
+	text-decoration: none;
+}
+.aph-nav .aph-nav-btn,
+.aph-nav .aph-nav-btn:link,
+.aph-nav .aph-nav-btn:visited,
+.aph-nav .aph-nav-btn:hover,
+.aph-nav .aph-nav-btn:active,
+.aph-nav .aph-nav-btn:focus {
+	color: #ffffff !important;
+	text-decoration: none !important;
+}
+.aph-nav-btn:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(255,255,255,0.35);
 }
 
 .aph-nav-btn:hover {
@@ -62,7 +88,6 @@
 	transform: translateY(-2px);
 }
 
-/* Profile Container */
 .alumnus-profile-container {
 	max-width: 1200px;
 	margin: 0 auto;
@@ -77,6 +102,8 @@
 	position: relative;
 	margin-top: -60px;
 }
+
+/* removed button variants and icon styles for unified buttons */
 
 /* Profile Header */
 .apc-header {

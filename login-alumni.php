@@ -30,6 +30,76 @@ function coenect_login_form_shortcode() {
     $errors = [];
     $username_echo = '';
 
+    // If user is already logged in, prevent re-login and redirect to their profile
+    if ( is_user_logged_in() ) {
+        // Determine target alumni_id from current WP user
+        $current = wp_get_current_user();
+        $alumni_id = '';
+        if ( $current && $current->exists() && ! empty( $current->user_login ) ) {
+            $alumni_id = (string) $current->user_login;
+        } else {
+            // Fallback to numeric WP user ID as string
+            $alumni_id = (string) get_current_user_id();
+        }
+
+        $profile_page_url = alumnus_resolve_profile_page_url();
+        if ( function_exists( 'alumnus_get_profile_url' ) ) {
+            $target = alumnus_get_profile_url( $alumni_id, $profile_page_url );
+        } else {
+            $target = add_query_arg( 'alumni_id', rawurlencode( $alumni_id ), $profile_page_url );
+        }
+
+        // Final override if needed
+        $target = apply_filters( 'alumnus_login_redirect_url', $target, $current, $alumni_id, [] );
+
+        wp_safe_redirect( $target );
+        exit;
+    }
+
+    // Helper: resolve the Alumni Profile page URL (page that contains [alumni_profile])
+    if ( ! function_exists( 'alumnus_resolve_profile_page_url' ) ) {
+        function alumnus_resolve_profile_page_url() {
+            // 1) Allow override via saved option (store a Page ID in alumnus_profile_page_id if desired)
+            $opt_page_id = (int) get_option( 'alumnus_profile_page_id' );
+            if ( $opt_page_id ) {
+                $link = get_permalink( $opt_page_id );
+                if ( $link ) {
+                    /**
+                     * Filter: adjust the profile page URL.
+                     *
+                     * @param string $link Resolved profile page URL
+                     */
+                    return apply_filters( 'alumnus_profile_page_url', $link );
+                }
+            }
+
+            // 2) Discover first published page that contains the shortcode [alumni_profile]
+            $candidate = '';
+            $pages = get_posts( [
+                'post_type'      => 'page',
+                'post_status'    => 'publish',
+                'posts_per_page' => 50,
+                'orderby'        => 'date',
+                'order'          => 'DESC',
+                'suppress_filters' => true,
+            ] );
+            if ( $pages ) {
+                foreach ( $pages as $p ) {
+                    if ( is_object( $p ) && ! empty( $p->post_content ) && function_exists( 'has_shortcode' ) && has_shortcode( $p->post_content, 'alumni_profile' ) ) {
+                        $candidate = get_permalink( $p->ID );
+                        break;
+                    }
+                }
+            }
+
+            if ( ! $candidate ) {
+                $candidate = home_url( '/' );
+            }
+
+            return apply_filters( 'alumnus_profile_page_url', $candidate );
+        }
+    }
+
     // --- Handle login submission ---
     if (isset($_POST['login_submit'])) {
         $nonce = isset($_POST['coenect_login_nonce']) ? $_POST['coenect_login_nonce'] : '';
@@ -109,23 +179,32 @@ function coenect_login_form_shortcode() {
             }
 
             if (!is_wp_error($user_obj)) {
-                // Authenticated: build redirect URL
+                // Authenticated: build redirect URL to the user's own profile
                 $urow = $db->get_row($db->prepare("SELECT * FROM `{$tables['user']}` WHERE `user` = %s LIMIT 1", $username));
                 $course_id = !empty($urow->course_id) ? $urow->course_id : '';
                 $year = !empty($urow->year) ? $urow->year : '';
+                // Respect explicit redirect_to if provided, else go to profile page
                 $target = isset($_POST['redirect_to']) ? esc_url_raw(wp_unslash($_POST['redirect_to'])) : '';
                 if (!$target) {
-                    // default to current page with query params (keeps existing behavior)
-                    $target = add_query_arg([
-                        'user' => rawurlencode($username),
-                        'course_id' => rawurlencode((string) $course_id),
-                        'year' => rawurlencode((string) $year),
-                    ], get_permalink());
+                    $profile_page_url = alumnus_resolve_profile_page_url();
+                    if (function_exists('alumnus_get_profile_url')) {
+                        // Use helper to append alumni_id
+                        $target = alumnus_get_profile_url($username, $profile_page_url);
+                    } else {
+                        // Fallback: manually add alumni_id
+                        $target = add_query_arg('alumni_id', rawurlencode($username), $profile_page_url);
+                    }
                 }
+
+                // Allow final override via filter
+                $target = apply_filters('alumnus_login_redirect_url', $target, $user_obj, $username, [
+                    'course_id' => $course_id,
+                    'year' => $year,
+                ]);
 
                 // If password is default 12345, show reset modal instead of redirect
                 if ($password === '12345') {
-                    echo '<script>document.addEventListener("DOMContentLoaded",function(){document.getElementById("resetModal").style.display="block";});</script>';
+                    echo '<script>document.addEventListener("DOMContentLoaded",function(){var m=document.getElementById("resetModal"); if(m){m.style.display="block";}});</script>';
                 } else {
                     wp_safe_redirect($target);
                     exit;
@@ -208,9 +287,17 @@ function coenect_login_form_shortcode() {
         </div>
     </div>
 
-    <style>
-        .error { color: red; margin: 10px 0; }
-    </style>
+    <script>
+    // Remember me checkbox toggle
+    document.addEventListener('DOMContentLoaded', function() {
+        const checkbox = document.querySelector('.coenect-remember-checkbox');
+        if (checkbox) {
+            checkbox.addEventListener('click', function() {
+                this.classList.toggle('checked');
+            });
+        }
+    });
+    </script>
 
     <?php
     return ob_get_clean();
