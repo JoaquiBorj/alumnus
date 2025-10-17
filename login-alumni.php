@@ -30,19 +30,30 @@ function coenect_login_form_shortcode() {
     $errors = [];
     $username_echo = '';
 
-    // If user is already logged in, prevent re-login and redirect to their profile
+    // If user is already logged in, prevent re-login (frontend) but do NOT redirect in admin/editor/REST contexts
     if ( is_user_logged_in() ) {
-        // Determine target alumni_id from current WP user
+        $is_admin_context = is_admin() || ( function_exists('wp_doing_ajax') && wp_doing_ajax() ) || ( defined('REST_REQUEST') && REST_REQUEST );
+        if ( $is_admin_context ) {
+            // Show a safe placeholder in editor/admin instead of redirecting
+            $preview = '<div class="coenect-login-admin-preview" style="padding:12px 14px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;color:#334e68;">'
+                     . esc_html__( 'Alumni Login form preview. You are currently logged in, so the form is hidden on the frontend. Use a private window to test the login flow.', 'alumnus' )
+                     . '</div>';
+            // Discard current buffer and return preview
+            ob_get_clean();
+            return $preview;
+        }
+
+        // Frontend: redirect logged-in users to their profile
         $current = wp_get_current_user();
         $alumni_id = '';
         if ( $current && $current->exists() && ! empty( $current->user_login ) ) {
             $alumni_id = (string) $current->user_login;
         } else {
-            // Fallback to numeric WP user ID as string
             $alumni_id = (string) get_current_user_id();
         }
 
-        $profile_page_url = alumnus_resolve_profile_page_url();
+        // Use helper if available; otherwise fall back to home URL
+        $profile_page_url = function_exists('alumnus_resolve_profile_page_url') ? alumnus_resolve_profile_page_url() : home_url('/');
         if ( function_exists( 'alumnus_get_profile_url' ) ) {
             $target = alumnus_get_profile_url( $alumni_id, $profile_page_url );
         } else {
