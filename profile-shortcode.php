@@ -134,9 +134,9 @@ function alumnus_render_profile_shortcode($atts = array()) {
 					<button class="aph-nav-btn" type="button" onclick="document.dispatchEvent(new CustomEvent('alumnus:editProfile')); alert('Edit feature coming soon');"><?php echo esc_html__('Edit', 'alumnus'); ?></button>
 					<a class="aph-nav-btn" href="<?php echo esc_url( home_url('/') ); ?>"><?php echo esc_html__('Home', 'alumnus'); ?></a>
 				<?php endif; ?>
-				<button class="aph-nav-btn" type="button" onclick="window.history.back()"><?php echo esc_html__('Back', 'alumnus'); ?></button>
 			</div>
 		</div>
+
 
 		<div class="alumnus-profile-container">
 			<div class="alumnus-profile-card">
@@ -147,59 +147,69 @@ function alumnus_render_profile_shortcode($atts = array()) {
 						</div>
 					</div>
 					
-					<div class="apc-info">
-						<h1 class="apc-name"><?php echo esc_html($full_name); ?></h1>
-						<?php if (!empty($alumni_data->email)): ?>
-							<p class="apc-email"><?php echo esc_html($alumni_data->email); ?></p>
-						<?php endif; ?>
-						<p class="apc-subtitle">
-							<?php 
-							$subtitle_parts = array();
-							if (!empty($alumni_data->year)) {
-								$subtitle_parts[] = 'Batch ' . esc_html($alumni_data->year);
-							}
-							if (!empty($alumni_data->course_name)) {
-								$subtitle_parts[] = esc_html($alumni_data->course_name);
-							}
-							echo implode(' | ', $subtitle_parts);
-							?>
-						</p>
-						<?php if (!empty($alumni_data->contact_info)): ?>
-							<p class="apc-contact"><?php echo esc_html($alumni_data->contact_info); ?></p>
-						<?php endif; ?>
+					<div class="apc-main-content">
+						<div class="apc-info">
+							<h1 class="apc-name"><?php echo esc_html($full_name); ?></h1>
+							<?php if (!empty($alumni_data->email)): ?>
+								<p class="apc-email"><?php echo esc_html($alumni_data->email); ?></p>
+							<?php endif; ?>
+							<p class="apc-subtitle">
+								<?php 
+								$subtitle_parts = array();
+								if (!empty($alumni_data->year)) {
+									$subtitle_parts[] = 'Batch ' . esc_html($alumni_data->year);
+								}
+								if (!empty($alumni_data->course_name)) {
+									$subtitle_parts[] = esc_html($alumni_data->course_name);
+								}
+								echo implode(' | ', $subtitle_parts);
+								?>
+							</p>
+							<?php if (!empty($alumni_data->contact_info)): ?>
+								<p class="apc-contact"><?php echo esc_html($alumni_data->contact_info); ?></p>
+							<?php endif; ?>
+						</div>
+
+						<div class="apc-sidebar">
+							<!-- Career Section -->
+							<div class="apc-info-section apc-sidebar-section">
+								<h2 class="apc-section-title">Career</h2>
+								<div class="apc-info-content">
+									<?php if (!empty($alumni_data->career)): ?>
+										<?php echo wp_kses_post(nl2br($alumni_data->career)); ?>
+									<?php else: ?>
+										<p class="apc-placeholder"><?php echo esc_html__('No career information provided yet.', 'alumnus'); ?></p>
+									<?php endif; ?>
+								</div>
+							</div>
+
+							<!-- Skills Section -->
+							<div class="apc-info-section apc-sidebar-section">
+								<h2 class="apc-section-title">Skills</h2>
+								<?php if (!empty($alumni_data->skills)): ?>
+									<div class="apc-skills-list">
+										<?php 
+										// Split skills by comma or newline
+										$skills_array = preg_split('/[,\n]+/', $alumni_data->skills);
+										foreach ($skills_array as $skill): 
+											$skill = trim($skill);
+											if (!empty($skill)):
+										?>
+											<span class="apc-skill-tag"><?php echo esc_html($skill); ?></span>
+										<?php 
+											endif;
+										endforeach; 
+										?>
+									</div>
+								<?php else: ?>
+									<div class="apc-info-content">
+										<p class="apc-placeholder"><?php echo esc_html__('No skills listed yet.', 'alumnus'); ?></p>
+									</div>
+								<?php endif; ?>
+							</div>
+						</div>
 					</div>
 				</div>
-
-				<!-- Career Section -->
-				<?php if (!empty($alumni_data->career)): ?>
-					<div class="apc-info-section">
-						<h2 class="apc-section-title">Career</h2>
-						<div class="apc-info-content">
-							<?php echo wp_kses_post(nl2br($alumni_data->career)); ?>
-						</div>
-					</div>
-				<?php endif; ?>
-
-				<!-- Skills Section -->
-				<?php if (!empty($alumni_data->skills)): ?>
-					<div class="apc-info-section">
-						<h2 class="apc-section-title">Skills</h2>
-						<div class="apc-skills-list">
-							<?php 
-							// Split skills by comma or newline
-							$skills_array = preg_split('/[,\n]+/', $alumni_data->skills);
-							foreach ($skills_array as $skill): 
-								$skill = trim($skill);
-								if (!empty($skill)):
-							?>
-								<span class="apc-skill-tag"><?php echo esc_html($skill); ?></span>
-							<?php 
-								endif;
-							endforeach; 
-							?>
-						</div>
-					</div>
-				<?php endif; ?>
 
 				<?php if ( $alumnus_show_recent_posts ) : ?>
 					<!-- Recent Posts Section -->

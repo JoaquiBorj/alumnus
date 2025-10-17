@@ -2,6 +2,26 @@
  * Alumni Profile Page Styles
  */
 
+/* Theme Container Overrides */
+/* Override Astra theme and other theme containers */
+body:has(.alumnus-profile-wrapper) .ast-container,
+body:has(.alumnus-profile-wrapper) .container,
+body:has(.alumnus-profile-wrapper) .site-content,
+body:has(.alumnus-profile-wrapper) .entry-content {
+	max-width: 100% !important;
+	padding-left: 0 !important;
+	padding-right: 0 !important;
+	margin: 0 !important;
+}
+
+/* Remove theme padding/margin from parent containers */
+.alumnus-profile-wrapper:is(.ast-container *, .container *, .site-content *, .entry-content *) {
+	margin-left: calc(-50vw + 50%) !important;
+	margin-right: calc(-50vw + 50%) !important;
+	width: 100vw !important;
+	max-width: 100vw !important;
+}
+
 /* Reset and Base */
 .alumnus-profile-wrapper * {
 	margin: 0;
@@ -107,12 +127,16 @@
 
 /* Profile Header */
 .apc-header {
-	display: flex;
-	align-items: flex-start;
-	gap: 30px;
-	margin-bottom: 40px;
-	padding-bottom: 30px;
+	margin-bottom: 20px;
+	padding-bottom: 25px;
 	border-bottom: 2px solid #e2e8f0;
+}
+
+.apc-main-content {
+	display: grid;
+	grid-template-columns: 1fr 1fr 1fr;
+	gap: 50px;
+	align-items: flex-start;
 }
 
 .apc-avatar-wrapper {
@@ -140,8 +164,15 @@
 }
 
 .apc-info {
-	flex: 1;
-	padding-top: 10px;
+	min-width: 0;
+}
+
+.apc-sidebar {
+	display: contents;
+}
+
+.apc-sidebar-section {
+	margin-top: 0 !important;
 }
 
 .apc-name {
@@ -180,6 +211,19 @@
 	display: inline-block;
 }
 
+.apc-sidebar .apc-section-title {
+	font-size: 20px;
+	margin-bottom: 16px;
+	padding-bottom: 8px;
+	border-bottom: 2px solid #0f4c75;
+}
+
+.apc-placeholder {
+	color: #a0aec0;
+	font-style: italic;
+	font-size: 14px;
+}
+
 /* Info Sections (Career, Skills, etc.) */
 .apc-info-section {
 	margin-top: 40px;
@@ -199,6 +243,10 @@
 	display: flex;
 	flex-wrap: wrap;
 	gap: 12px;
+	background: #f8fafc;
+	border: 1px solid #e2e8f0;
+	border-radius: 12px;
+	padding: 24px;
 }
 
 .apc-skill-tag {
@@ -341,39 +389,85 @@
 /* Responsive Design */
 @media (max-width: 768px) {
 	.alumnus-profile-card {
-		padding: 100px 20px 30px;
+		padding: 100px 15px 10px;
 	}
 
+	.apc-main-content {
+		grid-template-columns: 1fr;
+		gap: 30px;
+	}
+
+	/* Avatar */
 	.apc-avatar-wrapper {
 		left: 50%;
 		transform: translateX(-50%);
 	}
 
+	/* Header Section */
 	.apc-header {
+		display: flex;
 		flex-direction: column;
 		align-items: center;
 		text-align: center;
-		padding-top: 80px;
+	}
+
+	/* User Info Section */
+	.apc-info {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		text-align: center;
 	}
 
 	.apc-name {
-		font-size: 24px;
+		font-size: 32px;
+		font-weight: bold !important;
+		margin-bottom: 8px !important;
 	}
 
 	.apc-subtitle {
-		font-size: 16px;
+		font-size: 20px;
+		margin-bottom: 8px !important;
 	}
 
+	.apc-name,
+	.apc-subtitle,
+	.apc-email,
+	.apc-contact {
+		width: 100%;
+	}
+
+	/* Sidebar Sections (Career & Skills) */
+	.apc-sidebar-section {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+	}
+
+	.apc-sidebar-section .apc-section-title {
+		text-align: center;
+	}
+
+	.apc-sidebar-section .apc-info-content,
+	.apc-sidebar-section .apc-skills-list {
+		width: 100%;
+	}
+
+	.apc-sidebar-section .apc-skills-list {
+		justify-content: center;
+	}
+
+	/* Navigation */
 	.aph-nav {
 		flex-wrap: wrap;
 		justify-content: center;
 	}
 
 	.aph-nav-btn {
-		padding: 8px 16px;
-		font-size: 13px;
+		font-size: 16px;
 	}
 
+	/* Posts */
 	.apc-post-header {
 		flex-direction: column;
 		gap: 8px;
