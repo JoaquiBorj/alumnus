@@ -1,0 +1,393 @@
+/**
+ * Alumni Login Page Styles
+ */
+
+/* Reset and Base */
+.coenect-login-wrapper * {
+	margin: 0;
+	padding: 0;
+	box-sizing: border-box;
+}
+
+.coenect-login-wrapper {
+	font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+	background: #f5f7fa;
+	min-height: 100vh;
+	display: flex;
+	flex-direction: column;
+}
+
+/* Home Button */
+.coenect-login-home-btn {
+	position: absolute;
+	top: 40px;
+	left: 40px;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	background: linear-gradient(90deg, #6B4423 0%, #D4C4B0 50%, #D4C4B0 100%);
+	border: none;
+	padding: 12px 24px 12px 12px;
+	border-radius: 50px;
+	cursor: pointer;
+	text-decoration: none;
+	transition: all 0.3s ease;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+	z-index: 10;
+}
+
+.coenect-login-home-btn:hover {
+	transform: translateY(-2px);
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.coenect-login-home-icon {
+	width: 40px;
+	height: 40px;
+	background: #6B4423;
+	border-radius: 50%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	color: #F4D03F;
+	font-size: 20px;
+}
+
+.coenect-login-home-text {
+	color: #6B4423;
+	font-weight: 600;
+	font-size: 16px;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+}
+
+/* Main Container */
+.coenect-login-container {
+	display: flex;
+	flex: 1;
+	align-items: center;
+	justify-content: center;
+	padding: 40px 20px;
+	position: relative;
+}
+
+/* Split Layout */
+.coenect-login-split {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	max-width: 1200px;
+	width: 100%;
+	gap: 80px;
+}
+
+/* Left Side - Logo */
+.coenect-login-left {
+	flex: 1;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 40px;
+}
+
+.coenect-logo-text {
+	font-size: 48px;
+	font-weight: 700;
+	color: #0A5F7F;
+	text-align: center;
+	line-height: 1.2;
+}
+
+/* Vertical Divider */
+.coenect-login-divider {
+	width: 4px;
+	height: 400px;
+	background: linear-gradient(180deg, transparent 0%, #F4D03F 20%, #F4D03F 80%, transparent 100%);
+	border-radius: 2px;
+}
+
+/* Right Side - Form */
+.coenect-login-right {
+	flex: 1;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 40px;
+}
+
+.coenect-login-form {
+	width: 100%;
+	max-width: 400px;
+	display: flex;
+	flex-direction: column;
+	gap: 20px;
+}
+
+/* Form Inputs */
+.coenect-form-input {
+	width: 100%;
+	padding: 18px 24px;
+	border: none;
+	border-radius: 50px;
+	background: #E8D5D5;
+	color: #5A5A5A;
+	font-size: 16px;
+	font-weight: 400;
+	outline: none;
+	transition: all 0.3s ease;
+	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.coenect-form-input::placeholder {
+	color: #A09090;
+	font-weight: 300;
+}
+
+.coenect-form-input:focus {
+	background: #DCC5C5;
+	box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+	transform: translateY(-1px);
+}
+
+/* Form Options Row */
+.coenect-form-options {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 0 8px;
+}
+
+/* Remember Me */
+.coenect-remember-me {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	cursor: pointer;
+}
+
+.coenect-remember-checkbox {
+	width: 24px;
+	height: 24px;
+	border: 2px solid #0A5F7F;
+	border-radius: 4px;
+	background: #0A5F7F;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	cursor: pointer;
+	transition: all 0.2s ease;
+}
+
+.coenect-remember-checkbox.checked::after {
+	content: '✓';
+	color: white;
+	font-size: 16px;
+	font-weight: bold;
+}
+
+.coenect-remember-label {
+	color: #2d3748;
+	font-size: 15px;
+	font-weight: 500;
+	user-select: none;
+}
+
+/* Forgot Password Link */
+.coenect-forgot-link {
+	color: #0A5F7F;
+	font-size: 15px;
+	font-weight: 500;
+	text-decoration: none;
+	transition: all 0.2s ease;
+}
+
+.coenect-forgot-link:hover {
+	color: #084A61;
+	text-decoration: underline;
+}
+
+/* Login Button */
+.coenect-login-btn {
+	width: 100%;
+	padding: 18px 24px;
+	border: none;
+	border-radius: 50px;
+	background: #0A5F7F;
+	color: #F4D03F;
+	font-size: 18px;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 1px;
+	cursor: pointer;
+	transition: all 0.3s ease;
+	box-shadow: 0 4px 12px rgba(10, 95, 127, 0.3);
+	margin-top: 10px;
+}
+
+.coenect-login-btn:hover {
+	background: #084A61;
+	transform: translateY(-2px);
+	box-shadow: 0 6px 16px rgba(10, 95, 127, 0.4);
+}
+
+.coenect-login-btn:active {
+	transform: translateY(0);
+	box-shadow: 0 2px 8px rgba(10, 95, 127, 0.3);
+}
+
+/* Error Messages */
+.coenect-error-message {
+	background: #FEE2E2;
+	border: 1px solid #FCA5A5;
+	color: #991B1B;
+	padding: 12px 20px;
+	border-radius: 12px;
+	font-size: 14px;
+	font-weight: 500;
+	text-align: center;
+}
+
+/* Password Reset Modal */
+.coenect-modal-overlay {
+	display: none;
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background: rgba(0, 0, 0, 0.6);
+	backdrop-filter: blur(4px);
+	z-index: 9999;
+	align-items: center;
+	justify-content: center;
+}
+
+.coenect-modal-overlay.active {
+	display: flex;
+}
+
+.coenect-modal {
+	background: white;
+	width: 90%;
+	max-width: 400px;
+	padding: 40px;
+	border-radius: 20px;
+	box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+	position: relative;
+	animation: modalSlideIn 0.3s ease;
+}
+
+@keyframes modalSlideIn {
+	from {
+		opacity: 0;
+		transform: translateY(-20px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+.coenect-modal-close {
+	position: absolute;
+	top: 16px;
+	right: 16px;
+	width: 32px;
+	height: 32px;
+	border: none;
+	background: #E2E8F0;
+	color: #64748B;
+	border-radius: 50%;
+	cursor: pointer;
+	font-size: 18px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	transition: all 0.2s ease;
+}
+
+.coenect-modal-close:hover {
+	background: #CBD5E0;
+	color: #1A202C;
+}
+
+.coenect-modal h3 {
+	font-size: 24px;
+	font-weight: 700;
+	color: #1A202C;
+	margin-bottom: 24px;
+	text-align: center;
+}
+
+.coenect-modal-form {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+}
+
+.coenect-modal-label {
+	font-size: 14px;
+	font-weight: 600;
+	color: #4A5568;
+	margin-bottom: 4px;
+}
+
+/* Responsive Design */
+@media (max-width: 968px) {
+	.coenect-login-split {
+		flex-direction: column;
+		gap: 40px;
+	}
+
+	.coenect-login-divider {
+		width: 300px;
+		height: 4px;
+		background: linear-gradient(90deg, transparent 0%, #F4D03F 20%, #F4D03F 80%, transparent 100%);
+	}
+
+	.coenect-logo-text {
+		font-size: 36px;
+	}
+
+	.coenect-login-left,
+	.coenect-login-right {
+		padding: 20px;
+	}
+}
+
+@media (max-width: 480px) {
+	.coenect-login-home-btn {
+		top: 20px;
+		left: 20px;
+		padding: 10px 20px 10px 10px;
+	}
+
+	.coenect-login-home-icon {
+		width: 36px;
+		height: 36px;
+		font-size: 18px;
+	}
+
+	.coenect-login-home-text {
+		font-size: 14px;
+	}
+
+	.coenect-logo-text {
+		font-size: 28px;
+	}
+
+	.coenect-form-input {
+		padding: 16px 20px;
+		font-size: 15px;
+	}
+
+	.coenect-login-btn {
+		padding: 16px 20px;
+		font-size: 16px;
+	}
+
+	.coenect-modal {
+		padding: 30px 20px;
+	}
+}
+
