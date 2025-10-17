@@ -30,6 +30,32 @@ function coenect_login_form_shortcode() {
     $errors = [];
     $username_echo = '';
 
+    // If user is already logged in, prevent re-login and redirect to their profile
+    if ( is_user_logged_in() ) {
+        // Determine target alumni_id from current WP user
+        $current = wp_get_current_user();
+        $alumni_id = '';
+        if ( $current && $current->exists() && ! empty( $current->user_login ) ) {
+            $alumni_id = (string) $current->user_login;
+        } else {
+            // Fallback to numeric WP user ID as string
+            $alumni_id = (string) get_current_user_id();
+        }
+
+        $profile_page_url = alumnus_resolve_profile_page_url();
+        if ( function_exists( 'alumnus_get_profile_url' ) ) {
+            $target = alumnus_get_profile_url( $alumni_id, $profile_page_url );
+        } else {
+            $target = add_query_arg( 'alumni_id', rawurlencode( $alumni_id ), $profile_page_url );
+        }
+
+        // Final override if needed
+        $target = apply_filters( 'alumnus_login_redirect_url', $target, $current, $alumni_id, [] );
+
+        wp_safe_redirect( $target );
+        exit;
+    }
+
     // Helper: resolve the Alumni Profile page URL (page that contains [alumni_profile])
     if ( ! function_exists( 'alumnus_resolve_profile_page_url' ) ) {
         function alumnus_resolve_profile_page_url() {
