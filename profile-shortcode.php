@@ -102,6 +102,9 @@ function alumnus_render_profile_shortcode($atts = array()) {
 		(string)$user_id === $current_user_login || (string)$user_id === (string)$current_user_id
 	);
 
+	// Feature flag: control Recent Posts visibility (disabled by default; enable via filter)
+	$alumnus_show_recent_posts = apply_filters('alumnus_profile_show_posts', false, $alumni_data, $is_own_profile);
+
 	// Generate initials for avatar
 	$initials = '';
 	if (!empty($alumni_data->firstname)) {
@@ -198,46 +201,47 @@ function alumnus_render_profile_shortcode($atts = array()) {
 					</div>
 				<?php endif; ?>
 
-				<!-- Recent Posts Section -->
-				<div class="apc-posts-section">
-					<h2 class="apc-section-title">Recent Posts</h2>
-					
-					<?php if (empty($posts)): ?>
-						<div class="apc-empty-state">
-							<div class="apc-empty-icon">📝</div>
-							<p class="apc-empty-text"><?php echo esc_html__('No posts yet.', 'alumnus'); ?></p>
-							<?php if ($is_own_profile): ?>
-								<p class="apc-empty-subtext"><?php echo esc_html__('Share your thoughts with the community!', 'alumnus'); ?></p>
-							<?php endif; ?>
-						</div>
-					<?php else: ?>
-						<?php foreach ($posts as $post): ?>
-							<div class="apc-post">
-								<div class="apc-post-header">
-									<div class="apc-post-title"><?php echo esc_html($post['title']); ?></div>
-									<div class="apc-post-time"><?php echo esc_html($post['time']); ?></div>
-								</div>
-								<?php if (!empty($post['content'])): ?>
-									<div class="apc-post-content"><?php echo wp_kses_post($post['content']); ?></div>
+				<?php if ( $alumnus_show_recent_posts ) : ?>
+					<!-- Recent Posts Section -->
+					<div class="apc-posts-section">
+						<h2 class="apc-section-title">Recent Posts</h2>
+						<?php if (empty($posts)): ?>
+							<div class="apc-empty-state">
+								<div class="apc-empty-icon">📝</div>
+								<p class="apc-empty-text"><?php echo esc_html__('No posts yet.', 'alumnus'); ?></p>
+								<?php if ($is_own_profile): ?>
+									<p class="apc-empty-subtext"><?php echo esc_html__('Share your thoughts with the community!', 'alumnus'); ?></p>
 								<?php endif; ?>
-								<div class="apc-post-actions">
-									<button class="apc-action-btn" onclick="alumnus_toggleLike(this)">
-										<span class="apc-action-icon">👍</span>
-										<span class="apc-action-text">Like</span>
-									</button>
-									<button class="apc-action-btn" onclick="alert('Comment feature coming soon')">
-										<span class="apc-action-icon">💬</span>
-										<span class="apc-action-text">Comment</span>
-									</button>
-									<button class="apc-action-btn" onclick="alert('Share feature coming soon')">
-										<span class="apc-action-icon">🔗</span>
-										<span class="apc-action-text">Share</span>
-									</button>
-								</div>
 							</div>
-						<?php endforeach; ?>
-					<?php endif; ?>
-				</div>
+						<?php else: ?>
+							<?php foreach ($posts as $post): ?>
+								<div class="apc-post">
+									<div class="apc-post-header">
+										<div class="apc-post-title"><?php echo esc_html($post['title']); ?></div>
+										<div class="apc-post-time"><?php echo esc_html($post['time']); ?></div>
+									</div>
+									<?php if (!empty($post['content'])): ?>
+										<div class="apc-post-content"><?php echo wp_kses_post($post['content']); ?></div>
+									<?php endif; ?>
+									<div class="apc-post-actions">
+										<button class="apc-action-btn" onclick="alumnus_toggleLike(this)">
+											<span class="apc-action-icon">👍</span>
+											<span class="apc-action-text">Like</span>
+										</button>
+										<button class="apc-action-btn" onclick="alert('Comment feature coming soon')">
+											<span class="apc-action-icon">💬</span>
+											<span class="apc-action-text">Comment</span>
+										</button>
+										<button class="apc-action-btn" onclick="alert('Share feature coming soon')">
+											<span class="apc-action-icon">🔗</span>
+											<span class="apc-action-text">Share</span>
+										</button>
+									</div>
+								</div>
+							<?php endforeach; ?>
+						<?php endif; ?>
+					</div>
+				<?php endif; ?>
 			</div>
 		</div>
 	</div>
