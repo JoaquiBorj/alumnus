@@ -129,12 +129,13 @@ function alumnus_render_profile_shortcode($atts = array()) {
 	<div class="alumnus-profile-wrapper">
 		<div class="alumnus-profile-header">
 			<div class="aph-gradient-bg"></div>
-			<div class="aph-nav">
-				<?php if ($is_own_profile): ?>
-					<button class="aph-nav-btn" type="button" onclick="document.dispatchEvent(new CustomEvent('alumnus:editProfile')); alert('Edit feature coming soon');"><?php echo esc_html__('Edit', 'alumnus'); ?></button>
-					<a class="aph-nav-btn" href="<?php echo esc_url( home_url('/') ); ?>"><?php echo esc_html__('Home', 'alumnus'); ?></a>
-				<?php endif; ?>
-			</div>
+		<div class="aph-nav">
+			<?php if ($is_own_profile): ?>
+				<button class="aph-nav-btn" type="button" onclick="document.dispatchEvent(new CustomEvent('alumnus:editProfile')); alert('Edit feature coming soon');"><?php echo esc_html__('Edit', 'alumnus'); ?></button>
+				<a class="aph-nav-btn" href="<?php echo esc_url( wp_logout_url( home_url('/login-2') ) ); ?>"><?php echo esc_html__('Logout', 'alumnus'); ?></a>
+			<?php endif; ?>
+			<a class="aph-nav-btn" href="<?php echo esc_url( apply_filters('alumnus_directory_page_url', home_url('/directory')) ); ?>"><?php echo esc_html__('Back to Directory', 'alumnus'); ?></a>
+		</div>
 		</div>
 
 
