@@ -129,12 +129,7 @@ body .alumnus-directory-wrapper {
 	            0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
-.asb-icon {
-	width: 24px;
-	height: 24px;
-	margin-right: 8px;
-	flex-shrink: 0;
-}
+/* Removed icon styles; only text button remains */
 
 .asb-input,
 .alumnus-search-box input[type="text"],
@@ -166,6 +161,27 @@ body .alumnus-directory-wrapper {
 #alumnus-directory-search::placeholder {
 	color: #94a3b8;
 	font-weight: 300;
+}
+
+/* Search button inside the search box */
+.asb-button {
+	margin-left: 12px;
+	background-color: #04324d;
+	color: #fff;
+	border: none;
+	border-radius: 24px;
+	padding: 10px 16px;
+	cursor: pointer;
+	font-size: 14px;
+	font-weight: 600;
+	transition: background-color 0.2s ease, box-shadow 0.2s ease;
+}
+.asb-button:hover {
+	background-color: #064568;
+	box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+.asb-button:active {
+	background-color: #03283c;
 }
 
 /* ============================================
