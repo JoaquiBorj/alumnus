@@ -43,6 +43,7 @@ function alumnus_enqueue_directory_styles() {
 		'profile_url' => $profile_page_url, // URL for building profile links
 		'i18n'     => array(
 			'loading' => __('Loading alumni...', 'alumnus'),
+			'search'  => __('Search', 'alumnus'),
 			'noResults' => __('No alumni found matching your filters.', 'alumnus'),
 		)
 	));
@@ -84,16 +85,14 @@ function alumnus_render_directory_shortcode() {
 				
 				<div class="alumnus-search-box">
 					<div class="asb-inner">
-						<svg class="asb-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-							<circle cx="11" cy="11" r="7" stroke="#94a3b8" stroke-width="2"/>
-							<path d="M20 20L16.65 16.65" stroke="#94a3b8" stroke-width="2" stroke-linecap="round"/>
-						</svg>
+
 						<input 
 							type="text" 
 							class="asb-input" 
 							placeholder="Search Alum" 
 							id="alumnus-directory-search"
 						/>
+						<button type="button" id="alumnus-directory-submit-btn" class="asb-button"><?php echo esc_html__('Search', 'alumnus'); ?></button>
 					</div>
 				</div>
 			</div>
@@ -140,7 +139,7 @@ function alumnus_render_directory_shortcode() {
 			
 			<div class="alumnus-grid" id="alumnus-grid">
 				<div class="no-results-message" data-initial="1">
-					<p><?php echo esc_html__('Loading alumni...', 'alumnus'); ?></p>
+					<p><?php echo esc_html__('Adjust filters and press Search to see results.', 'alumnus'); ?></p>
 				</div>
 			</div>
 		</div>
@@ -214,8 +213,9 @@ function alumnus_directory_fetch_alumni() {
 	$search_sql = '';
 	if ($search !== '') {
 		$like = '%' . $wpdb->esc_like($search) . '%';
-		$search_sql = "(a.firstname LIKE %s OR a.lastname LIKE %s OR a.user_id LIKE %s OR c.course LIKE %s OR a.email LIKE %s)";
-		array_push($params, $like, $like, $like, $like, $like);
+		// Restrict search to names only (firstname, lastname, and full name)
+		$search_sql = "(a.firstname LIKE %s OR a.lastname LIKE %s OR CONCAT_WS(' ', a.firstname, a.lastname) LIKE %s)";
+		array_push($params, $like, $like, $like);
 		$where[] = $search_sql;
 	}
 
