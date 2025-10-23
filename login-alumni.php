@@ -89,8 +89,8 @@ function coenect_login_form_shortcode() {
 
     $tables = $detect_tables();
 
-    // Ensure pluggable functions are available
-    if (!function_exists('wp_signon') && defined('ABSPATH')) {
+    // Ensure wp_check_password is available for verifying WP-style hashes ($P$/portable)
+    if (!function_exists('wp_check_password') && defined('ABSPATH')) {
         @require_once ABSPATH . WPINC . '/pluggable.php';
     }
 
@@ -106,133 +106,53 @@ function coenect_login_form_shortcode() {
             $username = sanitize_text_field(wp_unslash($_POST['username'] ?? ''));
             $username_echo = $username;
             $password = isset($_POST['password']) ? (string) wp_unslash($_POST['password']) : '';
-            $remember = !empty($_POST['remember_me']);
 
-            // Try native WordPress login first
-            $creds = [
-                'user_login'    => $username,
-                'user_password' => $password,
-                'remember'      => $remember,
-            ];
-            $user_obj = wp_signon($creds, is_ssl());
+            // Query user data from custom table
+            $user = $db->get_row($db->prepare("SELECT * FROM `{$tables['user']}` WHERE `user` = %s", $username));
 
-            if (is_wp_error($user_obj)) {
-                // Fallback: verify against custom credentials table and sync WP user
-                $urow = $db->get_row($db->prepare("SELECT * FROM `{$tables['user']}` WHERE `user` = %s LIMIT 1", $username));
-                if ($urow) {
-                    $stored = (string) $urow->password;
-                    $verified = false;
-                    $should_upgrade_hash = false;
-
-                    // Verify password with multiple legacy formats
-                    if (preg_match('/^\$(2y|2a|argon2id|argon2i)\$/', $stored)) {
-                        if (password_verify($password, $stored)) {
-                            $verified = true;
-                            if (password_needs_rehash($stored, PASSWORD_DEFAULT)) {
-                                $should_upgrade_hash = true;
-                            }
-                        }
-                    } elseif (preg_match('/^\$(P|H)\$/', $stored)) {
-                        if (function_exists('wp_check_password') && wp_check_password($password, $stored)) {
-                            $verified = true;
-                            $should_upgrade_hash = true;
-                        }
-                    } elseif (ctype_xdigit($stored) && strlen($stored) === 32) { // md5
-                        if (md5($password) === strtolower($stored)) {
-                            $verified = true;
-                            $should_upgrade_hash = true;
-                        }
-                    } elseif (ctype_xdigit($stored) && strlen($stored) === 40) { // sha1
-                        if (sha1($password) === strtolower($stored)) {
-                            $verified = true;
-                            $should_upgrade_hash = true;
-                        }
-                    } else { // plain text
-                        if (hash_equals($stored, $password)) {
-                            $verified = true;
-                            $should_upgrade_hash = true;
-                        }
-                    }
-
-                    if (!$verified && function_exists('wp_check_password') && wp_check_password($password, $stored)) {
-                        $verified = true;
-                        $should_upgrade_hash = true;
-                    }
-
-                    if ($verified) {
-                        // Upgrade legacy hash to bcrypt
-                        if ($should_upgrade_hash) {
-                            $newHash = password_hash($password, PASSWORD_DEFAULT);
-                            $db->query($db->prepare("UPDATE `{$tables['user']}` SET `password` = %s WHERE `user` = %s", $newHash, $username));
-                        }
-
-                        // Ensure a WP user exists and sync password
-                        $wp_user = get_user_by('login', $username);
-                        if (!$wp_user) {
-                            // Create WP user with alumni data
-                            $alumni = $db->get_row($db->prepare("SELECT firstname, lastname FROM `{$tables['alumni']}` WHERE `user_id` = %s LIMIT 1", $username));
-                            $userdata = [
-                                'user_login'   => $username,
-                                'user_pass'    => $password,
-                                'user_email'   => 'alumni' . $username . '@example.invalid',
-                                'first_name'   => $alumni ? $alumni->firstname : '',
-                                'last_name'    => $alumni ? $alumni->lastname : '',
-                                'display_name' => $alumni ? trim($alumni->firstname . ' ' . $alumni->lastname) : $username,
-                                'role'         => 'subscriber',
-                            ];
-                            $new_id = wp_insert_user($userdata);
-                            if (!is_wp_error($new_id)) {
-                                $wp_user = get_user_by('ID', $new_id);
-                            }
-                        } else {
-                            // Update password to keep WP in sync
-                            wp_set_password($password, $wp_user->ID);
-                        }
-
-                        // Try to sign on again using WordPress
-                        $user_obj = wp_signon($creds, is_ssl());
-                    }
+            if ($user) {
+                // Check password (supports plain, bcrypt/argon2, and WordPress portable hashes)
+                $stored = (string) $user->password;
+                $verified = false;
+                if ($stored === $password) {
+                    $verified = true;
+                } elseif (password_verify($password, $stored)) {
+                    $verified = true;
+                } elseif (function_exists('wp_check_password') && wp_check_password($password, $stored)) {
+                    $verified = true;
                 }
-            }
 
-            if (!is_wp_error($user_obj)) {
-                // Authenticated: build redirect URL to user's profile
-                $urow = $db->get_row($db->prepare("SELECT * FROM `{$tables['user']}` WHERE `user` = %s LIMIT 1", $username));
-                $course_id = !empty($urow->course_id) ? $urow->course_id : '';
-                $year = !empty($urow->year) ? $urow->year : '';
-                
-                // Respect explicit redirect_to if provided
-                $target = isset($_POST['redirect_to']) ? esc_url_raw(wp_unslash($_POST['redirect_to'])) : '';
-                if (!$target) {
-                    $profile_page_url = alumnus_resolve_profile_page_url();
-                    if (function_exists('alumnus_get_profile_url')) {
-                        $target = alumnus_get_profile_url($username, $profile_page_url);
+                if ($verified) {
+                    // Build redirect params
+                    $course_id = rawurlencode((string) $user->course_id);
+                    $year = rawurlencode((string) $user->year);
+                    $username_encoded = rawurlencode((string) $user->user);
+
+                    // If password is default 123456 -> show reset modal
+                    if ($password === '123456') {
+                        ?>
+                        <script>
+                            document.addEventListener("DOMContentLoaded", function() {
+                                var modal = document.getElementById("resetModal");
+                                if (modal) { modal.classList.add("active"); }
+                            });
+                        </script>
+                        <?php
                     } else {
-                        $target = add_query_arg('alumni_id', rawurlencode($username), $profile_page_url);
+                        // Redirect to same page with query params (or change to a specific page permalink)
+                        $current_url = get_permalink();
+                        $redirect_url = add_query_arg([
+                            'user' => $username_encoded,
+                            'course_id' => $course_id,
+                            'year' => $year
+                        ], $current_url);
+                        echo '<script>window.location.href="' . esc_url($redirect_url) . '";</script>';
                     }
-                }
-
-                // Allow final override via filter
-                $target = apply_filters('alumnus_login_redirect_url', $target, $user_obj, $username, [
-                    'course_id' => $course_id,
-                    'year' => $year,
-                ]);
-
-                // If password is default 12345, show reset modal instead
-                if ($password === '12345') {
-                    ?>
-                    <script>
-                        document.addEventListener("DOMContentLoaded", function() {
-                            document.getElementById("resetModal").classList.add("active");
-                        });
-                    </script>
-                    <?php
                 } else {
-                    wp_safe_redirect($target);
-                    exit;
+                    $errors[] = __('Incorrect password.', 'alumnus');
                 }
             } else {
-                $errors[] = __('Invalid username or password.', 'alumnus');
+                $errors[] = __('User not found.', 'alumnus');
             }
         }
     }
@@ -245,27 +165,35 @@ function coenect_login_form_shortcode() {
         } else {
             $username = sanitize_text_field(wp_unslash($_POST['reset_username'] ?? ''));
             $new_password = isset($_POST['new_password']) ? (string) wp_unslash($_POST['new_password']) : '';
-            
+
             if (strlen($new_password) < 6) {
                 $errors[] = __('Password must be at least 6 characters.', 'alumnus');
             } else {
                 $hashed_password = password_hash($new_password, PASSWORD_DEFAULT);
-                $updated = $db->query($db->prepare("UPDATE `{$tables['user']}` SET `password` = %s WHERE `user` = %s", $hashed_password, $username));
-                
-                // Sync WP user password as well
-                $wp_user = get_user_by('login', $username);
-                if ($wp_user) {
-                    wp_set_password($new_password, $wp_user->ID);
-                }
+                $updated = $db->update(
+                    $tables['user'],
+                    ['password' => $hashed_password],
+                    ['user' => $username],
+                    ['%s'],
+                    ['%s']
+                );
 
                 if ($updated !== false) {
-                    $urow = $db->get_row($db->prepare("SELECT * FROM `{$tables['user']}` WHERE `user` = %s LIMIT 1", $username));
-                    
-                    // Redirect to profile page
-                    $profile_page_url = alumnus_resolve_profile_page_url();
-                    $target = alumnus_get_profile_url($username, $profile_page_url);
-                    
-                    echo "<script>alert('" . esc_js(__('Password reset successfully! Redirecting...', 'alumnus')) . "'); window.location.href='" . esc_url($target) . "';</script>";
+                    $user = $db->get_row($db->prepare("SELECT * FROM `{$tables['user']}` WHERE `user` = %s", $username));
+                    if ($user) {
+                        $course_id = rawurlencode((string) $user->course_id);
+                        $year = rawurlencode((string) $user->year);
+                        $username_encoded = rawurlencode((string) $user->user);
+
+                        $redirect_url = add_query_arg([
+                            'user' => $username_encoded,
+                            'course_id' => $course_id,
+                            'year' => $year
+                        ], get_permalink());
+                        echo "<script>alert('" . esc_js(__('Password reset successfully! Redirecting...', 'alumnus')) . "'); window.location.href='" . esc_url($redirect_url) . "';</script>";
+                    } else {
+                        $errors[] = __('User not found after reset.', 'alumnus');
+                    }
                 } else {
                     $errors[] = __('Failed to reset password.', 'alumnus');
                 }
