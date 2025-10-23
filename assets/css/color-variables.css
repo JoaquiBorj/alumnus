@@ -13,16 +13,10 @@
 	   ============================================ */
 	
 	/* Primary brand color palette */
-	--alumnus-primary: #5a0616;        	/* Used in: community-feed (profile cards, buttons), directory (hero bg, labels, filters) */
-	--alumnus-secondary: #cfb03f;   		/* Used in: directory (button active state) */
+	--alumnus-primary: #5a0616;        	/* Used in: community-feed (profile cards, buttons), directory (hero bg, labels, filters), login (logo text, checkboxes, button), profile (header gradient, section borders) */
+	--alumnus-secondary: #d8b847;   		/* Used in: directory (button active state) */
 	--alumnus-medium-blue: #064266;         /* Used in: community-feed (stats bg), directory (gradient) */
-	--alumnus-blue-hover: #064568;          /* Used in: directory (button hover) */
-	
-	/* Profile & Login Blues */
-	--alumnus-profile-blue: #0f4c75;        /* Used in: profile (header gradient, section borders, initials) */
-	--alumnus-profile-blue-light: #1b6ca8;  /* Used in: profile (header gradient end, skill tags) */
-	--alumnus-login-teal: #0A5F7F;          /* Used in: login (logo text, checkboxes, button) */
-	--alumnus-login-teal-dark: #084A61;     /* Used in: login (hover states) */
+	--alumnus-primary-hover: #450410;       /* Used in: hover states when using alumnus-primary color */
 	
 	/* Header Colors */
 	--alumnus-header-bg: #004568;           /* Used in: header (background) */
@@ -56,20 +50,17 @@
 	   TEXT COLORS (Dark to Light)
 	   ============================================ */
 	
-	--alumnus-text-heading: #102a43;        /* Used in: all headings, titles, labels, and primary dark text */
+	--alumnus-text-heading: #121212;        /* Used in: all headings, titles, labels, and primary dark text */
 	--alumnus-text-body: #2d3748;           /* Used in: profile (base text), login (labels) */
-	--alumnus-text-medium: #334e68;         /* Used in: directory (search input), community-feed (engagement stats) */
+	--alumnus-text-medium: #334e68;         /* Used in: community-feed (engagement stats) */
 	--alumnus-text-secondary: #4a5568;      /* Used in: profile (subtitle, info content) */
-	--alumnus-text-gray: #486581;           /* Used in: directory (degree text) */
 	--alumnus-text-muted: #5A5A5A;          /* Used in: login (input text) */
 	--alumnus-text-slate: #5d6d7e;          /* Used in: community-feed (post date) */
-	--alumnus-text-light: #627d98;          /* Used in: directory (company text) */
-	--alumnus-text-lighter: #64748b;        /* Used in: directory (location), profile (email, action buttons) */
+	--alumnus-text-lighter: #64748b;        /* Used in: directory, profile (email, action buttons) */
 	--alumnus-text-pale: #6b7280;           /* Used in: events (muted text) */
 	--alumnus-text-faint: #7a8a99;          /* Used in: community-feed (placeholder text) */
-	--alumnus-text-placeholder: #94a3b8;    /* Used in: directory (search placeholder) */
-	--alumnus-text-disabled: #A09090;       /* Used in: login (input placeholder) */
-	--alumnus-text-very-light: #a0aec0;     /* Used in: profile (placeholder, empty state) */
+	--alumnus-text-placeholder: #94a3b8;    /* Used in: directory, login, profile (placeholders) */
+	--alumnus-text-very-light: #a0aec0;     /* Used in: profile (empty state) */
 	
 	/* ============================================
 	   BACKGROUND COLORS
@@ -114,8 +105,7 @@
 	   ============================================ */
 	
 	/* Success */
-	--alumnus-success-green: #4CAF50;       /* Used in: event badges */
-	--alumnus-success-text: green;          /* Used in: PHP success messages */
+	--alumnus-success-text: green;          /* Used in: success messages */
 	
 	/* Error */
 	--alumnus-error-bg: #FEE2E2;            /* Used in: login (error message bg) */
@@ -138,7 +128,6 @@
 	
 	/* Light text on dark backgrounds */
 	--alumnus-text-on-dark: #fff;           /* Used in: dark cards, buttons */
-	--alumnus-text-on-dark-secondary: #dfe9f3;  /* Used in: community-feed (profile card text) */
 	
 	/* Scrollbar colors */
 	--alumnus-scrollbar-thumb: #c5d1da;     /* Used in: community-feed (scrollbar) */

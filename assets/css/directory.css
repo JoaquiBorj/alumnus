@@ -99,7 +99,7 @@ body .alumnus-directory-wrapper {
 
 .adh-tagline {
 	font-size: 24px;
-	color: var(--alumnus-text-on-dark-secondary);
+	color: var(--alumnus-text-on-dark);
 	margin: 0 0 48px;
 	font-weight: 300;
 	letter-spacing: 0.5px;
@@ -140,7 +140,7 @@ body .alumnus-directory-wrapper {
 	font-size: 18px;
 	padding: 12px 8px;
 	background: transparent !important;
-	color: var(--alumnus-text-medium);
+	color: var(--alumnus-text-heading);
 	width: 100%;
 	-webkit-appearance: none;
 	-moz-appearance: none;
@@ -166,7 +166,7 @@ body .alumnus-directory-wrapper {
 .asb-button {
 	margin-left: 12px;
 	background-color: var(--alumnus-secondary);
-	color: var(--alumnus-text-on-dark);
+	color: var(--alumnus-text-heading);
 	border: none;
 	border-radius: 24px;
 	padding: 10px 16px;
@@ -176,11 +176,7 @@ body .alumnus-directory-wrapper {
 	transition: background-color 0.2s ease, box-shadow 0.2s ease;
 }
 .asb-button:hover {
-	background-color: var(--alumnus-blue-hover);
-	box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-}
-.asb-button:active {
-	background-color: var(--alumnus-primary-blue-dark);
+	text-decoration: underline;
 }
 
 /* ============================================
@@ -416,11 +412,6 @@ select#filter-course:focus {
 	inset: 0;
 	border-radius: 50%;
 	padding: 2px;
-	background: linear-gradient(135deg, var(--alumnus-overlay-white-border) 0%, var(--alumnus-card-gradient-border) 100%);
-	-webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-	-webkit-mask-composite: xor;
-	mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-	mask-composite: exclude;
 }
 
 .ac-initials,
@@ -454,9 +445,6 @@ select#filter-course:focus {
 
 .ac-year,
 .ac-degree,
-.ac-position,
-.ac-company,
-.ac-location,
 .alumni-card p {
 	font-family: "Helvetica Neue", Arial, sans-serif !important;
 	line-height: 1.5 !important;
@@ -473,57 +461,11 @@ select#filter-course:focus {
 
 .ac-degree {
 	font-size: 15px !important;
-	color: var(--alumnus-text-gray) !important;
+	color: var(--alumnus-text-body) !important;
 	margin: 0 0 16px !important;
 	font-weight: 400 !important;
 }
 
-/* Divider */
-.ac-divider,
-.alumni-card .ac-divider {
-	width: 60px !important;
-	height: 2px !important;
-	background: linear-gradient(90deg, transparent 0%, var(--alumnus-border-select) 50%, transparent 100%) !important;
-	margin: 16px auto !important;
-	border: none !important;
-}
-
-/* Position & Company */
-.ac-position {
-	font-size: 16px !important;
-	font-weight: 600 !important;
-	color: var(--alumnus-text-medium) !important;
-	margin: 0 0 4px !important;
-}
-
-.ac-company {
-	font-size: 14px !important;
-	color: var(--alumnus-text-light) !important;
-	margin: 0 0 12px !important;
-	font-weight: 400 !important;
-}
-
-/* Location */
-.ac-location {
-	font-size: 14px !important;
-	color: var(--alumnus-text-lighter) !important;
-	margin: 0 !important;
-	display: flex !important;
-	align-items: center !important;
-	justify-content: center !important;
-	gap: 6px !important;
-}
-
-.ac-location-icon,
-.ac-location .ac-location-icon {
-	width: 16px !important;
-	height: 16px !important;
-	min-width: 16px !important;
-	min-height: 16px !important;
-	max-width: 16px !important;
-	max-height: 16px !important;
-	flex-shrink: 0 !important;
-}
 
 /* Responsive Design */
 @media (max-width: 768px) {

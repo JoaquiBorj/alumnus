@@ -118,7 +118,7 @@ body:has(.coenect-login-wrapper) .entry-content {
 .coenect-logo-text {
 	font-size: 48px;
 	font-weight: 700;
-	color: var(--alumnus-login-teal);
+	color: var(--alumnus-primary);
 	text-align: center;
 	line-height: 1.2;
 	word-break: break-word;
@@ -172,7 +172,7 @@ body:has(.coenect-login-wrapper) .entry-content {
 }
 
 .coenect-form-input::placeholder {
-	color: var(--alumnus-text-disabled);
+	color: var(--alumnus-text-placeholder);
 	font-weight: 300;
 }
 
@@ -201,9 +201,9 @@ body:has(.coenect-login-wrapper) .entry-content {
 .coenect-remember-checkbox {
 	width: 24px;
 	height: 24px;
-	border: 2px solid var(--alumnus-login-teal);
+	border: 2px solid var(--alumnus-primary);
 	border-radius: 4px;
-	background: var(--alumnus-login-teal);
+	background: var(--alumnus-primary);
 	display: flex;
 	align-items: center;
 	justify-content: center;
@@ -227,7 +227,7 @@ body:has(.coenect-login-wrapper) .entry-content {
 
 /* Forgot Password Link */
 .coenect-forgot-link {
-	color: var(--alumnus-login-teal);
+	color: var(--alumnus-primary);
 	font-size: 15px;
 	font-weight: 500;
 	text-decoration: none;
@@ -235,7 +235,7 @@ body:has(.coenect-login-wrapper) .entry-content {
 }
 
 .coenect-forgot-link:hover {
-	color: var(--alumnus-login-teal-dark);
+	color: var(--alumnus-primary-hover);
 }
 
 /* Login Button */
@@ -244,7 +244,7 @@ body:has(.coenect-login-wrapper) .entry-content {
 	padding: 18px 24px;
 	border: none;
 	border-radius: 50px;
-	background: var(--alumnus-login-teal);
+	background: var(--alumnus-primary);
 	color: var(--alumnus-gold-bright);
 	font-size: 18px;
 	font-weight: 700;
@@ -263,7 +263,7 @@ body:has(.coenect-login-wrapper) .entry-content {
 }
 
 .coenect-login-btn:hover {
-	background: var(--alumnus-login-teal-dark);
+	background: var(--alumnus-primary-hover);
 	color: var(--alumnus-gold-bright);
 	text-decoration: underline;
 	text-decoration-color: var(--alumnus-gold-bright);

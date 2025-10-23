@@ -39,7 +39,7 @@ body:has(.alumnus-profile-wrapper) .entry-content {
 
 /* Header with Gradient */
 .alumnus-profile-header {
-	background: linear-gradient(135deg, var(--alumnus-profile-blue) 0%, var(--alumnus-profile-blue-light) 100%);
+	background: var(--alumnus-primary);
 	padding: 40px 20px 80px;
 	position: relative;
 }
@@ -149,18 +149,18 @@ body:has(.alumnus-profile-wrapper) .entry-content {
 	width: 140px;
 	height: 140px;
 	border-radius: 50%;
-	border: 5px solid white;
+	border: 5px solid var(--alumnus-secondary);
 	box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	background: linear-gradient(135deg, var(--alumnus-avatar-gradient-start) 0%, var(--alumnus-avatar-gradient-end) 100%);
+	background: var(--alumnus-primary);
 }
 
 .apc-initials {
 	font-size: 48px;
 	font-weight: 700;
-	color: var(--alumnus-profile-blue);
+	color: var(--alumnus-bg-white);
 }
 
 .apc-info {
@@ -207,7 +207,7 @@ body:has(.alumnus-profile-wrapper) .entry-content {
 	color: var(--alumnus-text-heading);
 	margin-bottom: 24px;
 	padding-bottom: 12px;
-	border-bottom: 3px solid var(--alumnus-profile-blue);
+	border-bottom: 3px solid var(--alumnus-secondary);
 	display: inline-block;
 }
 
@@ -215,11 +215,11 @@ body:has(.alumnus-profile-wrapper) .entry-content {
 	font-size: 20px;
 	margin-bottom: 16px;
 	padding-bottom: 8px;
-	border-bottom: 2px solid var(--alumnus-profile-blue);
+	border-bottom: 2px solid var(--alumnus-secondary);
 }
 
 .apc-placeholder {
-	color: var(--alumnus-text-very-light);
+	color: var(--alumnus-text-placeholder);
 	font-style: italic;
 	font-size: 14px;
 }
@@ -250,7 +250,7 @@ body:has(.alumnus-profile-wrapper) .entry-content {
 }
 
 .apc-skill-tag {
-	background: linear-gradient(135deg, var(--alumnus-profile-blue) 0%, var(--alumnus-profile-blue-light) 100%);
+	background: var(--alumnus-primary);
 	color: white;
 	padding: 8px 16px;
 	border-radius: 20px;
@@ -301,7 +301,7 @@ body:has(.alumnus-profile-wrapper) .entry-content {
 
 .apc-post-time {
 	font-size: 13px;
-	color: var(--alumnus-text-very-light);
+	color: var(--alumnus-text-placeholder);
 }
 
 .apc-post-content {
@@ -334,11 +334,11 @@ body:has(.alumnus-profile-wrapper) .entry-content {
 
 .apc-action-btn:hover {
 	background: var(--alumnus-border-medium);
-	color: var(--alumnus-profile-blue);
+	color: var(--alumnus-primary);
 }
 
 .apc-action-btn.liked {
-	color: var(--alumnus-profile-blue);
+	color: var(--alumnus-primary);
 }
 
 .apc-action-icon {

@@ -116,10 +116,10 @@ function alumnus_render_directory_shortcode() {
 				<div class="af-filter-group">
 					<label for="filter-year" class="af-label">
 						<svg class="af-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-							<rect x="3" y="4" width="18" height="18" rx="2" stroke="#04324d" stroke-width="2" fill="none"/>
-							<line x1="3" y1="9" x2="21" y2="9" stroke="#04324d" stroke-width="2"/>
-							<line x1="8" y1="2" x2="8" y2="6" stroke="#04324d" stroke-width="2" stroke-linecap="round"/>
-							<line x1="16" y1="2" x2="16" y2="6" stroke="#04324d" stroke-width="2" stroke-linecap="round"/>
+							<rect x="3" y="4" width="18" height="18" rx="2" stroke= var(--alumnus-primary) stroke-width="2" fill="none"/>
+							<line x1="3" y1="9" x2="21" y2="9" stroke= var(--alumnus-primary) stroke-width="2"/>
+							<line x1="8" y1="2" x2="8" y2="6" stroke= var(--alumnus-primary) stroke-width="2" stroke-linecap="round"/>
+							<line x1="16" y1="2" x2="16" y2="6" stroke= var(--alumnus-primary) stroke-width="2" stroke-linecap="round"/>
 						</svg>
 						Year
 					</label>
@@ -134,8 +134,8 @@ function alumnus_render_directory_shortcode() {
 				<div class="af-filter-group">
 					<label for="filter-course" class="af-label">
 						<svg class="af-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-							<path d="M12 14l9-5-9-5-9 5 9 5z" stroke="#04324d" stroke-width="2" stroke-linejoin="round" fill="none"/>
-							<path d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" stroke="#04324d" stroke-width="2" stroke-linejoin="round" fill="none"/>
+							<path d="M12 14l9-5-9-5-9 5 9 5z" stroke= var(--alumnus-primary) stroke-width="2" stroke-linejoin="round" fill="none"/>
+							<path d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" stroke= var(--alumnus-primary) stroke-width="2" stroke-linejoin="round" fill="none"/>
 						</svg>
 						Course
 					</label>
