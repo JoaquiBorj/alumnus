@@ -123,7 +123,13 @@ function coenect_login_form_shortcode() {
                 }
 
                 if ($verified) {
-                    // Build redirect params
+                    // Set custom session state for the logged in alumni
+                    $remember_me = !empty($_POST['remember_me']);
+                    if (function_exists('alumnus_set_login_state')) {
+                        alumnus_set_login_state($user, (bool) $remember_me);
+                    }
+
+                    // Build redirect params (keep compatibility for existing pages expecting query args)
                     $course_id = rawurlencode((string) $user->course_id);
                     $year = rawurlencode((string) $user->year);
                     $username_encoded = rawurlencode((string) $user->user);
@@ -139,13 +145,13 @@ function coenect_login_form_shortcode() {
                         </script>
                         <?php
                     } else {
-                        // Redirect to same page with query params (or change to a specific page permalink)
-                        $current_url = get_permalink();
+                        // Prefer redirect to profile page if available
+                        $profile_page_url = function_exists('alumnus_resolve_profile_page_url') ? alumnus_resolve_profile_page_url() : get_permalink();
                         $redirect_url = add_query_arg([
-                            'user' => $username_encoded,
+                            'alumni_id' => $username_encoded,
                             'course_id' => $course_id,
                             'year' => $year
-                        ], $current_url);
+                        ], $profile_page_url);
                         echo '<script>window.location.href="' . esc_url($redirect_url) . '";</script>';
                     }
                 } else {
