@@ -1,10 +1,18 @@
 <?php
 // ===== Enqueue Login Styles =====
 function coenect_login_enqueue_styles() {
+    // Ensure color-variables.css is loaded
+    wp_enqueue_style(
+        'wordpress-plugin-template-colors',
+        plugin_dir_url(__FILE__) . 'assets/css/color-variables.css',
+        array(),
+        '1.0.0'
+    );
+    
     wp_enqueue_style(
         'coenect-login-styles',
         plugin_dir_url(__FILE__) . 'assets/css/login.css',
-        array(),
+        array( 'wordpress-plugin-template-colors' ),
         '1.0.0'
     );
 }
