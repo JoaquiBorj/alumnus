@@ -25,6 +25,9 @@
 	require_once 'includes/class-wordpress-plugin-template.php';
 	require_once 'includes/class-wordpress-plugin-template-settings.php';
 
+	// Session & auth helpers for custom alumni login
+	require_once 'includes/alumnus-session.php';
+
 	// Load plugin libraries.
 	require_once 'includes/lib/class-wordpress-plugin-template-admin-api.php';
 	require_once 'includes/lib/class-wordpress-plugin-template-post-type.php';

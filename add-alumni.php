@@ -140,8 +140,6 @@ function alumnus_handle_post() {
 		$first_name = isset($_POST['first_name']) ? sanitize_text_field(wp_unslash($_POST['first_name'])) : '';
 		$last_name  = isset($_POST['last_name']) ? sanitize_text_field(wp_unslash($_POST['last_name'])) : '';
 		$batch_year = isset($_POST['batch_year']) ? intval($_POST['batch_year']) : 0;
-	$password   = isset($_POST['password']) ? (string) wp_unslash($_POST['password']) : '';
-	$password_looks_hashed = alumnus_is_password_hash($password);
 
 		// Basic validation
 		$errors = [];
@@ -151,9 +149,6 @@ function alumnus_handle_post() {
 		if ($last_name === '') $errors[] = __('Last name is required.', 'alumnus');
 		$current_year = (int) date('Y');
 		if ($batch_year < 1900 || $batch_year > $current_year) $errors[] = __('Batch year must be between 1900 and current year.', 'alumnus');
-		if (!$password_looks_hashed && ($password === '' || strlen($password) < 6)) {
-			$errors[] = __('Password must be at least 6 characters.', 'alumnus');
-		}
 
 		// Validate course exists
         $course_exists = $wpdb->get_var(
@@ -172,15 +167,12 @@ function alumnus_handle_post() {
 			return;
 		}
 
-		// Hash password if it isn't already a hash (prevents double-hashing when a hash is pasted intentionally)
-		if ($password_looks_hashed) {
-			$password_hash = $password;
+		// Always set default initial password to '123456' (store as hash)
+		$__default_plain = '123456';
+		if (function_exists('wp_hash_password')) {
+			$password_hash = wp_hash_password($__default_plain);
 		} else {
-			if (function_exists('wp_hash_password')) {
-				$password_hash = wp_hash_password($password);
-			} else {
-				$password_hash = password_hash($password, PASSWORD_DEFAULT);
-			}
+			$password_hash = password_hash($__default_plain, PASSWORD_DEFAULT);
 		}
 
 		// Insert into alumni (fill required non-null fields with safe defaults)
@@ -223,56 +215,8 @@ function alumnus_handle_post() {
 			return;
 		}
 
-		// Create corresponding WordPress user (appears under Users in WP Admin)
-		// Use alumni_id as username; generate a placeholder email since this form doesn't collect one.
-		$user_login = (string) $alumni_id;
-		$user_email = 'alumni' . $alumni_id . '@example.invalid';
-		// WordPress expects a plaintext password; if a hash was provided, use a strong temporary password instead.
-		$wp_plain_password = $password_looks_hashed ? wp_generate_password(20, true, true) : $password;
-
-		// Guard against username conflicts in WP users
-		if (function_exists('username_exists') && username_exists($user_login)) {
-			// Roll back custom table inserts to keep data consistent
-			$wpdb->delete($tables['user'], [ 'user' => $alumni_id ], [ '%d' ]);
-			$wpdb->delete($tables['alumni'], [ 'user_id' => $alumni_id ], [ '%d' ]);
-			add_settings_error('alumnus', 'wp_username_exists', __('Failed to create WordPress user: a user with this User ID (username) already exists.', 'alumnus'), 'error');
-			return;
-		}
-
-		$userdata = [
-			'user_login'   => $user_login,
-			'user_pass'    => $wp_plain_password,
-			'user_email'   => $user_email,
-			'first_name'   => $first_name,
-			'last_name'    => $last_name,
-			'display_name' => trim($first_name . ' ' . $last_name),
-			'role'         => 'subscriber',
-		];
-
-		$user_id = wp_insert_user($userdata);
-		if (is_wp_error($user_id)) {
-			// Roll back custom inserts
-			$wpdb->delete($tables['user'], [ 'user' => $alumni_id ], [ '%d' ]);
-			$wpdb->delete($tables['alumni'], [ 'user_id' => $alumni_id ], [ '%d' ]);
-			add_settings_error('alumnus', 'wp_user_insert_fail', sprintf(__('Failed to create WordPress user. Error: %s', 'alumnus'), esc_html($user_id->get_error_message())), 'error');
-			return;
-		}
-
-		// Store cross-reference meta for convenience
-		update_user_meta($user_id, 'alumnus_user_id', $alumni_id);
-		update_user_meta($user_id, 'alumnus_course_id', $course_id);
-		update_user_meta($user_id, 'alumnus_year', $batch_year);
-
-		if ($password_looks_hashed) {
-			add_settings_error(
-				'alumnus',
-				'alumni_insert_ok',
-				__('Alumni added successfully. A WordPress user was created with a temporary password since the provided value looked like a hash. Please reset the user\'s password if needed.', 'alumnus'),
-				'updated'
-			);
-		} else {
-			add_settings_error('alumnus', 'alumni_insert_ok', __('Alumni added successfully and WordPress user created.', 'alumnus'), 'updated');
-		}
+		// Success: custom tables only (no WordPress user creation)
+		add_settings_error('alumnus', 'alumni_insert_ok', __('Alumni added successfully. Default password set to 123456.', 'alumnus'), 'updated');
 	}
 }
 add_action('admin_init', 'alumnus_handle_post');
@@ -358,10 +302,7 @@ function alumnus_render_admin_page() {
 	echo '    <td><input name="batch_year" id="batch_year" type="number" min="1900" max="' . esc_attr(date('Y')) . '" class="small-text" required /> <span class="description">' . esc_html__('e.g., 2024', 'alumnus') . '</span></td>';
 	echo '  </tr>';
 
-	echo '  <tr valign="top">';
-	echo '    <th scope="row"><label for="password">' . esc_html__('Password', 'alumnus') . '</label></th>';
-	echo '    <td><input name="password" id="password" type="password" class="regular-text" required /></td>';
-	echo '  </tr>';
+	// Removed password field; default password is set to 123456 on create
 
 	echo '</table>';
 	if (!empty($courses)) {

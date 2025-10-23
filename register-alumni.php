@@ -14,7 +14,7 @@ function alumni_register_form_shortcode() {
         $lastname  = sanitize_text_field($_POST['lastname']);
         $course    = intval($_POST['course']);
         $year      = sanitize_text_field($_POST['year']);
-        $password  = '12345';
+        $password  = '123456';
         
         if (!empty($idnumber) && !empty($firstname) && !empty($lastname) && !empty($course) && !empty($year)) {
 
