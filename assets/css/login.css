@@ -31,7 +31,7 @@ body:has(.coenect-login-wrapper) .entry-content {
 
 .coenect-login-wrapper {
 	font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-	background: #f5f7fa;
+	background: var(--alumnus-bg-page);
 	min-height: 100vh;
 	display: flex;
 	flex-direction: column;
@@ -45,7 +45,7 @@ body:has(.coenect-login-wrapper) .entry-content {
 	display: flex;
 	align-items: center;
 	gap: 8px;
-	background: linear-gradient(90deg, #6B4423 0%, #D4C4B0 50%, #D4C4B0 100%);
+	background: linear-gradient(90deg, var(--alumnus-brown) 0%, var(--alumnus-beige) 50%, var(--alumnus-beige) 100%);
 	border: none;
 	padding: 12px 24px 12px 12px;
 	border-radius: 50px;
@@ -58,23 +58,23 @@ body:has(.coenect-login-wrapper) .entry-content {
 
 .coenect-login-home-btn:hover {
 	transform: translateY(-2px);
-	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+	box-shadow: 0 4px 12px var(--alumnus-shadow-xl);
 }
 
 .coenect-login-home-icon {
 	width: 40px;
 	height: 40px;
-	background: #6B4423;
+	background: var(--alumnus-brown);
 	border-radius: 50%;
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	color: #F4D03F;
+	color: var(--alumnus-gold-bright);
 	font-size: 20px;
 }
 
 .coenect-login-home-text {
-	color: #6B4423;
+	color: var(--alumnus-brown);
 	font-weight: 600;
 	font-size: 16px;
 	text-transform: uppercase;
@@ -118,7 +118,7 @@ body:has(.coenect-login-wrapper) .entry-content {
 .coenect-logo-text {
 	font-size: 48px;
 	font-weight: 700;
-	color: #0A5F7F;
+	color: var(--alumnus-login-teal);
 	text-align: center;
 	line-height: 1.2;
 	word-break: break-word;
@@ -128,7 +128,7 @@ body:has(.coenect-login-wrapper) .entry-content {
 .coenect-login-divider {
 	width: 4px;
 	height: 400px;
-	background: linear-gradient(180deg, transparent 0%, #F4D03F 20%, #F4D03F 80%, transparent 100%);
+	background: linear-gradient(180deg, transparent 0%, var(--alumnus-gold-bright) 20%, var(--alumnus-gold-bright) 80%, transparent 100%);
 	border-radius: 2px;
 }
 
@@ -158,8 +158,8 @@ body:has(.coenect-login-wrapper) .entry-content {
 	padding: 18px 24px;
 	border: none;
 	border-radius: 50px;
-	background: #E8D5D5;
-	color: #5A5A5A;
+	background: var(--alumnus-bg-input);
+	color: var(--alumnus-text-muted);
 	font-size: 16px;
 	font-weight: 400;
 	outline: none;
@@ -172,12 +172,12 @@ body:has(.coenect-login-wrapper) .entry-content {
 }
 
 .coenect-form-input::placeholder {
-	color: #A09090;
+	color: var(--alumnus-text-disabled);
 	font-weight: 300;
 }
 
 .coenect-form-input:focus {
-	background: #DCC5C5;
+	background: var(--alumnus-bg-input-focus);
 	box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 	transform: translateY(-1px);
 }
@@ -201,9 +201,9 @@ body:has(.coenect-login-wrapper) .entry-content {
 .coenect-remember-checkbox {
 	width: 24px;
 	height: 24px;
-	border: 2px solid #0A5F7F;
+	border: 2px solid var(--alumnus-login-teal);
 	border-radius: 4px;
-	background: #0A5F7F;
+	background: var(--alumnus-login-teal);
 	display: flex;
 	align-items: center;
 	justify-content: center;
@@ -219,7 +219,7 @@ body:has(.coenect-login-wrapper) .entry-content {
 }
 
 .coenect-remember-label {
-	color: #2d3748;
+	color: var(--alumnus-text-body);
 	font-size: 15px;
 	font-weight: 500;
 	user-select: none;
@@ -227,7 +227,7 @@ body:has(.coenect-login-wrapper) .entry-content {
 
 /* Forgot Password Link */
 .coenect-forgot-link {
-	color: #0A5F7F;
+	color: var(--alumnus-login-teal);
 	font-size: 15px;
 	font-weight: 500;
 	text-decoration: none;
@@ -235,7 +235,7 @@ body:has(.coenect-login-wrapper) .entry-content {
 }
 
 .coenect-forgot-link:hover {
-	color: #084A61;
+	color: var(--alumnus-login-teal-dark);
 }
 
 /* Login Button */
@@ -244,15 +244,15 @@ body:has(.coenect-login-wrapper) .entry-content {
 	padding: 18px 24px;
 	border: none;
 	border-radius: 50px;
-	background: #0A5F7F;
-	color: #F4D03F;
+	background: var(--alumnus-login-teal);
+	color: var(--alumnus-gold-bright);
 	font-size: 18px;
 	font-weight: 700;
 	text-transform: uppercase;
 	letter-spacing: 1px;
 	cursor: pointer;
 	transition: all 0.3s ease;
-	box-shadow: 0 4px 12px rgba(10, 95, 127, 0.3);
+	box-shadow: 0 4px 12px var(--alumnus-shadow-button-login);
 	margin-top: 10px;
 	box-sizing: border-box;
 	-webkit-appearance: none;
@@ -263,25 +263,25 @@ body:has(.coenect-login-wrapper) .entry-content {
 }
 
 .coenect-login-btn:hover {
-	background: #084A61;
-	color: #F4D03F;
+	background: var(--alumnus-login-teal-dark);
+	color: var(--alumnus-gold-bright);
 	text-decoration: underline;
-	text-decoration-color: #F4D03F;
+	text-decoration-color: var(--alumnus-gold-bright);
 	text-underline-offset: 3px;
 	transform: translateY(-2px);
-	box-shadow: 0 6px 16px rgba(10, 95, 127, 0.4);
+	box-shadow: 0 6px 16px var(--alumnus-shadow-button-login-hover);
 }
 
 .coenect-login-btn:active {
 	transform: translateY(0);
-	box-shadow: 0 2px 8px rgba(10, 95, 127, 0.3);
+	box-shadow: 0 2px 8px var(--alumnus-shadow-button-login);
 }
 
 /* Error Messages */
 .coenect-error-message {
-	background: #FEE2E2;
-	border: 1px solid #FCA5A5;
-	color: #991B1B;
+	background: var(--alumnus-error-bg);
+	border: 1px solid var(--alumnus-error-border);
+	color: var(--alumnus-error-text);
 	padding: 12px 20px;
 	border-radius: 12px;
 	font-size: 14px;
@@ -297,7 +297,7 @@ body:has(.coenect-login-wrapper) .entry-content {
 	left: 0;
 	right: 0;
 	bottom: 0;
-	background: rgba(0, 0, 0, 0.6);
+	background: var(--alumnus-overlay-dark);
 	backdrop-filter: blur(4px);
 	z-index: 9999;
 	align-items: center;
@@ -337,8 +337,8 @@ body:has(.coenect-login-wrapper) .entry-content {
 	width: 32px;
 	height: 32px;
 	border: none;
-	background: #E2E8F0;
-	color: #64748B;
+	background: var(--alumnus-modal-border);
+	color: var(--alumnus-icon-muted);
 	border-radius: 50%;
 	cursor: pointer;
 	font-size: 18px;
@@ -349,14 +349,14 @@ body:has(.coenect-login-wrapper) .entry-content {
 }
 
 .coenect-modal-close:hover {
-	background: #CBD5E0;
-	color: #1A202C;
+	background: var(--alumnus-modal-border-dark);
+	color: var(--alumnus-icon-muted-hover);
 }
 
 .coenect-modal h3 {
 	font-size: 24px;
 	font-weight: 700;
-	color: #1A202C;
+	color: var(--alumnus-text-heading);
 	margin-bottom: 24px;
 	text-align: center;
 }
@@ -370,7 +370,7 @@ body:has(.coenect-login-wrapper) .entry-content {
 .coenect-modal-label {
 	font-size: 14px;
 	font-weight: 600;
-	color: #4A5568;
+	color: var(--alumnus-text-secondary);
 	margin-bottom: 4px;
 }
 
@@ -391,7 +391,7 @@ body:has(.coenect-login-wrapper) .entry-content {
 		width: 80%;
 		max-width: 300px;
 		height: 4px;
-		background: linear-gradient(90deg, transparent 0%, #F4D03F 20%, #F4D03F 80%, transparent 100%);
+		background: linear-gradient(90deg, transparent 0%, var(--alumnus-gold-bright) 20%, var(--alumnus-gold-bright) 80%, transparent 100%);
 	}
 
 	.coenect-logo-text {

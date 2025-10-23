@@ -60,11 +60,11 @@ function alumni_register_form_shortcode() {
         <h3>Alumni Registration</h3>
 
         <?php if (!empty($success_message)): ?>
-            <div style="color: green; font-weight: bold;"><?php echo esc_html($success_message); ?></div>
+            <div class="alumnus-success-message"><?php echo esc_html($success_message); ?></div>
         <?php endif; ?>
 
         <?php if (!empty($error_message)): ?>
-            <div style="color: red; font-weight: bold;"><?php echo esc_html($error_message); ?></div>
+            <div class="alumnus-error-message"><?php echo esc_html($error_message); ?></div>
         <?php endif; ?>
 
         <form method="post">

@@ -17,10 +17,21 @@ function alumnus_enqueue_directory_styles() {
 	$css_ver      = file_exists( $css_path ) ? filemtime( $css_path ) : '1.1.0';
 	$js_ver       = file_exists( $js_path ) ? filemtime( $js_path ) : '1.1.0';
 
+	// Ensure color-variables.css is loaded
+	if ( ! wp_style_is( 'wordpress-plugin-template-colors', 'registered' ) ) {
+		wp_register_style(
+			'wordpress-plugin-template-colors',
+			plugin_dir_url( __FILE__ ) . 'assets/css/color-variables.css',
+			array(),
+			$css_ver
+		);
+	}
+	wp_enqueue_style( 'wordpress-plugin-template-colors' );
+
 	wp_enqueue_style(
 		'alumnus-directory',
 		plugin_dir_url( __FILE__ ) . $css_rel_path,
-		array(),
+		array( 'wordpress-plugin-template-colors' ),
 		$css_ver
 	);
 
@@ -89,7 +100,7 @@ function alumnus_render_directory_shortcode() {
 						<input 
 							type="text" 
 							class="asb-input" 
-							placeholder="Search Alum" 
+							placeholder="Search Alumni" 
 							id="alumnus-directory-search"
 						/>
 						<button type="button" id="alumnus-directory-submit-btn" class="asb-button"><?php echo esc_html__('Search', 'alumnus'); ?></button>

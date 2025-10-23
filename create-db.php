@@ -115,9 +115,9 @@ function adm_admin_page_content() {
             </button>
         </form>
 
-        <hr style="margin:30px 0;">
+        <hr class="alumnus-admin-hr">
         <h3>Tables managed by this plugin:</h3>
-        <ul style="line-height:1.8;">
+        <ul class="alumnus-admin-list">
             <li>• <code>course</code></li>
             <li>• <code>alumni</code></li>
             <li>• <code>user</code></li>

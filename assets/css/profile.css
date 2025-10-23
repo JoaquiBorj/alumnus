@@ -32,14 +32,14 @@ body:has(.alumnus-profile-wrapper) .entry-content {
 /* Base wrapper */
 .alumnus-profile-wrapper {
 	font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-	background: #f5f7fa;
-	color: #2d3748;
+	background: var(--alumnus-bg-page);
+	color: var(--alumnus-text-body);
 	min-height: 100vh;
 }
 
 /* Header with Gradient */
 .alumnus-profile-header {
-	background: linear-gradient(135deg, #0f4c75 0%, #1b6ca8 100%);
+	background: linear-gradient(135deg, var(--alumnus-profile-blue) 0%, var(--alumnus-profile-blue-light) 100%);
 	padding: 40px 20px 80px;
 	position: relative;
 }
@@ -65,8 +65,8 @@ body:has(.alumnus-profile-wrapper) .entry-content {
 }
 
 .aph-nav-btn {
-	background: rgba(255, 255, 255, 0.15);
-	border: 2px solid rgba(255, 255, 255, 0.3);
+	background: var(--alumnus-overlay-white-medium);
+	border: 2px solid var(--alumnus-overlay-white-border-thick);
 	color: white;
 	padding: 10px 24px;
 	border-radius: 25px;
@@ -85,7 +85,7 @@ body:has(.alumnus-profile-wrapper) .entry-content {
 .aph-nav-btn:hover,
 .aph-nav-btn:active,
 .aph-nav-btn:focus {
-	color: #ffffff;
+	color: var(--alumnus-bg-white);
 	text-decoration: none;
 }
 .aph-nav .aph-nav-btn,
@@ -94,17 +94,17 @@ body:has(.alumnus-profile-wrapper) .entry-content {
 .aph-nav .aph-nav-btn:hover,
 .aph-nav .aph-nav-btn:active,
 .aph-nav .aph-nav-btn:focus {
-	color: #ffffff !important;
+	color: var(--alumnus-bg-white) !important;
 	text-decoration: none !important;
 }
 .aph-nav-btn:focus-visible {
     outline: none;
-    box-shadow: 0 0 0 3px rgba(255,255,255,0.35);
+    box-shadow: 0 0 0 3px var(--alumnus-overlay-white-focus);
 }
 
 .aph-nav-btn:hover {
-	background: rgba(255, 255, 255, 0.25);
-	border-color: rgba(255, 255, 255, 0.5);
+	background: var(--alumnus-overlay-white-hover);
+	border-color: var(--alumnus-overlay-white-hover-strong);
 	transform: translateY(-2px);
 }
 
@@ -129,7 +129,7 @@ body:has(.alumnus-profile-wrapper) .entry-content {
 .apc-header {
 	margin-bottom: 20px;
 	padding-bottom: 25px;
-	border-bottom: 2px solid #e2e8f0;
+	border-bottom: 2px solid var(--alumnus-border-medium);
 }
 
 .apc-main-content {
@@ -154,13 +154,13 @@ body:has(.alumnus-profile-wrapper) .entry-content {
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	background: linear-gradient(135deg, #a8d5e2 0%, #78b5c5 100%);
+	background: linear-gradient(135deg, var(--alumnus-avatar-gradient-start) 0%, var(--alumnus-avatar-gradient-end) 100%);
 }
 
 .apc-initials {
 	font-size: 48px;
 	font-weight: 700;
-	color: #0f4c75;
+	color: var(--alumnus-profile-blue);
 }
 
 .apc-info {
@@ -178,25 +178,25 @@ body:has(.alumnus-profile-wrapper) .entry-content {
 .apc-name {
 	font-size: 32px;
 	font-weight: 700;
-	color: #1a202c;
+	color: var(--alumnus-text-heading);
 	margin-bottom: 8px;
 }
 
 .apc-email {
 	font-size: 15px;
-	color: #64748b;
+	color: var(--alumnus-text-lighter);
 	margin-bottom: 12px;
 }
 
 .apc-subtitle {
 	font-size: 18px;
-	color: #4a5568;
+	color: var(--alumnus-text-secondary);
 	margin-bottom: 8px;
 }
 
 .apc-contact {
 	font-size: 14px;
-	color: #64748b;
+	color: var(--alumnus-text-lighter);
 	margin-top: 8px;
 }
 
@@ -204,10 +204,10 @@ body:has(.alumnus-profile-wrapper) .entry-content {
 .apc-section-title {
 	font-size: 24px;
 	font-weight: 700;
-	color: #1a202c;
+	color: var(--alumnus-text-heading);
 	margin-bottom: 24px;
 	padding-bottom: 12px;
-	border-bottom: 3px solid #0f4c75;
+	border-bottom: 3px solid var(--alumnus-profile-blue);
 	display: inline-block;
 }
 
@@ -215,11 +215,11 @@ body:has(.alumnus-profile-wrapper) .entry-content {
 	font-size: 20px;
 	margin-bottom: 16px;
 	padding-bottom: 8px;
-	border-bottom: 2px solid #0f4c75;
+	border-bottom: 2px solid var(--alumnus-profile-blue);
 }
 
 .apc-placeholder {
-	color: #a0aec0;
+	color: var(--alumnus-text-very-light);
 	font-style: italic;
 	font-size: 14px;
 }
@@ -230,11 +230,11 @@ body:has(.alumnus-profile-wrapper) .entry-content {
 }
 
 .apc-info-content {
-	background: #f8fafc;
-	border: 1px solid #e2e8f0;
+	background: var(--alumnus-bg-page);
+	border: 1px solid var(--alumnus-border-medium);
 	border-radius: 12px;
 	padding: 24px;
-	color: #4a5568;
+	color: var(--alumnus-text-secondary);
 	line-height: 1.8;
 	font-size: 15px;
 }
@@ -243,14 +243,14 @@ body:has(.alumnus-profile-wrapper) .entry-content {
 	display: flex;
 	flex-wrap: wrap;
 	gap: 12px;
-	background: #f8fafc;
-	border: 1px solid #e2e8f0;
+	background: var(--alumnus-bg-page);
+	border: 1px solid var(--alumnus-border-medium);
 	border-radius: 12px;
 	padding: 24px;
 }
 
 .apc-skill-tag {
-	background: linear-gradient(135deg, #0f4c75 0%, #1b6ca8 100%);
+	background: linear-gradient(135deg, var(--alumnus-profile-blue) 0%, var(--alumnus-profile-blue-light) 100%);
 	color: white;
 	padding: 8px 16px;
 	border-radius: 20px;
@@ -258,12 +258,12 @@ body:has(.alumnus-profile-wrapper) .entry-content {
 	font-weight: 500;
 	display: inline-block;
 	transition: all 0.3s ease;
-	box-shadow: 0 2px 4px rgba(15, 76, 117, 0.2);
+	box-shadow: 0 2px 4px var(--alumnus-shadow-profile-skill);
 }
 
 .apc-skill-tag:hover {
 	transform: translateY(-2px);
-	box-shadow: 0 4px 8px rgba(15, 76, 117, 0.3);
+	box-shadow: 0 4px 8px var(--alumnus-shadow-profile-skill-hover);
 }
 
 /* Posts Section */
@@ -272,8 +272,8 @@ body:has(.alumnus-profile-wrapper) .entry-content {
 }
 
 .apc-post {
-	background: #f8fafc;
-	border: 1px solid #e2e8f0;
+	background: var(--alumnus-bg-page);
+	border: 1px solid var(--alumnus-border-medium);
 	border-radius: 12px;
 	padding: 24px;
 	margin-bottom: 16px;
@@ -281,8 +281,8 @@ body:has(.alumnus-profile-wrapper) .entry-content {
 }
 
 .apc-post:hover {
-	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-	border-color: #cbd5e0;
+	box-shadow: 0 4px 12px var(--alumnus-shadow-md);
+	border-color: var(--alumnus-border-select);
 	transform: translateY(-2px);
 }
 
@@ -296,16 +296,16 @@ body:has(.alumnus-profile-wrapper) .entry-content {
 .apc-post-title {
 	font-size: 18px;
 	font-weight: 600;
-	color: #1a202c;
+	color: var(--alumnus-text-heading);
 }
 
 .apc-post-time {
 	font-size: 13px;
-	color: #a0aec0;
+	color: var(--alumnus-text-very-light);
 }
 
 .apc-post-content {
-	color: #4a5568;
+	color: var(--alumnus-text-secondary);
 	line-height: 1.6;
 	margin-bottom: 16px;
 }
@@ -314,7 +314,7 @@ body:has(.alumnus-profile-wrapper) .entry-content {
 	display: flex;
 	gap: 20px;
 	padding-top: 16px;
-	border-top: 1px solid #e2e8f0;
+	border-top: 1px solid var(--alumnus-border-medium);
 }
 
 .apc-action-btn {
@@ -323,7 +323,7 @@ body:has(.alumnus-profile-wrapper) .entry-content {
 	gap: 8px;
 	background: none;
 	border: none;
-	color: #64748b;
+	color: var(--alumnus-text-lighter);
 	font-size: 14px;
 	cursor: pointer;
 	padding: 8px 12px;
@@ -333,12 +333,12 @@ body:has(.alumnus-profile-wrapper) .entry-content {
 }
 
 .apc-action-btn:hover {
-	background: #e2e8f0;
-	color: #0f4c75;
+	background: var(--alumnus-border-medium);
+	color: var(--alumnus-profile-blue);
 }
 
 .apc-action-btn.liked {
-	color: #0f4c75;
+	color: var(--alumnus-profile-blue);
 }
 
 .apc-action-icon {
@@ -349,7 +349,7 @@ body:has(.alumnus-profile-wrapper) .entry-content {
 .apc-empty-state {
 	text-align: center;
 	padding: 60px 20px;
-	color: #a0aec0;
+	color: var(--alumnus-text-very-light);
 }
 
 .apc-empty-icon {
@@ -366,7 +366,7 @@ body:has(.alumnus-profile-wrapper) .entry-content {
 
 .apc-empty-subtext {
 	font-size: 14px;
-	color: #cbd5e0;
+	color: var(--alumnus-border-select);
 }
 
 /* Error State */
@@ -381,7 +381,7 @@ body:has(.alumnus-profile-wrapper) .entry-content {
 }
 
 .alumnus-profile-error p {
-	color: #e53e3e;
+	color: var(--alumnus-error-text);
 	font-size: 16px;
 	font-weight: 500;
 }
