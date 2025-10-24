@@ -155,7 +155,7 @@ function alumnus_render_profile_shortcode($atts = array()) {
 
 	ob_start();
 	?>
-		<div class="alumnus-profile-wrapper" id="alumnus-profile-root" data-ajax-url="<?php echo esc_url( admin_url('admin-ajax.php') ); ?>" data-nonce="<?php echo esc_attr( wp_create_nonce('alumnus_update_career') ); ?>" data-user-id="<?php echo esc_attr( (string) $user_id ); ?>">
+		<div class="alumnus-profile-wrapper" id="alumnus-profile-root" data-ajax-url="<?php echo esc_url( admin_url('admin-ajax.php') ); ?>" data-nonce="<?php echo esc_attr( wp_create_nonce('alumnus_update_career') ); ?>" data-nonce-skills="<?php echo esc_attr( wp_create_nonce('alumnus_update_skills') ); ?>" data-user-id="<?php echo esc_attr( (string) $user_id ); ?>">
 		<div class="alumnus-profile-header">
 			<div class="aph-gradient-bg"></div>
 		<div class="aph-nav">
@@ -229,26 +229,42 @@ function alumnus_render_profile_shortcode($atts = array()) {
 
 							<!-- Skills Section -->
 							<div class="apc-info-section apc-sidebar-section">
-								<h2 class="apc-section-title">Skills</h2>
-								<?php if (!empty($alumni_data->skills)): ?>
-									<div class="apc-skills-list">
-										<?php 
-										// Split skills by comma or newline
-										$skills_array = preg_split('/[,\n]+/', $alumni_data->skills);
-										foreach ($skills_array as $skill): 
-											$skill = trim($skill);
-											if (!empty($skill)):
-										?>
-											<span class="apc-skill-tag"><?php echo esc_html($skill); ?></span>
-										<?php 
-											endif;
-										endforeach; 
-										?>
-									</div>
-								<?php else: ?>
-									<div class="apc-info-content">
-										<p class="apc-placeholder"><?php echo esc_html__('No skills listed yet.', 'alumnus'); ?></p>
-									</div>
+								<div class="apc-section-title-row" style="display:flex; align-items:center; gap:8px;">
+									<h2 class="apc-section-title" style="margin:0;">Skills</h2>
+								</div>
+
+								<div id="alumnus-skills-view">
+									<?php if (!empty($alumni_data->skills)): ?>
+										<div class="apc-skills-list">
+											<?php 
+											// Split skills by comma or newline
+											$skills_array = preg_split('/[,\n]+/', $alumni_data->skills);
+											foreach ($skills_array as $skill): 
+												$skill = trim($skill);
+												if (!empty($skill)):
+											?>
+												<span class="apc-skill-tag"><?php echo esc_html($skill); ?></span>
+											<?php 
+												endif;
+											endforeach; 
+											?>
+										</div>
+									<?php else: ?>
+										<div class="apc-info-content">
+											<p class="apc-placeholder"><?php echo esc_html__('No skills listed yet.', 'alumnus'); ?></p>
+										</div>
+									<?php endif; ?>
+								</div>
+
+								<?php if ($is_own_profile): ?>
+									<form id="alumnus-skills-form" class="apc-edit-form" style="display:none;">
+										<label for="alumnus-skills-input" class="apc-edit-label"><?php echo esc_html__('Skills (comma-separated)', 'alumnus'); ?></label>
+										<textarea id="alumnus-skills-input" name="skills" rows="3" class="apc-textarea" placeholder="<?php echo esc_attr__('e.g., PHP, JavaScript, Docker', 'alumnus'); ?>"><?php echo esc_textarea( (string) $alumni_data->skills ); ?></textarea>
+										<div class="apc-edit-actions">
+											<button type="button" class="aph-nav-btn" onclick="alumnus_submitSkills(this)"><?php echo esc_html__('Save', 'alumnus'); ?></button>
+											<button type="button" class="aph-nav-btn" onclick="alumnus_toggleSkillsEdit(false)"><?php echo esc_html__('Cancel', 'alumnus'); ?></button>
+										</div>
+									</form>
 								<?php endif; ?>
 							</div>
 						</div>
@@ -330,13 +346,64 @@ function alumnus_render_profile_shortcode($atts = array()) {
 			setTimeout(function(){
 				form.scrollIntoView({ behavior: 'smooth', block: 'center' });
 			}, 50);
+			// Also open skills edit if available
+			try { if (typeof alumnus_toggleSkillsEdit === 'function') { alumnus_toggleSkillsEdit(true); } } catch(e) {}
 		} else {
 			form.style.display = 'none';
 			view.style.display = '';
 			if (navEdit) navEdit.style.display = '';
 			if (navSave) navSave.style.display = 'none';
 			if (navCancel) navCancel.style.display = 'none';
+			// Also close skills edit if available
+			try { if (typeof alumnus_toggleSkillsEdit === 'function') { alumnus_toggleSkillsEdit(false); } } catch(e) {}
 		}
+	}
+
+	function alumnus_toggleSkillsEdit(show) {
+		var form = document.getElementById('alumnus-skills-form');
+		var view = document.getElementById('alumnus-skills-view');
+		if (!form || !view) return;
+		if (show) {
+			form.style.display = '';
+			view.style.display = 'none';
+			var ta = document.getElementById('alumnus-skills-input');
+			if (ta) ta.focus();
+			setTimeout(function(){ form.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 50);
+		} else {
+			form.style.display = 'none';
+			view.style.display = '';
+		}
+	}
+
+	function alumnus_submitSkills(btn) {
+		var root = document.getElementById('alumnus-profile-root');
+		if (!root) return;
+		var ajaxUrl = root.getAttribute('data-ajax-url');
+		var nonce   = root.getAttribute('data-nonce-skills');
+		var userId  = root.getAttribute('data-user-id');
+		var textarea = document.getElementById('alumnus-skills-input');
+		if (!ajaxUrl || !nonce || !userId || !textarea) return;
+
+		var payload = new FormData();
+		payload.append('action', 'alumnus_update_skills');
+		payload.append('_ajax_nonce', nonce);
+		payload.append('user_id', userId);
+		payload.append('skills', textarea.value);
+
+		if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
+		fetch(ajaxUrl, { method: 'POST', credentials: 'same-origin', body: payload })
+			.then(function(res){ return res.json(); })
+			.then(function(json){
+				if (json && json.success) {
+					var view = document.getElementById('alumnus-skills-view');
+					if (view) { view.innerHTML = json.data.html; }
+					alumnus_toggleSkillsEdit(false);
+				} else {
+					alert((json && json.data && json.data.message) ? json.data.message : 'Failed to update skills.');
+				}
+			})
+			.catch(function(){ alert('Network error. Please try again.'); })
+			.finally(function(){ if (btn) { btn.disabled = false; btn.textContent = 'Save'; } });
 	}
 
 	function alumnus_submitCareer(btn) {
@@ -364,6 +431,12 @@ function alumnus_render_profile_shortcode($atts = array()) {
 					if (view) {
 						view.innerHTML = json.data.html;
 					}
+					// Also attempt to save skills if the form exists
+					try {
+						if (document.getElementById('alumnus-skills-form')) {
+							alumnus_submitSkills(null);
+						}
+					} catch(e) {}
 					alumnus_toggleEdit(false);
 					// Optional toast
 					try { if (window.wp && wp.toast) { wp.toast('Career updated'); } } catch(e) {}
@@ -427,6 +500,76 @@ function alumnus_update_career_ajax() {
 }
 add_action( 'wp_ajax_alumnus_update_career', 'alumnus_update_career_ajax' );
 add_action( 'wp_ajax_nopriv_alumnus_update_career', 'alumnus_update_career_ajax' );
+
+/**
+ * AJAX handler to update skills (CSV string) of the logged-in alumni user.
+ * Accepts POST: user_id, skills, _ajax_nonce
+ */
+function alumnus_update_skills_ajax() {
+	// Nonce check
+	if ( ! isset($_POST['_ajax_nonce']) || ! wp_verify_nonce( (string) $_POST['_ajax_nonce'], 'alumnus_update_skills' ) ) {
+		wp_send_json_error( array( 'message' => __( 'Security check failed.', 'alumnus' ) ), 403 );
+	}
+
+	// Must have our custom alumni session and match user_id
+	if ( ! function_exists('alumnus_is_logged_in') || ! alumnus_is_logged_in() ) {
+		wp_send_json_error( array( 'message' => __( 'You must be logged in.', 'alumnus' ) ), 401 );
+	}
+
+	$session_user = function_exists('alumnus_current_username') ? alumnus_current_username() : '';
+	$user_id = isset($_POST['user_id']) ? sanitize_text_field( wp_unslash($_POST['user_id']) ) : '';
+	if ( $user_id === '' || (string) $user_id !== (string) $session_user ) {
+		wp_send_json_error( array( 'message' => __( 'Permission denied for this user.', 'alumnus' ) ), 403 );
+	}
+
+	$skills_raw = isset($_POST['skills']) ? (string) wp_unslash($_POST['skills']) : '';
+	// Parse into array by commas/newlines, trim, dedupe, limit size and length
+	$parts = preg_split('/[,\n]+/', $skills_raw);
+	$clean = array();
+	if ( is_array($parts) ) {
+		foreach ($parts as $p) {
+			$p = trim( wp_strip_all_tags( $p ) ); // no HTML in skills
+			if ($p === '') continue;
+			// Limit individual skill length
+			if ( strlen($p) > 64 ) { $p = substr($p, 0, 64); }
+			$clean[] = $p;
+		}
+		// Dedupe and cap total skills
+		$clean = array_values( array_unique( $clean ) );
+		if ( count($clean) > 50 ) {
+			$clean = array_slice($clean, 0, 50);
+		}
+	}
+	$csv = implode(', ', $clean);
+
+	global $wpdb;
+	$updated = $wpdb->update(
+		'alumni',
+		array( 'skills' => $csv ),
+		array( 'user_id' => $user_id ),
+		array( '%s' ),
+		array( '%s' )
+	);
+
+	if ( $updated === false ) {
+		wp_send_json_error( array( 'message' => sprintf( __( 'Database error: %s', 'alumnus' ), $wpdb->last_error ) ), 500 );
+	}
+
+	// Build refreshed HTML for the skills view
+	if ( ! empty($clean) ) {
+		$html = '<div class="apc-skills-list">';
+		foreach ($clean as $s) {
+			$html .= '<span class="apc-skill-tag">' . esc_html( $s ) . '</span>';
+		}
+		$html .= '</div>';
+	} else {
+		$html = '<div class="apc-info-content"><p class="apc-placeholder">' . esc_html__( 'No skills listed yet.', 'alumnus' ) . '</p></div>';
+	}
+
+	wp_send_json_success( array( 'html' => $html ) );
+}
+add_action( 'wp_ajax_alumnus_update_skills', 'alumnus_update_skills_ajax' );
+add_action( 'wp_ajax_nopriv_alumnus_update_skills', 'alumnus_update_skills_ajax' );
 
 /**
  * Helper function to get profile URL for an alumni
