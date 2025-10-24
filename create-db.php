@@ -38,6 +38,7 @@ function adm_create_alumni_tables() {
         contact_info INT(11) NOT NULL,
         career LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
         skills LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+        bio_note LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL,
         PRIMARY KEY (user_id)
     ) ENGINE=InnoDB $charset_collate;";
 

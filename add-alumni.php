@@ -188,8 +188,9 @@ function alumnus_handle_post() {
 				'contact_info' => 0,      // placeholder; not collected here
 				'career'    => '',        // placeholder
 				'skills'    => '',        // placeholder
+				'bio_note'  => '',        // placeholder
 			],
-			[ '%d', '%d', '%d', '%s', '%s', '%s', '%d', '%s', '%s' ]
+			[ '%d', '%d', '%d', '%s', '%s', '%s', '%d', '%s', '%s', '%s' ]
 		);
 		if ($insert_alumni === false) {
 			add_settings_error('alumnus', 'alumni_insert_fail', sprintf(__('Failed to add alumni. DB error: %s', 'alumnus'), esc_html($wpdb->last_error)), 'error');
