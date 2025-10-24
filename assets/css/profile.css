@@ -73,12 +73,20 @@ body:has(.alumnus-profile-wrapper) .entry-content {
 	cursor: pointer;
 	font-size: 14px;
 	font-weight: 500;
-	transition: all 0.3s ease;
 	backdrop-filter: blur(10px);
 	text-decoration: none;
 	display: inline-flex;
 	align-items: center;
 	gap: 8px;
+}
+
+/* Reset button defaults for button elements */
+button.aph-nav-btn {
+	-webkit-appearance: none;
+	-moz-appearance: none;
+	appearance: none;
+	font-family: inherit;
+	line-height: normal;
 }
 .aph-nav-btn:link,
 .aph-nav-btn:visited,
@@ -114,11 +122,18 @@ body:has(.alumnus-profile-wrapper) .entry-content {
 	padding: 0 20px 40px;
 }
 
+.alumnus-skills-container {
+	max-width: 1200px;
+	margin: 0 auto;
+	padding: 20px 0px 0px;
+	margin-top: 90px;
+}
+
 .alumnus-profile-card {
 	background: white;
 	border-radius: 16px;
 	box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07), 0 10px 20px rgba(0, 0, 0, 0.05);
-	padding: 80px 40px 40px;
+	padding: 80px 40px 20px;
 	position: relative;
 	margin-top: -60px;
 }
@@ -127,16 +142,33 @@ body:has(.alumnus-profile-wrapper) .entry-content {
 
 /* Profile Header */
 .apc-header {
-	margin-bottom: 20px;
-	padding-bottom: 25px;
+	margin-bottom: 10px;
+	padding-bottom: 10px;
 	border-bottom: 2px solid var(--alumnus-border-medium);
 }
 
 .apc-main-content {
 	display: grid;
-	grid-template-columns: 1fr 1fr 1fr;
+	grid-template-columns: 1fr 1fr;
 	gap: 50px;
-	align-items: flex-start;
+	align-items: start;
+	width: 100%;
+}
+
+.apc-left-column {
+	display: flex;
+	flex-direction: column;
+	gap: 0px;
+	align-self: start;
+	min-width: 0;
+}
+
+.apc-right-column {
+	display: flex;
+	flex-direction: column;
+	align-self: start;
+	min-width: 0;
+	overflow: hidden;
 }
 
 .apc-avatar-wrapper {
@@ -167,19 +199,83 @@ body:has(.alumnus-profile-wrapper) .entry-content {
 	min-width: 0;
 }
 
-.apc-sidebar {
-	display: contents;
+.apc-career-section {
+	margin-top: 0 !important;
 }
 
-.apc-sidebar-section {
+.apc-career-text {
+	font-size: 20px;
+	line-height: 1.2;
+	color: var(--alumnus-text-body);
+	margin-bottom: 5px !important;
+}
+
+.apc-career-label {
+	font-weight: 600;
+	color: var(--alumnus-text-heading);
+}
+
+.apc-career-separator {
+	margin: 0 5px;
+	color: var(--alumnus-text-heading);
+}
+
+.apc-career-value {
+	color: var(--alumnus-text-heading);
+}
+
+.apc-career-input {
+	width: 100%;
+	padding: 12px 16px;
+	border: 2px solid var(--alumnus-border-medium);
+	border-radius: 8px;
+	font-size: 15px;
+	color: var(--alumnus-text-body);
+	background: var(--alumnus-bg-white);
+	font-family: inherit;
+	margin-top: 8px;
+	margin-bottom: 16px;
+	word-wrap: break-word;
+	word-break: break-word;
+	overflow-wrap: break-word;
+}
+
+.apc-career-input:focus {
+	outline: none;
+	border-color: var(--alumnus-primary);
+	box-shadow: 0 0 0 3px var(--alumnus-overlay-white-focus);
+}
+
+.apc-edit-form .apc-career-label {
+	display: block;
+	font-size: 14px;
+	font-weight: 600;
+	color: var(--alumnus-text-heading);
+	margin-bottom: 4px;
+}
+
+.apc-bio-section {
 	margin-top: 0 !important;
+	min-width: 0;
+	max-width: 100%;
+}
+
+.apc-bio-section .apc-section-title {
+	font-size: 20px;
+	margin-bottom: 16px;
+	border-bottom: 2px solid var(--alumnus-secondary);
+}
+
+.apc-bio-section .apc-info-content {
+	width: 100%;
+	overflow-wrap: break-word;
 }
 
 .apc-name {
 	font-size: 32px;
 	font-weight: 700;
 	color: var(--alumnus-text-heading);
-	margin-bottom: 8px;
+	margin-bottom: 0px;
 }
 
 .apc-email {
@@ -202,20 +298,13 @@ body:has(.alumnus-profile-wrapper) .entry-content {
 
 /* Section Title */
 .apc-section-title {
-	font-size: 24px;
+	font-size: 20px;
 	font-weight: 700;
 	color: var(--alumnus-text-heading);
-	margin-bottom: 24px;
-	padding-bottom: 12px;
-	border-bottom: 3px solid var(--alumnus-secondary);
-	display: inline-block;
-}
-
-.apc-sidebar .apc-section-title {
-	font-size: 20px;
-	margin-bottom: 16px;
-	padding-bottom: 8px;
+	margin-bottom: 10px !important;
+	padding-bottom: 0px;
 	border-bottom: 2px solid var(--alumnus-secondary);
+	display: inline-block;
 }
 
 .apc-placeholder {
@@ -230,23 +319,31 @@ body:has(.alumnus-profile-wrapper) .entry-content {
 }
 
 .apc-info-content {
-	background: var(--alumnus-bg-page);
-	border: 1px solid var(--alumnus-border-medium);
-	border-radius: 12px;
-	padding: 24px;
-	color: var(--alumnus-text-secondary);
-	line-height: 1.8;
+	color: var(--alumnus-text-heading);
+	line-height: 1.5;
 	font-size: 15px;
+	word-wrap: break-word;
+	word-break: break-word;
+	overflow-wrap: break-word;
+	max-width: 100%;
+}
+
+/* Skills Card (Separate from Profile Card) */
+.alumnus-skills-card {
+	background: white;
+	border-radius: 16px;
+	box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07), 0 10px 20px rgba(0, 0, 0, 0.05);
+	padding: 25px 40px 25px;
+}
+
+.alumnus-skills-card .apc-section-title {
+	margin-bottom: 15px !important;
 }
 
 .apc-skills-list {
 	display: flex;
 	flex-wrap: wrap;
 	gap: 12px;
-	background: var(--alumnus-bg-page);
-	border: 1px solid var(--alumnus-border-medium);
-	border-radius: 12px;
-	padding: 24px;
 }
 
 .apc-skill-tag {
@@ -257,7 +354,6 @@ body:has(.alumnus-profile-wrapper) .entry-content {
 	font-size: 14px;
 	font-weight: 500;
 	display: inline-block;
-	transition: all 0.3s ease;
 	box-shadow: 0 2px 4px var(--alumnus-shadow-profile-skill);
 }
 
@@ -277,7 +373,6 @@ body:has(.alumnus-profile-wrapper) .entry-content {
 	border-radius: 12px;
 	padding: 24px;
 	margin-bottom: 16px;
-	transition: all 0.3s ease;
 }
 
 .apc-post:hover {
@@ -328,7 +423,6 @@ body:has(.alumnus-profile-wrapper) .entry-content {
 	cursor: pointer;
 	padding: 8px 12px;
 	border-radius: 8px;
-	transition: all 0.2s ease;
 	font-weight: 500;
 }
 
@@ -389,12 +483,18 @@ body:has(.alumnus-profile-wrapper) .entry-content {
 /* Responsive Design */
 @media (max-width: 768px) {
 	.alumnus-profile-card {
-		padding: 100px 15px 10px;
+		padding: 80px 15px 15px;
 	}
 
 	.apc-main-content {
 		grid-template-columns: 1fr;
-		gap: 30px;
+		gap: 20px;
+	}
+
+	.apc-left-column,
+	.apc-right-column {
+		width: 100%;
+		gap: 0px !important;
 	}
 
 	/* Avatar */
@@ -409,6 +509,8 @@ body:has(.alumnus-profile-wrapper) .entry-content {
 		flex-direction: column;
 		align-items: center;
 		text-align: center;
+		margin-bottom: 10px !important;
+		padding-bottom: 20px !important;
 	}
 
 	/* User Info Section */
@@ -422,12 +524,12 @@ body:has(.alumnus-profile-wrapper) .entry-content {
 	.apc-name {
 		font-size: 32px;
 		font-weight: bold !important;
-		margin-bottom: 8px !important;
+		margin-bottom: 0px !important;
 	}
 
 	.apc-subtitle {
-		font-size: 20px;
-		margin-bottom: 8px !important;
+		font-size: 15px;
+		margin-bottom: 0px !important;
 	}
 
 	.apc-name,
@@ -437,23 +539,40 @@ body:has(.alumnus-profile-wrapper) .entry-content {
 		width: 100%;
 	}
 
-	/* Sidebar Sections (Career & Skills) */
-	.apc-sidebar-section {
+	/* Career & Bio Sections */
+	.apc-career-section,
+	.apc-bio-section {
 		display: flex;
 		flex-direction: column;
 		align-items: center;
 	}
 
-	.apc-sidebar-section .apc-section-title {
+	.apc-career-text {
+		text-align: center;
+		width: 100%;
+		font-size: 20px;
+		margin-bottom: 0px !important;
+	}
+
+	.apc-bio-section .apc-section-title {
 		text-align: center;
 	}
 
-	.apc-sidebar-section .apc-info-content,
-	.apc-sidebar-section .apc-skills-list {
+	.apc-bio-section .apc-info-content {
 		width: 100%;
 	}
 
-	.apc-sidebar-section .apc-skills-list {
+	/* Skills Card */
+	.alumnus-skills-card {
+		padding: 20px 20px;
+		text-align: center;
+	}
+
+	.alumnus-skills-card .apc-section-title {
+		text-align: center;
+	}
+
+	.apc-skills-list {
 		justify-content: center;
 	}
 
@@ -491,6 +610,259 @@ body:has(.alumnus-profile-wrapper) .entry-content {
 	.apc-action-btn {
 		padding: 6px 10px;
 		font-size: 13px;
+	}
+}
+
+/* Modal Styles */
+
+/* 1. The Dark Background Overlay */
+.alumnus-modal-overlay {
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	background: rgba(0, 0, 0, 0.6);
+	z-index: 10000;
+	
+	/* Center the modal card */
+	display: flex;
+	align-items: center;
+	justify-content: center;
+
+	/* Start hidden */
+	opacity: 0;
+	visibility: hidden;
+}
+
+/* Enable transitions only after first interaction */
+.alumnus-modal-overlay.alumnus-modal-ready {
+	transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+/* 2. The Active State (when pop-up is visible) */
+.alumnus-modal-overlay.active {
+	opacity: 1;
+	visibility: visible;
+}
+
+.alumnus-modal-overlay.alumnus-modal-ready.active {
+	transition: opacity 0.3s ease, visibility 0s linear;
+}
+
+/* 3. The Modal Card */
+.alumnus-modal-card {
+	background: var(--alumnus-bg-white);
+	padding: 32px;
+	border-radius: 16px;
+	box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+	width: 90%;
+	max-width: 600px;
+	max-height: 90vh;
+	overflow-y: auto;
+	position: relative;
+	
+	/* Start slightly scaled down */
+	transform: scale(0.95);
+	opacity: 0;
+}
+
+/* Enable card transitions only after first interaction */
+.alumnus-modal-overlay.alumnus-modal-ready .alumnus-modal-card {
+	transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+/* 4. Active state for the card */
+.alumnus-modal-overlay.active .alumnus-modal-card {
+	transform: scale(1);
+	opacity: 1;
+}
+
+/* 5. The Close Button */
+.alumnus-modal-close-btn {
+	position: absolute;
+	top: 16px;
+	right: 20px;
+	background: none;
+	border: none;
+	font-size: 32px;
+	font-weight: bold;
+	color: var(--alumnus-text-lighter);
+	cursor: pointer;
+	padding: 0;
+	line-height: 1;
+	width: 32px;
+	height: 32px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	transition: color 0.2s ease;
+}
+
+.alumnus-modal-close-btn:hover {
+	color: var(--alumnus-text-heading);
+}
+
+/* Modal Header */
+.alumnus-modal-header {
+	font-size: 28px;
+	font-weight: 700;
+	color: var(--alumnus-text-heading);
+	margin-bottom: 24px;
+	padding-right: 40px;
+}
+
+/* Modal Body */
+.alumnus-modal-body {
+	display: flex;
+	flex-direction: column;
+	gap: 20px;
+}
+
+/* Modal Field */
+.alumnus-modal-field {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.alumnus-modal-label {
+	font-size: 15px;
+	font-weight: 600;
+	color: var(--alumnus-text-heading);
+}
+
+.alumnus-modal-input,
+.alumnus-modal-textarea {
+	width: 100% !important;
+	padding: 8px 12px !important;
+	border: 2px solid var(--alumnus-border-medium) !important;
+	border-radius: 8px !important;
+	font-size: 15px !important;
+	color: var(--alumnus-text-body) !important;
+	background: var(--alumnus-bg-white) !important;
+	font-family: inherit !important;
+	margin: 0 !important;
+}
+
+.alumnus-modal-input {
+	word-wrap: normal !important;
+	word-break: normal !important;
+	overflow-wrap: normal !important;
+}
+
+.alumnus-modal-input:focus,
+.alumnus-modal-textarea:focus {
+	outline: none !important;
+	border-color: var(--alumnus-primary) !important;
+	box-shadow: 0 0 0 3px var(--alumnus-overlay-white-focus) !important;
+}
+
+.alumnus-modal-textarea {
+	resize: vertical !important;
+	min-height: 100px !important;
+	white-space: pre-wrap !important;
+	word-wrap: break-word !important;
+	overflow-wrap: break-word !important;
+}
+
+/* Character Counter */
+.alumnus-char-counter {
+	font-size: 13px;
+	color: var(--alumnus-text-lighter);
+	text-align: right;
+	margin-top: 4px;
+	font-weight: 500;
+}
+
+.alumnus-char-counter span {
+	color: var(--alumnus-text-heading);
+	font-weight: 600;
+}
+
+/* Modal Footer */
+.alumnus-modal-footer {
+	display: flex;
+	gap: 12px;
+	justify-content: flex-end;
+	padding-top: 24px;
+}
+
+.alumnus-modal-btn-save,
+.alumnus-modal-btn-cancel {
+	padding: 12px 24px;
+	border-radius: 8px;
+	font-size: 15px;
+	font-weight: 600;
+	cursor: pointer;
+}
+
+.alumnus-modal-btn-save {
+	background: var(--alumnus-primary);
+	color: white;
+	border: 2px solid var(--alumnus-primary);
+}
+
+.alumnus-modal-btn-save:hover:not(:disabled) {
+	background: var(--alumnus-primary-dark, var(--alumnus-primary));
+	transform: translateY(-2px);
+	box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.alumnus-modal-btn-save:disabled {
+	opacity: 0.6;
+	cursor: not-allowed;
+}
+
+.alumnus-modal-btn-cancel {
+	background: transparent;
+	color: var(--alumnus-text-body);
+	border: 2px solid var(--alumnus-border-medium);
+}
+
+.alumnus-modal-btn-cancel:hover {
+	background: var(--alumnus-text-body);
+	border-color: var(--alumnus-text-lighter);
+}
+
+/* Responsive Modal Styles */
+@media (max-width: 768px) {
+	.alumnus-modal-card {
+		padding: 24px;
+		width: 95%;
+		max-height: 95vh;
+	}
+
+	.alumnus-modal-header {
+		font-size: 24px;
+		margin-bottom: 20px;
+	}
+
+	.alumnus-modal-footer {
+		flex-direction: column;
+		gap: 10px;
+	}
+
+	.alumnus-modal-btn-save,
+	.alumnus-modal-btn-cancel {
+		width: 100%;
+		justify-content: center;
+	}
+}
+
+@media (max-width: 480px) {
+	.alumnus-modal-card {
+		padding: 20px;
+	}
+
+	.alumnus-modal-header {
+		font-size: 20px;
+	}
+
+	.alumnus-modal-close-btn {
+		font-size: 28px;
+		top: 12px;
+		right: 16px;
 	}
 }
 
