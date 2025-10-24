@@ -6,12 +6,16 @@
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 
 /**
- * Enqueue profile styles
+ * Enqueue profile styles and scripts
  */
 function alumnus_enqueue_profile_styles() {
 	$css_rel_path = 'assets/css/profile.css';
 	$css_path     = plugin_dir_path( __FILE__ ) . $css_rel_path;
 	$css_ver      = file_exists( $css_path ) ? filemtime( $css_path ) : '1.0.0';
+
+	$js_rel_path  = 'assets/js/profile.js';
+	$js_path      = plugin_dir_path( __FILE__ ) . $js_rel_path;
+	$js_ver       = file_exists( $js_path ) ? filemtime( $js_path ) : '1.0.0';
 
 	// Ensure color-variables.css is loaded
 	if ( ! wp_style_is( 'wordpress-plugin-template-colors', 'registered' ) ) {
@@ -31,8 +35,30 @@ function alumnus_enqueue_profile_styles() {
 		$css_ver
 	);
 
-	// Enqueue jQuery if not already loaded
-	wp_enqueue_script('jquery');
+	// Enqueue profile JavaScript
+	wp_enqueue_script(
+		'alumnus-profile',
+		plugin_dir_url( __FILE__ ) . $js_rel_path,
+		array(),
+		$js_ver,
+		true // Load in footer
+	);
+
+	// Localize script with translatable strings
+	wp_localize_script(
+		'alumnus-profile',
+		'alumnusProfileStrings',
+		array(
+			'saving'             => __( 'Saving…', 'alumnus' ),
+			'saveChanges'        => __( 'Save Changes', 'alumnus' ),
+			'errorCareer'        => __( 'Failed to update career.', 'alumnus' ),
+			'errorBio'           => __( 'Failed to update bio.', 'alumnus' ),
+			'errorSkills'        => __( 'Failed to update skills.', 'alumnus' ),
+			'networkErrorCareer' => __( 'Network error updating career.', 'alumnus' ),
+			'networkErrorBio'    => __( 'Network error updating bio.', 'alumnus' ),
+			'networkErrorSkills' => __( 'Network error updating skills.', 'alumnus' ),
+		)
+	);
 }
 
 /**
@@ -160,9 +186,7 @@ function alumnus_render_profile_shortcode($atts = array()) {
 			<div class="aph-gradient-bg"></div>
 		<div class="aph-nav">
 			<?php if ($is_own_profile): ?>
-				<button id="alumnus-nav-edit" class="aph-nav-btn" type="button" onclick="alumnus_toggleEdit(true)"><?php echo esc_html__('Edit', 'alumnus'); ?></button>
-				<button id="alumnus-nav-save" class="aph-nav-btn" type="button" style="display:none;" onclick="alumnus_submitCareer(this)"><?php echo esc_html__('Save', 'alumnus'); ?></button>
-				<button id="alumnus-nav-cancel" class="aph-nav-btn" type="button" style="display:none;" onclick="alumnus_toggleEdit(false)"><?php echo esc_html__('Cancel', 'alumnus'); ?></button>
+				<button id="alumnus-nav-edit" class="aph-nav-btn" type="button" onclick="alumnus_openModal()"><?php echo esc_html__('Edit', 'alumnus'); ?></button>
 				<?php $logout_url = function_exists('alumnus_logout_url') ? alumnus_logout_url( home_url('/login-2') ) : wp_logout_url( home_url('/login-2') ); ?>
 				<a class="aph-nav-btn" href="<?php echo esc_url( $logout_url ); ?>"><?php echo esc_html__('Logout', 'alumnus'); ?></a>
 			<?php endif; ?>
@@ -202,13 +226,6 @@ function alumnus_render_profile_shortcode($atts = array()) {
 									<?php endif; ?>
 								</span>
 							</div>
-
-							<?php if ($is_own_profile): ?>
-								<form id="alumnus-career-form" class="apc-edit-form" style="display:none;">
-									<label for="alumnus-career-input" class="apc-career-label"><?php echo esc_html__('Current Career', 'alumnus'); ?></label>
-									<input type="text" id="alumnus-career-input" name="career" class="apc-career-input" placeholder="<?php echo esc_attr__('e.g., Research and Development Engineer at Company XYZ', 'alumnus'); ?>" value="<?php echo esc_attr( (string) $alumni_data->career ); ?>" />
-								</form>
-							<?php endif; ?>
 						</div>
 
 						<div class="apc-info">
@@ -241,17 +258,6 @@ function alumnus_render_profile_shortcode($atts = array()) {
 									<p class="apc-placeholder"><?php echo esc_html__('No bio provided yet.', 'alumnus'); ?></p>
 								<?php endif; ?>
 							</div>
-
-							<?php if ($is_own_profile): ?>
-								<form id="alumnus-bio-form" class="apc-edit-form" style="display:none;">
-									<label for="alumnus-bio-input" class="screen-reader-text"><?php echo esc_html__('Bio', 'alumnus'); ?></label>
-									<textarea id="alumnus-bio-input" name="bio_note" rows="8" class="apc-textarea" placeholder="<?php echo esc_attr__('Tell us about yourself…', 'alumnus'); ?>"><?php echo esc_textarea( (string) $alumni_data->bio_note ); ?></textarea>
-									<div class="apc-edit-actions">
-										<button type="button" class="aph-nav-btn" onclick="alumnus_submitBio(this)"><?php echo esc_html__('Save', 'alumnus'); ?></button>
-										<button type="button" class="aph-nav-btn" onclick="alumnus_toggleBioEdit(false)"><?php echo esc_html__('Cancel', 'alumnus'); ?></button>
-									</div>
-								</form>
-							<?php endif; ?>
 						</div>
 					</div>
 				</div>
@@ -285,17 +291,6 @@ function alumnus_render_profile_shortcode($atts = array()) {
 						</div>
 					<?php endif; ?>
 				</div>
-
-				<?php if ($is_own_profile): ?>
-					<form id="alumnus-skills-form" class="apc-edit-form" style="display:none;">
-						<label for="alumnus-skills-input" class="apc-edit-label"><?php echo esc_html__('Comma-separated', 'alumnus'); ?></label>
-						<textarea id="alumnus-skills-input" name="skills" rows="3" class="apc-textarea" placeholder="<?php echo esc_attr__('e.g., Project Management, Problem Solving, Data Analysis', 'alumnus'); ?>"><?php echo esc_textarea( (string) $alumni_data->skills ); ?></textarea>
-						<div class="apc-edit-actions">
-							<button type="button" class="aph-nav-btn" onclick="alumnus_submitSkills(this)"><?php echo esc_html__('Save', 'alumnus'); ?></button>
-							<button type="button" class="aph-nav-btn" onclick="alumnus_toggleSkillsEdit(false)"><?php echo esc_html__('Cancel', 'alumnus'); ?></button>
-						</div>
-					</form>
-				<?php endif; ?>
 			</div>
 		</div>
 
@@ -342,194 +337,43 @@ function alumnus_render_profile_shortcode($atts = array()) {
 					</div>
 			</div>
 		<?php endif; ?>
+
+		<?php if ($is_own_profile): ?>
+			<!-- Edit Profile Modal -->
+			<div id="alumnus-modal-overlay" class="alumnus-modal-overlay">
+				<div class="alumnus-modal-card">
+					<button id="alumnus-modal-close" class="alumnus-modal-close-btn" type="button">&times;</button>
+					<h2 class="alumnus-modal-header"><?php echo esc_html__('Edit Profile', 'alumnus'); ?></h2>
+					
+					<div class="alumnus-modal-body">
+						<div class="alumnus-modal-field">
+							<label for="alumnus-modal-career-input" class="alumnus-modal-label"><?php echo esc_html__('Current Career', 'alumnus'); ?></label>
+							<input type="text" id="alumnus-modal-career-input" name="career" class="alumnus-modal-input" placeholder="<?php echo esc_attr__('e.g., Research and Development Engineer at Company XYZ', 'alumnus'); ?>" value="<?php echo esc_attr( (string) $alumni_data->career ); ?>" />
+						</div>
+
+						<div class="alumnus-modal-field">
+							<label for="alumnus-modal-bio-input" class="alumnus-modal-label"><?php echo esc_html__('Bio', 'alumnus'); ?></label>
+							<textarea id="alumnus-modal-bio-input" name="bio_note" rows="8" maxlength="250" class="alumnus-modal-textarea" placeholder="<?php echo esc_attr__('Tell us about yourself…', 'alumnus'); ?>"><?php echo esc_textarea( (string) $alumni_data->bio_note ); ?></textarea>
+							<div class="alumnus-char-counter">
+								<span id="alumnus-bio-char-count"><?php echo esc_html( strlen( (string) $alumni_data->bio_note ) ); ?></span> / 250 <?php echo esc_html__('characters', 'alumnus'); ?>
+							</div>
+						</div>
+
+						<div class="alumnus-modal-field">
+							<label for="alumnus-modal-skills-input" class="alumnus-modal-label"><?php echo esc_html__('Skills (comma-separated)', 'alumnus'); ?></label>
+							<textarea id="alumnus-modal-skills-input" name="skills" rows="3" class="alumnus-modal-textarea" placeholder="<?php echo esc_attr__('e.g., Project Management, Problem Solving, Data Analysis', 'alumnus'); ?>"><?php echo esc_textarea( (string) $alumni_data->skills ); ?></textarea>
+						</div>
+					</div>
+
+					<div class="alumnus-modal-footer">
+						<button type="button" class="aph-nav-btn alumnus-modal-btn-save" id="alumnus-modal-save"><?php echo esc_html__('Save Changes', 'alumnus'); ?></button>
+						<button type="button" class="aph-nav-btn alumnus-modal-btn-cancel" id="alumnus-modal-cancel"><?php echo esc_html__('Cancel', 'alumnus'); ?></button>
+					</div>
+				</div>
+			</div>
+		<?php endif; ?>
 	</div>
 
-	<script>
-	function alumnus_toggleLike(btn) {
-		if (btn.classList.contains('liked')) {
-			btn.classList.remove('liked');
-			btn.querySelector('.apc-action-text').textContent = 'Like';
-		} else {
-			btn.classList.add('liked');
-			btn.querySelector('.apc-action-text').textContent = 'Liked';
-		}
-	}
-
-	function alumnus_toggleEdit(show) {
-		var form = document.getElementById('alumnus-career-form');
-		var view = document.getElementById('alumnus-career-view');
-		var navEdit = document.getElementById('alumnus-nav-edit');
-		var navSave = document.getElementById('alumnus-nav-save');
-		var navCancel = document.getElementById('alumnus-nav-cancel');
-		if (!form || !view) return;
-		if (show) {
-			form.style.display = '';
-			view.style.display = 'none';
-			var ta = document.getElementById('alumnus-career-input');
-			if (ta) ta.focus();
-			if (navEdit) navEdit.style.display = 'none';
-			if (navSave) navSave.style.display = '';
-			if (navCancel) navCancel.style.display = '';
-			// Bring the edit form into view
-			setTimeout(function(){
-				form.scrollIntoView({ behavior: 'smooth', block: 'center' });
-			}, 50);
-			// Also open bio and skills edit if available
-			try { if (typeof alumnus_toggleBioEdit === 'function') { alumnus_toggleBioEdit(true); } } catch(e) {}
-			try { if (typeof alumnus_toggleSkillsEdit === 'function') { alumnus_toggleSkillsEdit(true); } } catch(e) {}
-		} else {
-			form.style.display = 'none';
-			view.style.display = '';
-			if (navEdit) navEdit.style.display = '';
-			if (navSave) navSave.style.display = 'none';
-			if (navCancel) navCancel.style.display = 'none';
-			// Also close bio and skills edit if available
-			try { if (typeof alumnus_toggleBioEdit === 'function') { alumnus_toggleBioEdit(false); } } catch(e) {}
-			try { if (typeof alumnus_toggleSkillsEdit === 'function') { alumnus_toggleSkillsEdit(false); } } catch(e) {}
-		}
-	}
-
-	function alumnus_toggleBioEdit(show) {
-		var form = document.getElementById('alumnus-bio-form');
-		var view = document.getElementById('alumnus-bio-view');
-		if (!form || !view) return;
-		if (show) {
-			form.style.display = '';
-			view.style.display = 'none';
-			var ta = document.getElementById('alumnus-bio-input');
-			if (ta) ta.focus();
-			setTimeout(function(){ form.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 50);
-		} else {
-			form.style.display = 'none';
-			view.style.display = '';
-		}
-	}
-
-	function alumnus_submitBio(btn) {
-		var root = document.getElementById('alumnus-profile-root');
-		if (!root) return;
-		var ajaxUrl = root.getAttribute('data-ajax-url');
-		var nonce   = root.getAttribute('data-nonce-bio');
-		var userId  = root.getAttribute('data-user-id');
-		var textarea = document.getElementById('alumnus-bio-input');
-		if (!ajaxUrl || !nonce || !userId || !textarea) return;
-
-		var payload = new FormData();
-		payload.append('action', 'alumnus_update_bio_note');
-		payload.append('_ajax_nonce', nonce);
-		payload.append('user_id', userId);
-		payload.append('bio_note', textarea.value);
-
-		if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
-		fetch(ajaxUrl, { method: 'POST', credentials: 'same-origin', body: payload })
-			.then(function(res){ return res.json(); })
-			.then(function(json){
-				if (json && json.success) {
-					var view = document.getElementById('alumnus-bio-view');
-					if (view) { view.innerHTML = json.data.html; }
-					alumnus_toggleBioEdit(false);
-				} else {
-					alert((json && json.data && json.data.message) ? json.data.message : 'Failed to update bio.');
-				}
-			})
-			.catch(function(){ alert('Network error. Please try again.'); })
-			.finally(function(){ if (btn) { btn.disabled = false; btn.textContent = 'Save'; } });
-	}
-
-	function alumnus_toggleSkillsEdit(show) {
-		var form = document.getElementById('alumnus-skills-form');
-		var view = document.getElementById('alumnus-skills-view');
-		if (!form || !view) return;
-		if (show) {
-			form.style.display = '';
-			view.style.display = 'none';
-			var ta = document.getElementById('alumnus-skills-input');
-			if (ta) ta.focus();
-			setTimeout(function(){ form.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 50);
-		} else {
-			form.style.display = 'none';
-			view.style.display = '';
-		}
-	}
-
-	function alumnus_submitSkills(btn) {
-		var root = document.getElementById('alumnus-profile-root');
-		if (!root) return;
-		var ajaxUrl = root.getAttribute('data-ajax-url');
-		var nonce   = root.getAttribute('data-nonce-skills');
-		var userId  = root.getAttribute('data-user-id');
-		var textarea = document.getElementById('alumnus-skills-input');
-		if (!ajaxUrl || !nonce || !userId || !textarea) return;
-
-		var payload = new FormData();
-		payload.append('action', 'alumnus_update_skills');
-		payload.append('_ajax_nonce', nonce);
-		payload.append('user_id', userId);
-		payload.append('skills', textarea.value);
-
-		if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
-		fetch(ajaxUrl, { method: 'POST', credentials: 'same-origin', body: payload })
-			.then(function(res){ return res.json(); })
-			.then(function(json){
-				if (json && json.success) {
-					var view = document.getElementById('alumnus-skills-view');
-					if (view) { view.innerHTML = json.data.html; }
-					alumnus_toggleSkillsEdit(false);
-				} else {
-					alert((json && json.data && json.data.message) ? json.data.message : 'Failed to update skills.');
-				}
-			})
-			.catch(function(){ alert('Network error. Please try again.'); })
-			.finally(function(){ if (btn) { btn.disabled = false; btn.textContent = 'Save'; } });
-	}
-
-	function alumnus_submitCareer(btn) {
-		var root = document.getElementById('alumnus-profile-root');
-		if (!root) return;
-		var ajaxUrl = root.getAttribute('data-ajax-url');
-		var nonce   = root.getAttribute('data-nonce');
-		var userId  = root.getAttribute('data-user-id');
-		var textarea = document.getElementById('alumnus-career-input');
-		if (!ajaxUrl || !nonce || !userId || !textarea) return;
-
-		var payload = new FormData();
-		payload.append('action', 'alumnus_update_career');
-		payload.append('_ajax_nonce', nonce);
-		payload.append('user_id', userId);
-		payload.append('career', textarea.value);
-
-		if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
-		fetch(ajaxUrl, { method: 'POST', credentials: 'same-origin', body: payload })
-			.then(function(res){ return res.json(); })
-			.then(function(json){
-				if (json && json.success) {
-					// Replace view content
-					var view = document.getElementById('alumnus-career-view');
-					if (view) {
-						view.innerHTML = json.data.html;
-					}
-					// Also attempt to save bio and skills if the forms exist
-					try {
-						if (document.getElementById('alumnus-bio-form')) {
-							alumnus_submitBio(null);
-						}
-					} catch(e) {}
-					try {
-						if (document.getElementById('alumnus-skills-form')) {
-							alumnus_submitSkills(null);
-						}
-					} catch(e) {}
-					alumnus_toggleEdit(false);
-					// Optional toast
-					try { if (window.wp && wp.toast) { wp.toast('Career updated'); } } catch(e) {}
-				} else {
-					alert((json && json.data && json.data.message) ? json.data.message : 'Failed to update career.');
-				}
-			})
-			.catch(function(){ alert('Network error. Please try again.'); })
-			.finally(function(){ if (btn) { btn.disabled = false; btn.textContent = 'Save'; } });
-	}
-	</script>
 	<?php
 	return ob_get_clean();
 }

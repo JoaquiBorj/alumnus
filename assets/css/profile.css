@@ -133,7 +133,7 @@ button.aph-nav-btn {
 	background: white;
 	border-radius: 16px;
 	box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07), 0 10px 20px rgba(0, 0, 0, 0.05);
-	padding: 80px 40px 40px;
+	padding: 80px 40px 20px;
 	position: relative;
 	margin-top: -60px;
 }
@@ -142,27 +142,33 @@ button.aph-nav-btn {
 
 /* Profile Header */
 .apc-header {
-	margin-bottom: 20px;
-	padding-bottom: 25px;
+	margin-bottom: 10px;
+	padding-bottom: 10px;
 	border-bottom: 2px solid var(--alumnus-border-medium);
 }
 
 .apc-main-content {
 	display: grid;
 	grid-template-columns: 1fr 1fr;
-	gap: 10px;
-	align-items: flex-start;
+	gap: 50px;
+	align-items: start;
+	width: 100%;
 }
 
 .apc-left-column {
 	display: flex;
 	flex-direction: column;
 	gap: 0px;
+	align-self: start;
+	min-width: 0;
 }
 
 .apc-right-column {
 	display: flex;
 	flex-direction: column;
+	align-self: start;
+	min-width: 0;
+	overflow: hidden;
 }
 
 .apc-avatar-wrapper {
@@ -199,7 +205,7 @@ button.aph-nav-btn {
 
 .apc-career-text {
 	font-size: 20px;
-	line-height: 1.5;
+	line-height: 1.2;
 	color: var(--alumnus-text-body);
 	margin-bottom: 5px !important;
 }
@@ -250,12 +256,19 @@ button.aph-nav-btn {
 
 .apc-bio-section {
 	margin-top: 0 !important;
+	min-width: 0;
+	max-width: 100%;
 }
 
 .apc-bio-section .apc-section-title {
 	font-size: 20px;
 	margin-bottom: 16px;
 	border-bottom: 2px solid var(--alumnus-secondary);
+}
+
+.apc-bio-section .apc-info-content {
+	width: 100%;
+	overflow-wrap: break-word;
 }
 
 .apc-name {
@@ -312,6 +325,7 @@ button.aph-nav-btn {
 	word-wrap: break-word;
 	word-break: break-word;
 	overflow-wrap: break-word;
+	max-width: 100%;
 }
 
 /* Skills Card (Separate from Profile Card) */
@@ -319,11 +333,11 @@ button.aph-nav-btn {
 	background: white;
 	border-radius: 16px;
 	box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07), 0 10px 20px rgba(0, 0, 0, 0.05);
-	padding: 40px;
+	padding: 25px 40px 25px;
 }
 
 .alumnus-skills-card .apc-section-title {
-	margin-bottom: 24px;
+	margin-bottom: 15px !important;
 }
 
 .apc-skills-list {
@@ -469,12 +483,12 @@ button.aph-nav-btn {
 /* Responsive Design */
 @media (max-width: 768px) {
 	.alumnus-profile-card {
-		padding: 100px 15px 10px;
+		padding: 80px 15px 15px;
 	}
 
 	.apc-main-content {
 		grid-template-columns: 1fr;
-		gap: 30px;
+		gap: 20px;
 	}
 
 	.apc-left-column,
@@ -495,6 +509,8 @@ button.aph-nav-btn {
 		flex-direction: column;
 		align-items: center;
 		text-align: center;
+		margin-bottom: 10px !important;
+		padding-bottom: 20px !important;
 	}
 
 	/* User Info Section */
@@ -548,7 +564,7 @@ button.aph-nav-btn {
 
 	/* Skills Card */
 	.alumnus-skills-card {
-		padding: 30px 20px;
+		padding: 20px 20px;
 		text-align: center;
 	}
 
@@ -594,6 +610,259 @@ button.aph-nav-btn {
 	.apc-action-btn {
 		padding: 6px 10px;
 		font-size: 13px;
+	}
+}
+
+/* Modal Styles */
+
+/* 1. The Dark Background Overlay */
+.alumnus-modal-overlay {
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	background: rgba(0, 0, 0, 0.6);
+	z-index: 10000;
+	
+	/* Center the modal card */
+	display: flex;
+	align-items: center;
+	justify-content: center;
+
+	/* Start hidden */
+	opacity: 0;
+	visibility: hidden;
+}
+
+/* Enable transitions only after first interaction */
+.alumnus-modal-overlay.alumnus-modal-ready {
+	transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+/* 2. The Active State (when pop-up is visible) */
+.alumnus-modal-overlay.active {
+	opacity: 1;
+	visibility: visible;
+}
+
+.alumnus-modal-overlay.alumnus-modal-ready.active {
+	transition: opacity 0.3s ease, visibility 0s linear;
+}
+
+/* 3. The Modal Card */
+.alumnus-modal-card {
+	background: var(--alumnus-bg-white);
+	padding: 32px;
+	border-radius: 16px;
+	box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+	width: 90%;
+	max-width: 600px;
+	max-height: 90vh;
+	overflow-y: auto;
+	position: relative;
+	
+	/* Start slightly scaled down */
+	transform: scale(0.95);
+	opacity: 0;
+}
+
+/* Enable card transitions only after first interaction */
+.alumnus-modal-overlay.alumnus-modal-ready .alumnus-modal-card {
+	transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+/* 4. Active state for the card */
+.alumnus-modal-overlay.active .alumnus-modal-card {
+	transform: scale(1);
+	opacity: 1;
+}
+
+/* 5. The Close Button */
+.alumnus-modal-close-btn {
+	position: absolute;
+	top: 16px;
+	right: 20px;
+	background: none;
+	border: none;
+	font-size: 32px;
+	font-weight: bold;
+	color: var(--alumnus-text-lighter);
+	cursor: pointer;
+	padding: 0;
+	line-height: 1;
+	width: 32px;
+	height: 32px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	transition: color 0.2s ease;
+}
+
+.alumnus-modal-close-btn:hover {
+	color: var(--alumnus-text-heading);
+}
+
+/* Modal Header */
+.alumnus-modal-header {
+	font-size: 28px;
+	font-weight: 700;
+	color: var(--alumnus-text-heading);
+	margin-bottom: 24px;
+	padding-right: 40px;
+}
+
+/* Modal Body */
+.alumnus-modal-body {
+	display: flex;
+	flex-direction: column;
+	gap: 20px;
+}
+
+/* Modal Field */
+.alumnus-modal-field {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.alumnus-modal-label {
+	font-size: 15px;
+	font-weight: 600;
+	color: var(--alumnus-text-heading);
+}
+
+.alumnus-modal-input,
+.alumnus-modal-textarea {
+	width: 100% !important;
+	padding: 8px 12px !important;
+	border: 2px solid var(--alumnus-border-medium) !important;
+	border-radius: 8px !important;
+	font-size: 15px !important;
+	color: var(--alumnus-text-body) !important;
+	background: var(--alumnus-bg-white) !important;
+	font-family: inherit !important;
+	margin: 0 !important;
+}
+
+.alumnus-modal-input {
+	word-wrap: normal !important;
+	word-break: normal !important;
+	overflow-wrap: normal !important;
+}
+
+.alumnus-modal-input:focus,
+.alumnus-modal-textarea:focus {
+	outline: none !important;
+	border-color: var(--alumnus-primary) !important;
+	box-shadow: 0 0 0 3px var(--alumnus-overlay-white-focus) !important;
+}
+
+.alumnus-modal-textarea {
+	resize: vertical !important;
+	min-height: 100px !important;
+	white-space: pre-wrap !important;
+	word-wrap: break-word !important;
+	overflow-wrap: break-word !important;
+}
+
+/* Character Counter */
+.alumnus-char-counter {
+	font-size: 13px;
+	color: var(--alumnus-text-lighter);
+	text-align: right;
+	margin-top: 4px;
+	font-weight: 500;
+}
+
+.alumnus-char-counter span {
+	color: var(--alumnus-text-heading);
+	font-weight: 600;
+}
+
+/* Modal Footer */
+.alumnus-modal-footer {
+	display: flex;
+	gap: 12px;
+	justify-content: flex-end;
+	padding-top: 24px;
+}
+
+.alumnus-modal-btn-save,
+.alumnus-modal-btn-cancel {
+	padding: 12px 24px;
+	border-radius: 8px;
+	font-size: 15px;
+	font-weight: 600;
+	cursor: pointer;
+}
+
+.alumnus-modal-btn-save {
+	background: var(--alumnus-primary);
+	color: white;
+	border: 2px solid var(--alumnus-primary);
+}
+
+.alumnus-modal-btn-save:hover:not(:disabled) {
+	background: var(--alumnus-primary-dark, var(--alumnus-primary));
+	transform: translateY(-2px);
+	box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.alumnus-modal-btn-save:disabled {
+	opacity: 0.6;
+	cursor: not-allowed;
+}
+
+.alumnus-modal-btn-cancel {
+	background: transparent;
+	color: var(--alumnus-text-body);
+	border: 2px solid var(--alumnus-border-medium);
+}
+
+.alumnus-modal-btn-cancel:hover {
+	background: var(--alumnus-text-body);
+	border-color: var(--alumnus-text-lighter);
+}
+
+/* Responsive Modal Styles */
+@media (max-width: 768px) {
+	.alumnus-modal-card {
+		padding: 24px;
+		width: 95%;
+		max-height: 95vh;
+	}
+
+	.alumnus-modal-header {
+		font-size: 24px;
+		margin-bottom: 20px;
+	}
+
+	.alumnus-modal-footer {
+		flex-direction: column;
+		gap: 10px;
+	}
+
+	.alumnus-modal-btn-save,
+	.alumnus-modal-btn-cancel {
+		width: 100%;
+		justify-content: center;
+	}
+}
+
+@media (max-width: 480px) {
+	.alumnus-modal-card {
+		padding: 20px;
+	}
+
+	.alumnus-modal-header {
+		font-size: 20px;
+	}
+
+	.alumnus-modal-close-btn {
+		font-size: 28px;
+		top: 12px;
+		right: 16px;
 	}
 }
 
