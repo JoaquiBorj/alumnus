@@ -83,7 +83,7 @@ function alumnus_render_profile_shortcode($atts = array()) {
 	global $wpdb;
 
 	// Fetch alumni data from database
-	$sql = "SELECT a.user_id, a.year, a.course_id, a.firstname, a.lastname, a.email, a.contact_info, a.career, a.skills, c.course AS course_name 
+	$sql = "SELECT a.user_id, a.year, a.course_id, a.firstname, a.lastname, a.email, a.contact_info, a.career, a.bio_note, a.skills, c.course AS course_name 
 			FROM alumni a
 			LEFT JOIN course c ON a.course_id = c.course_id
 			WHERE a.user_id = %s";
@@ -155,7 +155,7 @@ function alumnus_render_profile_shortcode($atts = array()) {
 
 	ob_start();
 	?>
-		<div class="alumnus-profile-wrapper" id="alumnus-profile-root" data-ajax-url="<?php echo esc_url( admin_url('admin-ajax.php') ); ?>" data-nonce="<?php echo esc_attr( wp_create_nonce('alumnus_update_career') ); ?>" data-nonce-skills="<?php echo esc_attr( wp_create_nonce('alumnus_update_skills') ); ?>" data-user-id="<?php echo esc_attr( (string) $user_id ); ?>">
+		<div class="alumnus-profile-wrapper" id="alumnus-profile-root" data-ajax-url="<?php echo esc_url( admin_url('admin-ajax.php') ); ?>" data-nonce="<?php echo esc_attr( wp_create_nonce('alumnus_update_career') ); ?>" data-nonce-bio="<?php echo esc_attr( wp_create_nonce('alumnus_update_bio_note') ); ?>" data-nonce-skills="<?php echo esc_attr( wp_create_nonce('alumnus_update_skills') ); ?>" data-user-id="<?php echo esc_attr( (string) $user_id ); ?>">
 		<div class="alumnus-profile-header">
 			<div class="aph-gradient-bg"></div>
 		<div class="aph-nav">
@@ -180,12 +180,38 @@ function alumnus_render_profile_shortcode($atts = array()) {
 						</div>
 					</div>
 					
-					<div class="apc-main-content">
+				<div class="apc-main-content">
+					<div class="apc-left-column">
 						<div class="apc-info">
 							<h1 class="apc-name"><?php echo esc_html($full_name); ?></h1>
 							<?php if (!empty($alumni_data->email)): ?>
 								<p class="apc-email"><?php echo esc_html($alumni_data->email); ?></p>
 							<?php endif; ?>
+						</div>
+
+						<!-- Career Section -->
+						<div class="apc-career-section">
+							<div class="apc-career-text" id="alumnus-career-view">
+								<span class="apc-career-label">Current Career</span>
+								<span class="apc-career-separator">-</span>
+								<span class="apc-career-value">
+									<?php if (!empty($alumni_data->career)): ?>
+										<?php echo esc_html($alumni_data->career); ?>
+									<?php else: ?>
+										<span class="apc-placeholder"><?php echo esc_html__('Not specified', 'alumnus'); ?></span>
+									<?php endif; ?>
+								</span>
+							</div>
+
+							<?php if ($is_own_profile): ?>
+								<form id="alumnus-career-form" class="apc-edit-form" style="display:none;">
+									<label for="alumnus-career-input" class="apc-career-label"><?php echo esc_html__('Current Career', 'alumnus'); ?></label>
+									<input type="text" id="alumnus-career-input" name="career" class="apc-career-input" placeholder="<?php echo esc_attr__('e.g., Research and Development Engineer at Company XYZ', 'alumnus'); ?>" value="<?php echo esc_attr( (string) $alumni_data->career ); ?>" />
+								</form>
+							<?php endif; ?>
+						</div>
+
+						<div class="apc-info">
 							<p class="apc-subtitle">
 								<?php 
 								$subtitle_parts = array();
@@ -202,76 +228,79 @@ function alumnus_render_profile_shortcode($atts = array()) {
 								<p class="apc-contact"><?php echo esc_html($alumni_data->contact_info); ?></p>
 							<?php endif; ?>
 						</div>
+					</div>
 
-						<div class="apc-sidebar">
-							<!-- Career Section -->
-							<div class="apc-info-section apc-sidebar-section">
-								<h2 class="apc-section-title">Career</h2>
-								<div class="apc-info-content" id="alumnus-career-view">
-									<?php if (!empty($alumni_data->career)): ?>
-										<?php echo wp_kses_post(nl2br($alumni_data->career)); ?>
-									<?php else: ?>
-										<p class="apc-placeholder"><?php echo esc_html__('No career information provided yet.', 'alumnus'); ?></p>
-									<?php endif; ?>
-								</div>
-
-								<?php if ($is_own_profile): ?>
-									<form id="alumnus-career-form" class="apc-edit-form" style="display:none;">
-										<label for="alumnus-career-input" class="screen-reader-text"><?php echo esc_html__('Current career', 'alumnus'); ?></label>
-										<textarea id="alumnus-career-input" name="career" rows="5" class="apc-textarea" placeholder="<?php echo esc_attr__('Describe your current career, role, and company…', 'alumnus'); ?>"><?php echo esc_textarea( (string) $alumni_data->career ); ?></textarea>
-										<div class="apc-edit-actions">
-											<button type="button" class="aph-nav-btn" onclick="alumnus_submitCareer(this)"><?php echo esc_html__('Save', 'alumnus'); ?></button>
-											<button type="button" class="aph-nav-btn" onclick="alumnus_toggleEdit(false)"><?php echo esc_html__('Cancel', 'alumnus'); ?></button>
-										</div>
-									</form>
+					<div class="apc-right-column">
+						<!-- Bio Note Section -->
+						<div class="apc-info-section apc-bio-section">
+							<h2 class="apc-section-title">Bio</h2>
+							<div class="apc-info-content" id="alumnus-bio-view">
+								<?php if (!empty($alumni_data->bio_note)): ?>
+									<?php echo wp_kses_post(nl2br($alumni_data->bio_note)); ?>
+								<?php else: ?>
+									<p class="apc-placeholder"><?php echo esc_html__('No bio provided yet.', 'alumnus'); ?></p>
 								<?php endif; ?>
 							</div>
 
-							<!-- Skills Section -->
-							<div class="apc-info-section apc-sidebar-section">
-								<div class="apc-section-title-row" style="display:flex; align-items:center; gap:8px;">
-									<h2 class="apc-section-title" style="margin:0;">Skills</h2>
-								</div>
-
-								<div id="alumnus-skills-view">
-									<?php if (!empty($alumni_data->skills)): ?>
-										<div class="apc-skills-list">
-											<?php 
-											// Split skills by comma or newline
-											$skills_array = preg_split('/[,\n]+/', $alumni_data->skills);
-											foreach ($skills_array as $skill): 
-												$skill = trim($skill);
-												if (!empty($skill)):
-											?>
-												<span class="apc-skill-tag"><?php echo esc_html($skill); ?></span>
-											<?php 
-												endif;
-											endforeach; 
-											?>
-										</div>
-									<?php else: ?>
-										<div class="apc-info-content">
-											<p class="apc-placeholder"><?php echo esc_html__('No skills listed yet.', 'alumnus'); ?></p>
-										</div>
-									<?php endif; ?>
-								</div>
-
-								<?php if ($is_own_profile): ?>
-									<form id="alumnus-skills-form" class="apc-edit-form" style="display:none;">
-										<label for="alumnus-skills-input" class="apc-edit-label"><?php echo esc_html__('Skills (comma-separated)', 'alumnus'); ?></label>
-										<textarea id="alumnus-skills-input" name="skills" rows="3" class="apc-textarea" placeholder="<?php echo esc_attr__('e.g., PHP, JavaScript, Docker', 'alumnus'); ?>"><?php echo esc_textarea( (string) $alumni_data->skills ); ?></textarea>
-										<div class="apc-edit-actions">
-											<button type="button" class="aph-nav-btn" onclick="alumnus_submitSkills(this)"><?php echo esc_html__('Save', 'alumnus'); ?></button>
-											<button type="button" class="aph-nav-btn" onclick="alumnus_toggleSkillsEdit(false)"><?php echo esc_html__('Cancel', 'alumnus'); ?></button>
-										</div>
-									</form>
-								<?php endif; ?>
-							</div>
+							<?php if ($is_own_profile): ?>
+								<form id="alumnus-bio-form" class="apc-edit-form" style="display:none;">
+									<label for="alumnus-bio-input" class="screen-reader-text"><?php echo esc_html__('Bio', 'alumnus'); ?></label>
+									<textarea id="alumnus-bio-input" name="bio_note" rows="8" class="apc-textarea" placeholder="<?php echo esc_attr__('Tell us about yourself…', 'alumnus'); ?>"><?php echo esc_textarea( (string) $alumni_data->bio_note ); ?></textarea>
+									<div class="apc-edit-actions">
+										<button type="button" class="aph-nav-btn" onclick="alumnus_submitBio(this)"><?php echo esc_html__('Save', 'alumnus'); ?></button>
+										<button type="button" class="aph-nav-btn" onclick="alumnus_toggleBioEdit(false)"><?php echo esc_html__('Cancel', 'alumnus'); ?></button>
+									</div>
+								</form>
+							<?php endif; ?>
 						</div>
 					</div>
 				</div>
+			</div>
+		</div>
 
-				<?php if ( $alumnus_show_recent_posts ) : ?>
+		<!-- Skills Card (Separate) -->
+		<div class="alumnus-skills-container">
+			<div class="alumnus-skills-card">
+				<h2 class="apc-section-title">Skills</h2>
+				
+				<div id="alumnus-skills-view">
+					<?php if (!empty($alumni_data->skills)): ?>
+						<div class="apc-skills-list">
+							<?php 
+							// Split skills by comma or newline
+							$skills_array = preg_split('/[,\n]+/', $alumni_data->skills);
+							foreach ($skills_array as $skill): 
+								$skill = trim($skill);
+								if (!empty($skill)):
+							?>
+								<span class="apc-skill-tag"><?php echo esc_html($skill); ?></span>
+							<?php 
+								endif;
+							endforeach; 
+							?>
+						</div>
+					<?php else: ?>
+						<div class="apc-info-content">
+							<p class="apc-placeholder"><?php echo esc_html__('No skills listed yet.', 'alumnus'); ?></p>
+						</div>
+					<?php endif; ?>
+				</div>
+
+				<?php if ($is_own_profile): ?>
+					<form id="alumnus-skills-form" class="apc-edit-form" style="display:none;">
+						<label for="alumnus-skills-input" class="apc-edit-label"><?php echo esc_html__('Comma-separated', 'alumnus'); ?></label>
+						<textarea id="alumnus-skills-input" name="skills" rows="3" class="apc-textarea" placeholder="<?php echo esc_attr__('e.g., Project Management, Problem Solving, Data Analysis', 'alumnus'); ?>"><?php echo esc_textarea( (string) $alumni_data->skills ); ?></textarea>
+						<div class="apc-edit-actions">
+							<button type="button" class="aph-nav-btn" onclick="alumnus_submitSkills(this)"><?php echo esc_html__('Save', 'alumnus'); ?></button>
+							<button type="button" class="aph-nav-btn" onclick="alumnus_toggleSkillsEdit(false)"><?php echo esc_html__('Cancel', 'alumnus'); ?></button>
+						</div>
+					</form>
+				<?php endif; ?>
+			</div>
+		</div>
+
+		<?php if ( $alumnus_show_recent_posts ) : ?>
+			<div class="alumnus-profile-container">
 					<!-- Recent Posts Section -->
 					<div class="apc-posts-section">
 						<h2 class="apc-section-title">Recent Posts</h2>
@@ -311,9 +340,8 @@ function alumnus_render_profile_shortcode($atts = array()) {
 							<?php endforeach; ?>
 						<?php endif; ?>
 					</div>
-				<?php endif; ?>
 			</div>
-		</div>
+		<?php endif; ?>
 	</div>
 
 	<script>
@@ -346,7 +374,8 @@ function alumnus_render_profile_shortcode($atts = array()) {
 			setTimeout(function(){
 				form.scrollIntoView({ behavior: 'smooth', block: 'center' });
 			}, 50);
-			// Also open skills edit if available
+			// Also open bio and skills edit if available
+			try { if (typeof alumnus_toggleBioEdit === 'function') { alumnus_toggleBioEdit(true); } } catch(e) {}
 			try { if (typeof alumnus_toggleSkillsEdit === 'function') { alumnus_toggleSkillsEdit(true); } } catch(e) {}
 		} else {
 			form.style.display = 'none';
@@ -354,9 +383,57 @@ function alumnus_render_profile_shortcode($atts = array()) {
 			if (navEdit) navEdit.style.display = '';
 			if (navSave) navSave.style.display = 'none';
 			if (navCancel) navCancel.style.display = 'none';
-			// Also close skills edit if available
+			// Also close bio and skills edit if available
+			try { if (typeof alumnus_toggleBioEdit === 'function') { alumnus_toggleBioEdit(false); } } catch(e) {}
 			try { if (typeof alumnus_toggleSkillsEdit === 'function') { alumnus_toggleSkillsEdit(false); } } catch(e) {}
 		}
+	}
+
+	function alumnus_toggleBioEdit(show) {
+		var form = document.getElementById('alumnus-bio-form');
+		var view = document.getElementById('alumnus-bio-view');
+		if (!form || !view) return;
+		if (show) {
+			form.style.display = '';
+			view.style.display = 'none';
+			var ta = document.getElementById('alumnus-bio-input');
+			if (ta) ta.focus();
+			setTimeout(function(){ form.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 50);
+		} else {
+			form.style.display = 'none';
+			view.style.display = '';
+		}
+	}
+
+	function alumnus_submitBio(btn) {
+		var root = document.getElementById('alumnus-profile-root');
+		if (!root) return;
+		var ajaxUrl = root.getAttribute('data-ajax-url');
+		var nonce   = root.getAttribute('data-nonce-bio');
+		var userId  = root.getAttribute('data-user-id');
+		var textarea = document.getElementById('alumnus-bio-input');
+		if (!ajaxUrl || !nonce || !userId || !textarea) return;
+
+		var payload = new FormData();
+		payload.append('action', 'alumnus_update_bio_note');
+		payload.append('_ajax_nonce', nonce);
+		payload.append('user_id', userId);
+		payload.append('bio_note', textarea.value);
+
+		if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
+		fetch(ajaxUrl, { method: 'POST', credentials: 'same-origin', body: payload })
+			.then(function(res){ return res.json(); })
+			.then(function(json){
+				if (json && json.success) {
+					var view = document.getElementById('alumnus-bio-view');
+					if (view) { view.innerHTML = json.data.html; }
+					alumnus_toggleBioEdit(false);
+				} else {
+					alert((json && json.data && json.data.message) ? json.data.message : 'Failed to update bio.');
+				}
+			})
+			.catch(function(){ alert('Network error. Please try again.'); })
+			.finally(function(){ if (btn) { btn.disabled = false; btn.textContent = 'Save'; } });
 	}
 
 	function alumnus_toggleSkillsEdit(show) {
@@ -431,7 +508,12 @@ function alumnus_render_profile_shortcode($atts = array()) {
 					if (view) {
 						view.innerHTML = json.data.html;
 					}
-					// Also attempt to save skills if the form exists
+					// Also attempt to save bio and skills if the forms exist
+					try {
+						if (document.getElementById('alumnus-bio-form')) {
+							alumnus_submitBio(null);
+						}
+					} catch(e) {}
 					try {
 						if (document.getElementById('alumnus-skills-form')) {
 							alumnus_submitSkills(null);
@@ -493,8 +575,12 @@ function alumnus_update_career_ajax() {
 		wp_send_json_error( array( 'message' => sprintf( __( 'Database error: %s', 'alumnus' ), $wpdb->last_error ) ), 500 );
 	}
 
-	// Prepare HTML for the view block (nl2br + safe HTML)
-	$html = $career_clean !== '' ? nl2br( $career_clean ) : '<p class="apc-placeholder">' . esc_html__( 'No career information provided yet.', 'alumnus' ) . '</p>';
+	// Prepare HTML for the view block
+	if ( $career_clean !== '' ) {
+		$html = '<span class="apc-career-label">Current Career</span><span class="apc-career-separator">-</span><span class="apc-career-value">' . esc_html( $career_clean ) . '</span>';
+	} else {
+		$html = '<span class="apc-career-label">Current Career</span><span class="apc-career-separator">-</span><span class="apc-career-value"><span class="apc-placeholder">' . esc_html__( 'Not specified', 'alumnus' ) . '</span></span>';
+	}
 
 	wp_send_json_success( array( 'html' => $html ) );
 }
@@ -570,6 +656,53 @@ function alumnus_update_skills_ajax() {
 }
 add_action( 'wp_ajax_alumnus_update_skills', 'alumnus_update_skills_ajax' );
 add_action( 'wp_ajax_nopriv_alumnus_update_skills', 'alumnus_update_skills_ajax' );
+
+/**
+ * AJAX handler to update bio_note of the logged-in alumni user.
+ * Accepts POST: user_id, bio_note, _ajax_nonce
+ */
+function alumnus_update_bio_note_ajax() {
+	// Nonce check
+	if ( ! isset($_POST['_ajax_nonce']) || ! wp_verify_nonce( (string) $_POST['_ajax_nonce'], 'alumnus_update_bio_note' ) ) {
+		wp_send_json_error( array( 'message' => __( 'Security check failed.', 'alumnus' ) ), 403 );
+	}
+
+	// Must have our custom alumni session and match user_id
+	if ( ! function_exists('alumnus_is_logged_in') || ! alumnus_is_logged_in() ) {
+		wp_send_json_error( array( 'message' => __( 'You must be logged in.', 'alumnus' ) ), 401 );
+	}
+
+	$session_user = function_exists('alumnus_current_username') ? alumnus_current_username() : '';
+	$user_id = isset($_POST['user_id']) ? sanitize_text_field( wp_unslash($_POST['user_id']) ) : '';
+	if ( $user_id === '' || (string) $user_id !== (string) $session_user ) {
+		wp_send_json_error( array( 'message' => __( 'Permission denied for this user.', 'alumnus' ) ), 403 );
+	}
+
+	// Sanitize and normalize input
+	$bio_raw = isset($_POST['bio_note']) ? (string) wp_unslash($_POST['bio_note']) : '';
+	// Allow basic HTML similar to wp_kses_post; store cleaned HTML
+	$bio_clean = wp_kses_post( $bio_raw );
+
+	global $wpdb;
+	$updated = $wpdb->update(
+		'alumni',
+		array( 'bio_note' => $bio_clean ),
+		array( 'user_id' => $user_id ),
+		array( '%s' ),
+		array( '%s' )
+	);
+
+	if ( $updated === false ) {
+		wp_send_json_error( array( 'message' => sprintf( __( 'Database error: %s', 'alumnus' ), $wpdb->last_error ) ), 500 );
+	}
+
+	// Prepare HTML for the view block
+	$html = $bio_clean !== '' ? nl2br( $bio_clean ) : '<p class="apc-placeholder">' . esc_html__( 'No bio provided yet.', 'alumnus' ) . '</p>';
+
+	wp_send_json_success( array( 'html' => $html ) );
+}
+add_action( 'wp_ajax_alumnus_update_bio_note', 'alumnus_update_bio_note_ajax' );
+add_action( 'wp_ajax_nopriv_alumnus_update_bio_note', 'alumnus_update_bio_note_ajax' );
 
 /**
  * Helper function to get profile URL for an alumni

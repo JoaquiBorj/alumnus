@@ -73,12 +73,20 @@ body:has(.alumnus-profile-wrapper) .entry-content {
 	cursor: pointer;
 	font-size: 14px;
 	font-weight: 500;
-	transition: all 0.3s ease;
 	backdrop-filter: blur(10px);
 	text-decoration: none;
 	display: inline-flex;
 	align-items: center;
 	gap: 8px;
+}
+
+/* Reset button defaults for button elements */
+button.aph-nav-btn {
+	-webkit-appearance: none;
+	-moz-appearance: none;
+	appearance: none;
+	font-family: inherit;
+	line-height: normal;
 }
 .aph-nav-btn:link,
 .aph-nav-btn:visited,
@@ -114,6 +122,13 @@ body:has(.alumnus-profile-wrapper) .entry-content {
 	padding: 0 20px 40px;
 }
 
+.alumnus-skills-container {
+	max-width: 1200px;
+	margin: 0 auto;
+	padding: 20px 0px 0px;
+	margin-top: 90px;
+}
+
 .alumnus-profile-card {
 	background: white;
 	border-radius: 16px;
@@ -134,9 +149,20 @@ body:has(.alumnus-profile-wrapper) .entry-content {
 
 .apc-main-content {
 	display: grid;
-	grid-template-columns: 1fr 1fr 1fr;
-	gap: 50px;
+	grid-template-columns: 1fr 1fr;
+	gap: 10px;
 	align-items: flex-start;
+}
+
+.apc-left-column {
+	display: flex;
+	flex-direction: column;
+	gap: 0px;
+}
+
+.apc-right-column {
+	display: flex;
+	flex-direction: column;
 }
 
 .apc-avatar-wrapper {
@@ -167,19 +193,76 @@ body:has(.alumnus-profile-wrapper) .entry-content {
 	min-width: 0;
 }
 
-.apc-sidebar {
-	display: contents;
+.apc-career-section {
+	margin-top: 0 !important;
 }
 
-.apc-sidebar-section {
+.apc-career-text {
+	font-size: 20px;
+	line-height: 1.5;
+	color: var(--alumnus-text-body);
+	margin-bottom: 5px !important;
+}
+
+.apc-career-label {
+	font-weight: 600;
+	color: var(--alumnus-text-heading);
+}
+
+.apc-career-separator {
+	margin: 0 5px;
+	color: var(--alumnus-text-heading);
+}
+
+.apc-career-value {
+	color: var(--alumnus-text-heading);
+}
+
+.apc-career-input {
+	width: 100%;
+	padding: 12px 16px;
+	border: 2px solid var(--alumnus-border-medium);
+	border-radius: 8px;
+	font-size: 15px;
+	color: var(--alumnus-text-body);
+	background: var(--alumnus-bg-white);
+	font-family: inherit;
+	margin-top: 8px;
+	margin-bottom: 16px;
+	word-wrap: break-word;
+	word-break: break-word;
+	overflow-wrap: break-word;
+}
+
+.apc-career-input:focus {
+	outline: none;
+	border-color: var(--alumnus-primary);
+	box-shadow: 0 0 0 3px var(--alumnus-overlay-white-focus);
+}
+
+.apc-edit-form .apc-career-label {
+	display: block;
+	font-size: 14px;
+	font-weight: 600;
+	color: var(--alumnus-text-heading);
+	margin-bottom: 4px;
+}
+
+.apc-bio-section {
 	margin-top: 0 !important;
+}
+
+.apc-bio-section .apc-section-title {
+	font-size: 20px;
+	margin-bottom: 16px;
+	border-bottom: 2px solid var(--alumnus-secondary);
 }
 
 .apc-name {
 	font-size: 32px;
 	font-weight: 700;
 	color: var(--alumnus-text-heading);
-	margin-bottom: 8px;
+	margin-bottom: 0px;
 }
 
 .apc-email {
@@ -202,20 +285,13 @@ body:has(.alumnus-profile-wrapper) .entry-content {
 
 /* Section Title */
 .apc-section-title {
-	font-size: 24px;
+	font-size: 20px;
 	font-weight: 700;
 	color: var(--alumnus-text-heading);
-	margin-bottom: 24px;
-	padding-bottom: 12px;
-	border-bottom: 3px solid var(--alumnus-secondary);
-	display: inline-block;
-}
-
-.apc-sidebar .apc-section-title {
-	font-size: 20px;
-	margin-bottom: 16px;
-	padding-bottom: 8px;
+	margin-bottom: 10px !important;
+	padding-bottom: 0px;
 	border-bottom: 2px solid var(--alumnus-secondary);
+	display: inline-block;
 }
 
 .apc-placeholder {
@@ -230,23 +306,30 @@ body:has(.alumnus-profile-wrapper) .entry-content {
 }
 
 .apc-info-content {
-	background: var(--alumnus-bg-page);
-	border: 1px solid var(--alumnus-border-medium);
-	border-radius: 12px;
-	padding: 24px;
-	color: var(--alumnus-text-secondary);
-	line-height: 1.8;
+	color: var(--alumnus-text-heading);
+	line-height: 1.5;
 	font-size: 15px;
+	word-wrap: break-word;
+	word-break: break-word;
+	overflow-wrap: break-word;
+}
+
+/* Skills Card (Separate from Profile Card) */
+.alumnus-skills-card {
+	background: white;
+	border-radius: 16px;
+	box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07), 0 10px 20px rgba(0, 0, 0, 0.05);
+	padding: 40px;
+}
+
+.alumnus-skills-card .apc-section-title {
+	margin-bottom: 24px;
 }
 
 .apc-skills-list {
 	display: flex;
 	flex-wrap: wrap;
 	gap: 12px;
-	background: var(--alumnus-bg-page);
-	border: 1px solid var(--alumnus-border-medium);
-	border-radius: 12px;
-	padding: 24px;
 }
 
 .apc-skill-tag {
@@ -257,7 +340,6 @@ body:has(.alumnus-profile-wrapper) .entry-content {
 	font-size: 14px;
 	font-weight: 500;
 	display: inline-block;
-	transition: all 0.3s ease;
 	box-shadow: 0 2px 4px var(--alumnus-shadow-profile-skill);
 }
 
@@ -277,7 +359,6 @@ body:has(.alumnus-profile-wrapper) .entry-content {
 	border-radius: 12px;
 	padding: 24px;
 	margin-bottom: 16px;
-	transition: all 0.3s ease;
 }
 
 .apc-post:hover {
@@ -328,7 +409,6 @@ body:has(.alumnus-profile-wrapper) .entry-content {
 	cursor: pointer;
 	padding: 8px 12px;
 	border-radius: 8px;
-	transition: all 0.2s ease;
 	font-weight: 500;
 }
 
@@ -397,6 +477,12 @@ body:has(.alumnus-profile-wrapper) .entry-content {
 		gap: 30px;
 	}
 
+	.apc-left-column,
+	.apc-right-column {
+		width: 100%;
+		gap: 0px !important;
+	}
+
 	/* Avatar */
 	.apc-avatar-wrapper {
 		left: 50%;
@@ -422,12 +508,12 @@ body:has(.alumnus-profile-wrapper) .entry-content {
 	.apc-name {
 		font-size: 32px;
 		font-weight: bold !important;
-		margin-bottom: 8px !important;
+		margin-bottom: 0px !important;
 	}
 
 	.apc-subtitle {
-		font-size: 20px;
-		margin-bottom: 8px !important;
+		font-size: 15px;
+		margin-bottom: 0px !important;
 	}
 
 	.apc-name,
@@ -437,23 +523,40 @@ body:has(.alumnus-profile-wrapper) .entry-content {
 		width: 100%;
 	}
 
-	/* Sidebar Sections (Career & Skills) */
-	.apc-sidebar-section {
+	/* Career & Bio Sections */
+	.apc-career-section,
+	.apc-bio-section {
 		display: flex;
 		flex-direction: column;
 		align-items: center;
 	}
 
-	.apc-sidebar-section .apc-section-title {
+	.apc-career-text {
+		text-align: center;
+		width: 100%;
+		font-size: 20px;
+		margin-bottom: 0px !important;
+	}
+
+	.apc-bio-section .apc-section-title {
 		text-align: center;
 	}
 
-	.apc-sidebar-section .apc-info-content,
-	.apc-sidebar-section .apc-skills-list {
+	.apc-bio-section .apc-info-content {
 		width: 100%;
 	}
 
-	.apc-sidebar-section .apc-skills-list {
+	/* Skills Card */
+	.alumnus-skills-card {
+		padding: 30px 20px;
+		text-align: center;
+	}
+
+	.alumnus-skills-card .apc-section-title {
+		text-align: center;
+	}
+
+	.apc-skills-list {
 		justify-content: center;
 	}
 
