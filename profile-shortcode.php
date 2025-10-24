@@ -155,12 +155,14 @@ function alumnus_render_profile_shortcode($atts = array()) {
 
 	ob_start();
 	?>
-	<div class="alumnus-profile-wrapper">
+		<div class="alumnus-profile-wrapper" id="alumnus-profile-root" data-ajax-url="<?php echo esc_url( admin_url('admin-ajax.php') ); ?>" data-nonce="<?php echo esc_attr( wp_create_nonce('alumnus_update_career') ); ?>" data-user-id="<?php echo esc_attr( (string) $user_id ); ?>">
 		<div class="alumnus-profile-header">
 			<div class="aph-gradient-bg"></div>
 		<div class="aph-nav">
 			<?php if ($is_own_profile): ?>
-				<button class="aph-nav-btn" type="button" onclick="document.dispatchEvent(new CustomEvent('alumnus:editProfile')); alert('Edit feature coming soon');"><?php echo esc_html__('Edit', 'alumnus'); ?></button>
+				<button id="alumnus-nav-edit" class="aph-nav-btn" type="button" onclick="alumnus_toggleEdit(true)"><?php echo esc_html__('Edit', 'alumnus'); ?></button>
+				<button id="alumnus-nav-save" class="aph-nav-btn" type="button" style="display:none;" onclick="alumnus_submitCareer(this)"><?php echo esc_html__('Save', 'alumnus'); ?></button>
+				<button id="alumnus-nav-cancel" class="aph-nav-btn" type="button" style="display:none;" onclick="alumnus_toggleEdit(false)"><?php echo esc_html__('Cancel', 'alumnus'); ?></button>
 				<?php $logout_url = function_exists('alumnus_logout_url') ? alumnus_logout_url( home_url('/login-2') ) : wp_logout_url( home_url('/login-2') ); ?>
 				<a class="aph-nav-btn" href="<?php echo esc_url( $logout_url ); ?>"><?php echo esc_html__('Logout', 'alumnus'); ?></a>
 			<?php endif; ?>
@@ -205,13 +207,24 @@ function alumnus_render_profile_shortcode($atts = array()) {
 							<!-- Career Section -->
 							<div class="apc-info-section apc-sidebar-section">
 								<h2 class="apc-section-title">Career</h2>
-								<div class="apc-info-content">
+								<div class="apc-info-content" id="alumnus-career-view">
 									<?php if (!empty($alumni_data->career)): ?>
 										<?php echo wp_kses_post(nl2br($alumni_data->career)); ?>
 									<?php else: ?>
 										<p class="apc-placeholder"><?php echo esc_html__('No career information provided yet.', 'alumnus'); ?></p>
 									<?php endif; ?>
 								</div>
+
+								<?php if ($is_own_profile): ?>
+									<form id="alumnus-career-form" class="apc-edit-form" style="display:none;">
+										<label for="alumnus-career-input" class="screen-reader-text"><?php echo esc_html__('Current career', 'alumnus'); ?></label>
+										<textarea id="alumnus-career-input" name="career" rows="5" class="apc-textarea" placeholder="<?php echo esc_attr__('Describe your current career, role, and company…', 'alumnus'); ?>"><?php echo esc_textarea( (string) $alumni_data->career ); ?></textarea>
+										<div class="apc-edit-actions">
+											<button type="button" class="aph-nav-btn" onclick="alumnus_submitCareer(this)"><?php echo esc_html__('Save', 'alumnus'); ?></button>
+											<button type="button" class="aph-nav-btn" onclick="alumnus_toggleEdit(false)"><?php echo esc_html__('Cancel', 'alumnus'); ?></button>
+										</div>
+									</form>
+								<?php endif; ?>
 							</div>
 
 							<!-- Skills Section -->
@@ -297,12 +310,123 @@ function alumnus_render_profile_shortcode($atts = array()) {
 			btn.querySelector('.apc-action-text').textContent = 'Liked';
 		}
 	}
+
+	function alumnus_toggleEdit(show) {
+		var form = document.getElementById('alumnus-career-form');
+		var view = document.getElementById('alumnus-career-view');
+		var navEdit = document.getElementById('alumnus-nav-edit');
+		var navSave = document.getElementById('alumnus-nav-save');
+		var navCancel = document.getElementById('alumnus-nav-cancel');
+		if (!form || !view) return;
+		if (show) {
+			form.style.display = '';
+			view.style.display = 'none';
+			var ta = document.getElementById('alumnus-career-input');
+			if (ta) ta.focus();
+			if (navEdit) navEdit.style.display = 'none';
+			if (navSave) navSave.style.display = '';
+			if (navCancel) navCancel.style.display = '';
+			// Bring the edit form into view
+			setTimeout(function(){
+				form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+			}, 50);
+		} else {
+			form.style.display = 'none';
+			view.style.display = '';
+			if (navEdit) navEdit.style.display = '';
+			if (navSave) navSave.style.display = 'none';
+			if (navCancel) navCancel.style.display = 'none';
+		}
+	}
+
+	function alumnus_submitCareer(btn) {
+		var root = document.getElementById('alumnus-profile-root');
+		if (!root) return;
+		var ajaxUrl = root.getAttribute('data-ajax-url');
+		var nonce   = root.getAttribute('data-nonce');
+		var userId  = root.getAttribute('data-user-id');
+		var textarea = document.getElementById('alumnus-career-input');
+		if (!ajaxUrl || !nonce || !userId || !textarea) return;
+
+		var payload = new FormData();
+		payload.append('action', 'alumnus_update_career');
+		payload.append('_ajax_nonce', nonce);
+		payload.append('user_id', userId);
+		payload.append('career', textarea.value);
+
+		if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
+		fetch(ajaxUrl, { method: 'POST', credentials: 'same-origin', body: payload })
+			.then(function(res){ return res.json(); })
+			.then(function(json){
+				if (json && json.success) {
+					// Replace view content
+					var view = document.getElementById('alumnus-career-view');
+					if (view) {
+						view.innerHTML = json.data.html;
+					}
+					alumnus_toggleEdit(false);
+					// Optional toast
+					try { if (window.wp && wp.toast) { wp.toast('Career updated'); } } catch(e) {}
+				} else {
+					alert((json && json.data && json.data.message) ? json.data.message : 'Failed to update career.');
+				}
+			})
+			.catch(function(){ alert('Network error. Please try again.'); })
+			.finally(function(){ if (btn) { btn.disabled = false; btn.textContent = 'Save'; } });
+	}
 	</script>
 	<?php
 	return ob_get_clean();
 }
 
 add_shortcode( 'alumni_profile', 'alumnus_render_profile_shortcode' );
+
+/**
+ * AJAX handler to update current career of the logged-in alumni user.
+ * Accepts POST: user_id, career, _ajax_nonce
+ */
+function alumnus_update_career_ajax() {
+	// Nonce check
+	if ( ! isset($_POST['_ajax_nonce']) || ! wp_verify_nonce( (string) $_POST['_ajax_nonce'], 'alumnus_update_career' ) ) {
+		wp_send_json_error( array( 'message' => __( 'Security check failed.', 'alumnus' ) ), 403 );
+	}
+
+	// Must have our custom alumni session and match user_id
+	if ( ! function_exists('alumnus_is_logged_in') || ! alumnus_is_logged_in() ) {
+		wp_send_json_error( array( 'message' => __( 'You must be logged in.', 'alumnus' ) ), 401 );
+	}
+
+	$session_user = function_exists('alumnus_current_username') ? alumnus_current_username() : '';
+	$user_id = isset($_POST['user_id']) ? sanitize_text_field( wp_unslash($_POST['user_id']) ) : '';
+	if ( $user_id === '' || (string) $user_id !== (string) $session_user ) {
+		wp_send_json_error( array( 'message' => __( 'Permission denied for this user.', 'alumnus' ) ), 403 );
+	}
+
+	// Sanitize and normalize input
+	$career_raw = isset($_POST['career']) ? (string) wp_unslash($_POST['career']) : '';
+	// Allow basic HTML similar to wp_kses_post; store cleaned HTML
+	$career_clean = wp_kses_post( $career_raw );
+
+	global $wpdb;
+	$updated = $wpdb->update(
+		'alumni',
+		array( 'career' => $career_clean ),
+		array( 'user_id' => $user_id ),
+		array( '%s' ),
+		array( '%s' )
+	);
+
+	if ( $updated === false ) {
+		wp_send_json_error( array( 'message' => sprintf( __( 'Database error: %s', 'alumnus' ), $wpdb->last_error ) ), 500 );
+	}
+
+	// Prepare HTML for the view block (nl2br + safe HTML)
+	$html = $career_clean !== '' ? nl2br( $career_clean ) : '<p class="apc-placeholder">' . esc_html__( 'No career information provided yet.', 'alumnus' ) . '</p>';
+
+	wp_send_json_success( array( 'html' => $html ) );
+}
+add_action( 'wp_ajax_alumnus_update_career', 'alumnus_update_career_ajax' );
+add_action( 'wp_ajax_nopriv_alumnus_update_career', 'alumnus_update_career_ajax' );
 
 /**
  * Helper function to get profile URL for an alumni
