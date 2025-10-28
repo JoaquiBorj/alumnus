@@ -172,6 +172,9 @@ function alumnus_maybe_handle_logout() {
 }
 add_action( 'init', 'alumnus_maybe_handle_logout', 2 );
 
+// Ensure that when a user logs out of WordPress, our custom alumni session/cookie is also cleared
+add_action( 'wp_logout', 'alumnus_logout' );
+
 /**
  * Helper: Build a logout URL for templates (optionally with a redirect).
  */
