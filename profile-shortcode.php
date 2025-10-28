@@ -187,10 +187,7 @@ function alumnus_render_profile_shortcode($atts = array()) {
 		<div class="aph-nav">
 			<?php if ($is_own_profile): ?>
 				<button id="alumnus-nav-edit" class="aph-nav-btn" type="button" onclick="alumnus_openModal()"><?php echo esc_html__('Edit', 'alumnus'); ?></button>
-				<?php $logout_url = function_exists('alumnus_logout_url') ? alumnus_logout_url( home_url('/login-2') ) : wp_logout_url( home_url('/login-2') ); ?>
-				<a class="aph-nav-btn" href="<?php echo esc_url( $logout_url ); ?>"><?php echo esc_html__('Logout', 'alumnus'); ?></a>
 			<?php endif; ?>
-			<a class="aph-nav-btn" href="<?php echo esc_url( apply_filters('alumnus_directory_page_url', home_url('/directory')) ); ?>"><?php echo esc_html__('Back to Directory', 'alumnus'); ?></a>
 		</div>
 		</div>
 

@@ -11,26 +11,10 @@ function alumnus_render_header_shortcode() {
     ?>
     <div class="alumnus-header-bar">
         <div class="alumnus-header-inner">
-            <div class="ahb-left">
-                <a class="ahb-logo" href="<?php echo esc_url( home_url( '/' ) ); ?>" aria-label="Home">
-                    <span class="ahb-logo-icon">🏠</span>
-                </a>
-                <nav class="ahb-nav" aria-label="Primary">
-                    <ul>
-                        <li><a href="#" class="active">Request Credentials</a></li>
-                        <li><a href="#">About Us</a></li>
-                        <li><a href="#">Community Feed</a></li>
-                        <li class="current"><a href="#">Directory</a><span class="ahb-indicator" aria-hidden="true"></span></li>
-                    </ul>
-                </nav>
-            </div>
             <div class="ahb-right">
-                <button class="ahb-icon-btn" type="button" aria-label="Search" disabled>
-                    <span>🔍</span>
-                </button>
-                <button class="ahb-icon-btn" type="button" aria-label="Profile" disabled>
-                    <span>👤</span>
-                </button>
+                <a href="http://localhost/alumnus/wordpress/directory/" class="ahb-directory-btn">Directory</a>
+                <a href="http://localhost/alumnus/wordpress/alumni-profile/" class="ahb-profile-btn">Profile</a>
+                <a href="http://localhost/alumnus/wordpress/landing-page/" class="ahb-logout-btn">Logout</a>
             </div>
         </div>
     </div>

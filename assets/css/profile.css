@@ -66,7 +66,7 @@ body:has(.alumnus-profile-wrapper) .entry-content {
 
 .aph-nav-btn {
 	background: var(--alumnus-overlay-white-medium);
-	border: 2px solid var(--alumnus-overlay-white-border-thick);
+	border: 2px solid var(--alumnus-secondary);
 	color: white;
 	padding: 10px 24px;
 	border-radius: 25px;
