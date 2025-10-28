@@ -39,28 +39,41 @@ function alumnus_render_profile_shortcode($atts = array()) {
 		'user_id' => '', // Can be set via shortcode attribute
 	), $atts);
 
-	// Check for URL parameter first (from directory links)
-	if (isset($_GET['alumni_id']) && !empty($_GET['alumni_id'])) {
-		$user_id = sanitize_text_field(wp_unslash($_GET['alumni_id']));
-	} elseif (!empty($atts['user_id'])) {
-		// Use shortcode attribute if provided
-		$user_id = $atts['user_id'];
-	} else {
-		// Prefer our custom alumni session if available
-		if (function_exists('alumnus_current_username')) {
-			$session_user = alumnus_current_username();
-			if ($session_user !== '') {
-				$user_id = $session_user;
-			}
-		}
-		// If still empty, fall back to WP user info
-		if (empty($user_id)) {
-			$current_user_obj = wp_get_current_user();
-			if ($current_user_obj && $current_user_obj->exists() && !empty($current_user_obj->user_login)) {
-				$user_id = (string) $current_user_obj->user_login;
-			} else {
-				$user_id = (string) get_current_user_id();
-			}
+	// Determine the effective user whose profile will be displayed.
+	// Security: Do NOT trust URL parameters to pick arbitrary users.
+	$user_id        = '';
+	$session_user   = '';
+	$wp_login_user  = '';
+
+	if ( function_exists('alumnus_current_username') && function_exists('alumnus_is_logged_in') && alumnus_is_logged_in() ) {
+		$session_user = alumnus_current_username();
+	}
+
+	$current_user_obj = wp_get_current_user();
+	if ( $current_user_obj && $current_user_obj->exists() && !empty($current_user_obj->user_login) ) {
+		$wp_login_user = (string) $current_user_obj->user_login;
+	}
+
+	// Default to the authenticated alumni session if present; otherwise WP user login.
+	$user_id = $session_user !== '' ? $session_user : $wp_login_user;
+
+	// Optional: allow admins (or via filter) to view others by specifying a target ID.
+	$can_view_others = current_user_can('manage_options');
+	$can_view_others = (bool) apply_filters('alumnus_can_view_other_profiles', $can_view_others);
+
+	$requested_id = '';
+	if ( isset($_GET['alumni_id']) && $_GET['alumni_id'] !== '' ) {
+		$requested_id = sanitize_text_field( wp_unslash( $_GET['alumni_id'] ) );
+	} elseif ( !empty($atts['user_id']) ) {
+		$requested_id = sanitize_text_field( (string) $atts['user_id'] );
+	}
+
+	if ( $requested_id !== '' ) {
+		if ( $can_view_others ) {
+			$user_id = $requested_id; // permitted override for admins
+		} else {
+			// Non-admins can only see their own profile even if URL is tampered
+			// Keep $user_id as derived from session/WP login
 		}
 	}
 
@@ -80,27 +93,15 @@ function alumnus_render_profile_shortcode($atts = array()) {
 	$alumni_data = $wpdb->get_row($wpdb->prepare($sql, $user_id));
 
 	if (!$alumni_data) {
-		// Debug: Show what user_id we're looking for
-		$debug_msg = sprintf(
-			__('Profile not found for user ID: %s', 'alumnus'),
-			esc_html($user_id)
-		);
-		
-		// Check if there are any alumni in the database
-		$total_alumni = $wpdb->get_var("SELECT COUNT(*) FROM alumni");
-		
-		if ($total_alumni == 0) {
-			$debug_msg .= '<br><br>' . __('Note: There are no alumni records in the database yet.', 'alumnus');
-		} else {
-			$debug_msg .= '<br><br>' . sprintf(__('There are %d alumni in the database.', 'alumnus'), $total_alumni);
-			// Show a sample of user_ids to help debug
-			$sample_ids = $wpdb->get_col("SELECT user_id FROM alumni LIMIT 5");
-			if (!empty($sample_ids)) {
-				$debug_msg .= '<br>' . __('Sample user IDs: ', 'alumnus') . implode(', ', array_map('esc_html', $sample_ids));
-			}
+		// Avoid leaking database details to non-admins
+		if ( current_user_can('manage_options') ) {
+			$debug_msg = sprintf(
+				__('Profile not found for user ID: %s', 'alumnus'),
+				esc_html($user_id)
+			);
+			return '<div class="alumnus-profile-error"><p>' . $debug_msg . '</p></div>';
 		}
-		
-		return '<div class="alumnus-profile-error"><p>' . $debug_msg . '</p></div>';
+		return '<div class="alumnus-profile-error"><p>' . esc_html__('Profile not found or inaccessible.', 'alumnus') . '</p></div>';
 	}
 
 	// Check if viewing own profile.
@@ -305,6 +306,7 @@ function alumnus_get_profile_url($user_id, $profile_page_url = '') {
 	if (empty($profile_page_url)) {
 		$profile_page_url = get_permalink();
 	}
+	// For compatibility, keep alumni_id in URL but server-side will ignore it for non-admins.
 	return add_query_arg('alumni_id', urlencode($user_id), $profile_page_url);
 }
 
