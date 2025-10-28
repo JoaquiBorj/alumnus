@@ -158,20 +158,22 @@ function alumnus_logout() {
  * Support a simple logout URL flow: add alumnus_logout=1 to any URL; optionally include _wpnonce.
  */
 function alumnus_maybe_handle_logout() {
-	if ( isset($_GET['alumnus_logout']) && (string) $_GET['alumnus_logout'] === '1' ) {
-		// Require a valid nonce for logout links
-		if ( ! isset($_GET['_wpnonce']) || ! wp_verify_nonce( (string) $_GET['_wpnonce'], 'alumnus_logout' ) ) {
+	if ( isset($_GET['alumnus_logout']) && (int) $_GET['alumnus_logout'] === 1 ) {
+		// Optional nonce check when provided
+		if ( isset($_GET['_wpnonce']) && ! wp_verify_nonce( (string) $_GET['_wpnonce'], 'alumnus_logout' ) ) {
 			wp_die( esc_html__( 'Invalid logout link.', 'alumnus' ) );
 		}
 		alumnus_logout();
-		// Redirect to home or provided redirect_to (same-host only)
-		$redir_raw  = isset($_GET['redirect_to']) ? (string) wp_unslash($_GET['redirect_to']) : '';
-		$redir_safe = $redir_raw !== '' ? wp_validate_redirect( $redir_raw, home_url('/') ) : home_url('/');
-		wp_safe_redirect( $redir_safe );
+		// Redirect to home or provided redirect_to
+		$redir = isset($_GET['redirect_to']) ? esc_url_raw( wp_unslash($_GET['redirect_to']) ) : home_url('/');
+		wp_safe_redirect( $redir );
 		exit;
 	}
 }
 add_action( 'init', 'alumnus_maybe_handle_logout', 2 );
+
+// Ensure that when a user logs out of WordPress, our custom alumni session/cookie is also cleared
+add_action( 'wp_logout', 'alumnus_logout' );
 
 /**
  * Helper: Build a logout URL for templates (optionally with a redirect).
