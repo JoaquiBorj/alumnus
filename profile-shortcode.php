@@ -21,7 +21,7 @@ if ( ! function_exists( 'alumnus_preserve_alumni_id_canonical' ) ) {
 }
 
 /**
- * Enqueue profile styles
+ * Enqueue profile styles and scripts
  */
 function alumnus_enqueue_profile_styles() {
 	$css_rel_path = 'assets/css/profile.css';
@@ -56,7 +56,7 @@ function alumnus_enqueue_profile_styles() {
 		plugin_dir_url( __FILE__ ) . $js_rel_path,
 		array(),
 		$js_ver,
-		true
+		true // Load in footer
 	);
 
 	// Localize script with translatable strings
@@ -182,7 +182,7 @@ function alumnus_render_profile_shortcode($atts = array()) {
 
 	ob_start();
 	?>
-	<div class="alumnus-profile-wrapper" id="alumnus-profile-root" data-ajax-url="<?php echo esc_url( admin_url('admin-ajax.php') ); ?>" data-nonce="<?php echo esc_attr( wp_create_nonce('alumnus_update_career') ); ?>" data-nonce-bio="<?php echo esc_attr( wp_create_nonce('alumnus_update_bio_note') ); ?>" data-nonce-skills="<?php echo esc_attr( wp_create_nonce('alumnus_update_skills') ); ?>" data-user-id="<?php echo esc_attr( (string) $user_id ); ?>">
+		<div class="alumnus-profile-wrapper" id="alumnus-profile-root" data-ajax-url="<?php echo esc_url( admin_url('admin-ajax.php') ); ?>" data-nonce="<?php echo esc_attr( wp_create_nonce('alumnus_update_career') ); ?>" data-nonce-bio="<?php echo esc_attr( wp_create_nonce('alumnus_update_bio_note') ); ?>" data-nonce-skills="<?php echo esc_attr( wp_create_nonce('alumnus_update_skills') ); ?>" data-user-id="<?php echo esc_attr( (string) $user_id ); ?>">
 		<div class="alumnus-profile-header">
 			<div class="aph-gradient-bg"></div>
 		<div class="aph-nav">
@@ -202,14 +202,14 @@ function alumnus_render_profile_shortcode($atts = array()) {
 						</div>
 					</div>
 					
-					<div class="apc-main-content">
+				<div class="apc-main-content">
 					<div class="apc-left-column">
 						<div class="apc-info">
 							<h1 class="apc-name"><?php echo esc_html($full_name); ?></h1>
 							<?php if (!empty($alumni_data->email)): ?>
 								<p class="apc-email"><?php echo esc_html($alumni_data->email); ?></p>
 							<?php endif; ?>
-						</div>	
+						</div>
 
 						<!-- Career Section -->
 						<div class="apc-career-section">
@@ -245,26 +245,13 @@ function alumnus_render_profile_shortcode($atts = array()) {
 						</div>
 					</div>
 
-						<div class="apc-sidebar">
-							<!-- Career Section -->
-							<div class="apc-info-section apc-sidebar-section">
-								<h2 class="apc-section-title">Career</h2>
-								<div class="apc-info-content">
-									<?php if (!empty($alumni_data->career)): ?>
-										<?php echo wp_kses_post(nl2br($alumni_data->career)); ?>
-									<?php else: ?>
-										<p class="apc-placeholder"><?php echo esc_html__('No career information provided yet.', 'alumnus'); ?></p>
-									<?php endif; ?>
-								</div>
-							</div>
-
-							<div class="apc-right-column">
-								<!-- Bio Note Section -->
-								<div class="apc-info-section apc-bio-section">
+					<div class="apc-right-column">
+						<!-- Bio Note Section -->
+						<div class="apc-info-section apc-bio-section">
 							<h2 class="apc-section-title">Bio</h2>
 							<div class="apc-info-content" id="alumnus-bio-view">
 								<?php if (!empty($alumni_data->bio_note)): ?>
-									<?php echo wp_kses_post(nl2br($alumni_data->bio_note)); ?>							
+									<?php echo wp_kses_post(nl2br($alumni_data->bio_note)); ?>
 								<?php else: ?>
 									<p class="apc-placeholder"><?php echo esc_html__('No bio provided yet.', 'alumnus'); ?></p>
 								<?php endif; ?>
@@ -307,6 +294,7 @@ function alumnus_render_profile_shortcode($atts = array()) {
 
 		<?php if ( $alumnus_show_recent_posts ) : ?>
 			<div class="alumnus-profile-container">
+					<!-- Recent Posts Section -->
 					<div class="apc-posts-section">
 						<h2 class="apc-section-title">Recent Posts</h2>
 						<?php if (empty($posts)): ?>
@@ -347,8 +335,6 @@ function alumnus_render_profile_shortcode($atts = array()) {
 					</div>
 				</div>
 			<?php endif; ?>
-		</div>
-		<?php endif; ?>
 
 		<?php if ($is_own_profile): ?>
 			<!-- Edit Profile Modal -->
@@ -575,3 +561,4 @@ function alumnus_get_profile_url($user_id, $profile_page_url = '') {
 	}
 	return add_query_arg('alumni_id', urlencode($user_id), $profile_page_url);
 }
+
