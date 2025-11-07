@@ -225,7 +225,7 @@ function coenect_login_form_shortcode() {
             <div class="coenect-login-split">
                 <!-- Left Side - Logo -->
                 <div class="coenect-login-left">
-                    <h1 class="coenect-logo-text">Logo of COE</h1>
+                    <img src="<?php echo plugin_dir_url(__FILE__) . 'assets/images/logo.png'; ?>" alt="XU Engineering Logo" class="coenect-logo-image">
                 </div>
 
                 <!-- Vertical Divider -->
