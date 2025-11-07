@@ -38,6 +38,7 @@ function adm_create_alumni_tables() {
         contact_info INT(11) NOT NULL,
         career LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
         skills LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+        bio_note LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL,
         PRIMARY KEY (user_id)
     ) ENGINE=InnoDB $charset_collate;";
 
@@ -115,9 +116,9 @@ function adm_admin_page_content() {
             </button>
         </form>
 
-        <hr style="margin:30px 0;">
+        <hr class="alumnus-admin-hr">
         <h3>Tables managed by this plugin:</h3>
-        <ul style="line-height:1.8;">
+        <ul class="alumnus-admin-list">
             <li>• <code>course</code></li>
             <li>• <code>alumni</code></li>
             <li>• <code>user</code></li>

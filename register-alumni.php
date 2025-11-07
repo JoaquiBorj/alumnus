@@ -34,13 +34,18 @@ function alumni_register_form_shortcode() {
             $alumni_insert = $db->insert(
                 'alumni',
                 array(
-                    'user_id'   => $idnumber,
-                    'firstname' => $firstname,
-                    'lastname'  => $lastname,
-                    'course_id' => $course,
-                    'year'      => $year
+                    'user_id'      => $idnumber,
+                    'firstname'    => $firstname,
+                    'lastname'     => $lastname,
+                    'course_id'    => $course,
+                    'year'         => $year,
+                    'email'        => '',      // placeholders for optional fields
+                    'contact_info' => 0,
+                    'career'       => '',
+                    'skills'       => '',
+                    'bio_note'     => ''
                 ),
-                array('%s', '%s', '%s', '%d', '%s')
+                array('%s', '%s', '%s', '%d', '%s', '%s', '%d', '%s', '%s', '%s')
             );
 
             if ($user_insert && $alumni_insert) {
@@ -60,11 +65,11 @@ function alumni_register_form_shortcode() {
         <h3>Alumni Registration</h3>
 
         <?php if (!empty($success_message)): ?>
-            <div style="color: green; font-weight: bold;"><?php echo esc_html($success_message); ?></div>
+            <div class="alumnus-success-message"><?php echo esc_html($success_message); ?></div>
         <?php endif; ?>
 
         <?php if (!empty($error_message)): ?>
-            <div style="color: red; font-weight: bold;"><?php echo esc_html($error_message); ?></div>
+            <div class="alumnus-error-message"><?php echo esc_html($error_message); ?></div>
         <?php endif; ?>
 
         <form method="post">

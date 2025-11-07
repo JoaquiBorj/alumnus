@@ -17,10 +17,21 @@ function alumnus_enqueue_directory_styles() {
 	$css_ver      = file_exists( $css_path ) ? filemtime( $css_path ) : '1.1.0';
 	$js_ver       = file_exists( $js_path ) ? filemtime( $js_path ) : '1.1.0';
 
+	// Ensure color-variables.css is loaded
+	if ( ! wp_style_is( 'wordpress-plugin-template-colors', 'registered' ) ) {
+		wp_register_style(
+			'wordpress-plugin-template-colors',
+			plugin_dir_url( __FILE__ ) . 'assets/css/color-variables.css',
+			array(),
+			$css_ver
+		);
+	}
+	wp_enqueue_style( 'wordpress-plugin-template-colors' );
+
 	wp_enqueue_style(
 		'alumnus-directory',
 		plugin_dir_url( __FILE__ ) . $css_rel_path,
-		array(),
+		array( 'wordpress-plugin-template-colors' ),
 		$css_ver
 	);
 
@@ -33,8 +44,12 @@ function alumnus_enqueue_directory_styles() {
 	);
 
 	// Determine the profile page URL
-	// By default, use current page. Can be overridden with 'alumnus_profile_page_url' filter
-	$profile_page_url = apply_filters('alumnus_profile_page_url', get_permalink());
+	// Prefer resolving the page that contains [alumni_profile]; allow override via filter
+	if ( function_exists('alumnus_resolve_profile_page_url') ) {
+		$profile_page_url = alumnus_resolve_profile_page_url();
+	} else {
+		$profile_page_url = apply_filters('alumnus_profile_page_url', home_url('/'));
+	}
 	
 	// Localize AJAX settings
 	wp_localize_script('alumnus-directory-filters', 'AlumnusDirectory', array(
@@ -89,7 +104,7 @@ function alumnus_render_directory_shortcode() {
 						<input 
 							type="text" 
 							class="asb-input" 
-							placeholder="Search Alum" 
+							placeholder="Search Alumni" 
 							id="alumnus-directory-search"
 						/>
 						<button type="button" id="alumnus-directory-submit-btn" class="asb-button"><?php echo esc_html__('Search', 'alumnus'); ?></button>
@@ -105,10 +120,10 @@ function alumnus_render_directory_shortcode() {
 				<div class="af-filter-group">
 					<label for="filter-year" class="af-label">
 						<svg class="af-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-							<rect x="3" y="4" width="18" height="18" rx="2" stroke="#04324d" stroke-width="2" fill="none"/>
-							<line x1="3" y1="9" x2="21" y2="9" stroke="#04324d" stroke-width="2"/>
-							<line x1="8" y1="2" x2="8" y2="6" stroke="#04324d" stroke-width="2" stroke-linecap="round"/>
-							<line x1="16" y1="2" x2="16" y2="6" stroke="#04324d" stroke-width="2" stroke-linecap="round"/>
+							<rect x="3" y="4" width="18" height="18" rx="2" stroke= var(--alumnus-primary) stroke-width="2" fill="none"/>
+							<line x1="3" y1="9" x2="21" y2="9" stroke= var(--alumnus-primary) stroke-width="2"/>
+							<line x1="8" y1="2" x2="8" y2="6" stroke= var(--alumnus-primary) stroke-width="2" stroke-linecap="round"/>
+							<line x1="16" y1="2" x2="16" y2="6" stroke= var(--alumnus-primary) stroke-width="2" stroke-linecap="round"/>
 						</svg>
 						Year
 					</label>
@@ -123,8 +138,8 @@ function alumnus_render_directory_shortcode() {
 				<div class="af-filter-group">
 					<label for="filter-course" class="af-label">
 						<svg class="af-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-							<path d="M12 14l9-5-9-5-9 5 9 5z" stroke="#04324d" stroke-width="2" stroke-linejoin="round" fill="none"/>
-							<path d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" stroke="#04324d" stroke-width="2" stroke-linejoin="round" fill="none"/>
+							<path d="M12 14l9-5-9-5-9 5 9 5z" stroke= var(--alumnus-primary) stroke-width="2" stroke-linejoin="round" fill="none"/>
+							<path d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" stroke= var(--alumnus-primary) stroke-width="2" stroke-linejoin="round" fill="none"/>
 						</svg>
 						Course
 					</label>
@@ -161,9 +176,11 @@ function alumnus_render_alumni_card($row, $base_profile_url = '') {
 	if ($initials === '' && $full_name !== '') { $initials = strtoupper(substr($full_name, 0, 1)); }
 
 	// Generate profile URL using helper function
-	// If base_profile_url is provided (from AJAX), use it; otherwise use current page
+	// If base_profile_url is provided (from AJAX), use it; otherwise resolve the profile page
 	if (empty($base_profile_url)) {
-		$base_profile_url = get_permalink();
+		$base_profile_url = function_exists('alumnus_resolve_profile_page_url')
+			? alumnus_resolve_profile_page_url()
+			: get_permalink();
 	}
 	$profile_url = alumnus_get_profile_url($row->user_id, $base_profile_url);
 

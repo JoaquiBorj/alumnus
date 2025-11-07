@@ -21,7 +21,7 @@ html:has(.alumnus-directory-wrapper) {
 div.alumnus-directory-wrapper,
 body .alumnus-directory-wrapper {
 	font-family: "Helvetica Neue", Arial, sans-serif !important;
-	color: #102a43 !important;
+	color: var(--alumnus-primary) !important;
 	margin: 0 !important;
 	padding: 0 !important;
 	width: 100% !important;
@@ -30,8 +30,7 @@ body .alumnus-directory-wrapper {
 
 /* Hero Section with Search - Full Width */
 .alumnus-directory-hero {
-	background: linear-gradient(135deg, rgba(4, 50, 77, 0.95) 0%, rgba(6, 66, 102, 0.9) 100%),
-	            url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 600"><rect fill="%23d4d4c8" width="1200" height="600"/></svg>');
+	background: var(--alumnus-primary);
 	background-size: cover;
 	background-position: center;
 	padding: 80px 24px 100px;
@@ -92,7 +91,7 @@ body .alumnus-directory-wrapper {
 .adh-title {
 	font-size: 72px;
 	font-weight: 300;
-	color: #fff;
+	color: var(--alumnus-text-on-dark);
 	margin: 0 0 12px;
 	letter-spacing: -1px;
 	text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
@@ -100,7 +99,7 @@ body .alumnus-directory-wrapper {
 
 .adh-tagline {
 	font-size: 24px;
-	color: #dfe9f3;
+	color: var(--alumnus-text-on-dark);
 	margin: 0 0 48px;
 	font-weight: 300;
 	letter-spacing: 0.5px;
@@ -116,7 +115,7 @@ body .alumnus-directory-wrapper {
 	position: relative;
 	display: flex;
 	align-items: center;
-	background: #ffffff;
+	background: var(--alumnus-bg-white);
 	border-radius: 50px;
 	padding: 8px 24px;
 	box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2),
@@ -125,7 +124,7 @@ body .alumnus-directory-wrapper {
 }
 
 .asb-inner:hover {
-	box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25),
+	box-shadow: 0 12px 32px var(--alumnus-shadow-hover),
 	            0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
@@ -141,7 +140,7 @@ body .alumnus-directory-wrapper {
 	font-size: 18px;
 	padding: 12px 8px;
 	background: transparent !important;
-	color: #334e68;
+	color: var(--alumnus-text-heading);
 	width: 100%;
 	-webkit-appearance: none;
 	-moz-appearance: none;
@@ -159,15 +158,15 @@ body .alumnus-directory-wrapper {
 .asb-input::placeholder,
 .alumnus-search-box input[type="text"]::placeholder,
 #alumnus-directory-search::placeholder {
-	color: #94a3b8;
+	color: var(--alumnus-text-placeholder);
 	font-weight: 300;
 }
 
 /* Search button inside the search box */
 .asb-button {
 	margin-left: 12px;
-	background-color: #04324d;
-	color: #fff;
+	background-color: var(--alumnus-secondary);
+	color: var(--alumnus-text-heading);
 	border: none;
 	border-radius: 24px;
 	padding: 10px 16px;
@@ -177,11 +176,7 @@ body .alumnus-directory-wrapper {
 	transition: background-color 0.2s ease, box-shadow 0.2s ease;
 }
 .asb-button:hover {
-	background-color: #064568;
-	box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-}
-.asb-button:active {
-	background-color: #03283c;
+	text-decoration: underline;
 }
 
 /* ============================================
@@ -214,7 +209,7 @@ body .alumnus-directory-wrapper {
 	gap: 8px;
 	font-size: 13px;
 	font-weight: 600;
-	color: #04324d;
+	color: var(--alumnus-primary);
 	text-transform: uppercase;
 	letter-spacing: 1px;
 	font-family: "Helvetica Neue", Arial, sans-serif;
@@ -234,10 +229,10 @@ select#filter-course {
 	padding: 5px 10px !important;
 	font-size: 15px !important;
 	font-weight: 500 !important;
-	border: 2px solid #cbd5e0 !important;
+	border: 2px solid var(--alumnus-border-select) !important;
 	border-radius: 8px !important;
-	background: #ffffff !important;
-	color: #102a43 !important;
+	background: var(--alumnus-bg-white) !important;
+	color: var(--alumnus-text-heading) !important;
 	font-family: "Helvetica Neue", Arial, sans-serif !important;
 	cursor: pointer !important;
 	transition: all 0.3s ease !important;
@@ -259,15 +254,15 @@ select#filter-course {
 .af-select:hover,
 select#filter-year:hover,
 select#filter-course:hover {
-	border-color: #04324d !important;
+	border-color: var(--alumnus-primary) !important;
 	box-shadow: 0 2px 6px rgba(4, 50, 77, 0.1) !important;
 }
 
 .af-select:focus,
 select#filter-year:focus,
 select#filter-course:focus {
-	border-color: #04324d !important;
-	box-shadow: 0 0 0 3px rgba(4, 50, 77, 0.1) !important;
+	border-color: var(--alumnus-primary) !important;
+	box-shadow: 0 0 0 3px var(--alumnus-focus-ring) !important;
 	outline: none !important;
 }
 
@@ -280,7 +275,7 @@ select#filter-course:focus {
 	grid-column: 1 / -1;
 	text-align: center;
 	padding: 60px 20px;
-	color: #64748b;
+	color: var(--alumnus-text-lighter);
 	font-size: 18px;
 	font-family: "Helvetica Neue", Arial, sans-serif;
 }
@@ -288,7 +283,7 @@ select#filter-course:focus {
 .no-results-message p {
 	margin: 0;
 	font-size: 18px !important;
-	color: #64748b !important;
+	color: var(--alumnus-text-lighter) !important;
 }
 
 /* Reset all elements inside grid container to prevent theme interference */
@@ -303,14 +298,14 @@ select#filter-course:focus {
 .alumnus-directory-wrapper .alumnus-grid-container {
 	max-width: 1200px !important;
 	margin: 0 auto !important;
-	padding: 60px 24px !important;
+	padding: 24px 24px !important;
 	width: 100% !important;
 	box-sizing: border-box !important;
 	position: relative !important;
 	left: auto !important;
 	right: auto !important;
 	transform: none !important;
-	background: #f8f9fa !important;
+	background: var(--alumnus-bg-page) !important;
 }
 
 /* Alumni Grid */
@@ -328,12 +323,12 @@ select#filter-course:focus {
 /* Alumni Card */
 .alumni-card,
 .alumnus-grid .alumni-card {
-	background: #ffffff !important;
+	background: var(--alumnus-bg-white) !important;
 	border-radius: 16px !important;
 	padding: 32px 24px !important;
-	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08), 0 1px 4px rgba(0, 0, 0, 0.04) !important;
+	box-shadow: 0 2px 8px var(--alumnus-shadow-md), 0 1px 4px var(--alumnus-shadow-sm) !important;
 	transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-	border: 1px solid #e2e8f0 !important;
+	border: 1px solid var(--alumnus-border-medium) !important;
 	display: flex !important;
 	flex-direction: column !important;
 	align-items: center !important;
@@ -374,16 +369,16 @@ select#filter-course:focus {
 	left: 0;
 	right: 0;
 	height: 4px;
-	background: linear-gradient(90deg, #04324d 0%, #064266 100%);
+	background: var(--alumnus-secondary);
 	transform: scaleX(0);
 	transition: transform 0.3s ease;
 }
 
 .alumni-card:hover {
 	transform: translateY(-8px);
-	box-shadow: 0 12px 24px rgba(0, 0, 0, 0.12),
-	            0 4px 12px rgba(0, 0, 0, 0.08);
-	border-color: #cbd5e0;
+	box-shadow: 0 12px 24px var(--alumnus-shadow-lg),
+	            0 4px 12px var(--alumnus-shadow-md);
+	border-color: var(--alumnus-border-select);
 }
 
 .alumni-card:hover::before {
@@ -400,12 +395,12 @@ select#filter-course:focus {
 	max-width: 96px !important;
 	max-height: 96px !important;
 	border-radius: 50% !important;
-	background: linear-gradient(135deg, #04324d 0%, #064266 100%) !important;
+	background: var(--alumnus-primary) !important;
 	display: flex !important;
 	align-items: center !important;
 	justify-content: center !important;
 	margin: 0 auto 20px !important;
-	box-shadow: 0 4px 12px rgba(4, 50, 77, 0.2) !important;
+	box-shadow: 0 4px 12px var(--alumnus-shadow-card) !important;
 	position: relative !important;
 	overflow: hidden !important;
 	flex-shrink: 0 !important;
@@ -417,18 +412,13 @@ select#filter-course:focus {
 	inset: 0;
 	border-radius: 50%;
 	padding: 2px;
-	background: linear-gradient(135deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0) 100%);
-	-webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-	-webkit-mask-composite: xor;
-	mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-	mask-composite: exclude;
 }
 
 .ac-initials,
 .ac-avatar .ac-initials {
 	font-size: 32px !important;
 	font-weight: 600 !important;
-	color: #ffffff !important;
+	color: var(--alumnus-bg-white) !important;
 	letter-spacing: 1px !important;
 	line-height: 1 !important;
 	font-family: "Helvetica Neue", Arial, sans-serif !important;
@@ -446,7 +436,7 @@ select#filter-course:focus {
 .alumni-card h3 {
 	font-size: 22px !important;
 	font-weight: 600 !important;
-	color: #102a43 !important;
+	color: var(--alumnus-text-heading) !important;
 	margin: 0 0 8px !important;
 	letter-spacing: -0.3px !important;
 	font-family: "Helvetica Neue", Arial, sans-serif !important;
@@ -455,9 +445,6 @@ select#filter-course:focus {
 
 .ac-year,
 .ac-degree,
-.ac-position,
-.ac-company,
-.ac-location,
 .alumni-card p {
 	font-family: "Helvetica Neue", Arial, sans-serif !important;
 	line-height: 1.5 !important;
@@ -466,7 +453,7 @@ select#filter-course:focus {
 .ac-year {
 	font-size: 14px !important;
 	font-weight: 500 !important;
-	color: #04324d !important;
+	color: var(--alumnus-text-heading) !important;
 	margin: 0 0 4px !important;
 	text-transform: uppercase !important;
 	letter-spacing: 0.5px !important;
@@ -474,57 +461,11 @@ select#filter-course:focus {
 
 .ac-degree {
 	font-size: 15px !important;
-	color: #486581 !important;
+	color: var(--alumnus-text-body) !important;
 	margin: 0 0 16px !important;
 	font-weight: 400 !important;
 }
 
-/* Divider */
-.ac-divider,
-.alumni-card .ac-divider {
-	width: 60px !important;
-	height: 2px !important;
-	background: linear-gradient(90deg, transparent 0%, #cbd5e0 50%, transparent 100%) !important;
-	margin: 16px auto !important;
-	border: none !important;
-}
-
-/* Position & Company */
-.ac-position {
-	font-size: 16px !important;
-	font-weight: 600 !important;
-	color: #334e68 !important;
-	margin: 0 0 4px !important;
-}
-
-.ac-company {
-	font-size: 14px !important;
-	color: #627d98 !important;
-	margin: 0 0 12px !important;
-	font-weight: 400 !important;
-}
-
-/* Location */
-.ac-location {
-	font-size: 14px !important;
-	color: #64748b !important;
-	margin: 0 !important;
-	display: flex !important;
-	align-items: center !important;
-	justify-content: center !important;
-	gap: 6px !important;
-}
-
-.ac-location-icon,
-.ac-location .ac-location-icon {
-	width: 16px !important;
-	height: 16px !important;
-	min-width: 16px !important;
-	min-height: 16px !important;
-	max-width: 16px !important;
-	max-height: 16px !important;
-	flex-shrink: 0 !important;
-}
 
 /* Responsive Design */
 @media (max-width: 768px) {

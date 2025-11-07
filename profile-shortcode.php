@@ -6,6 +6,21 @@
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 
 /**
+ * Prevent WordPress canonical redirects from stripping our alumni_id query param.
+ * Some environments/plugins may trigger a redirect that drops unknown query vars,
+ * causing the page to reload without alumni_id and then fall back to the logged user.
+ */
+if ( ! function_exists( 'alumnus_preserve_alumni_id_canonical' ) ) {
+	function alumnus_preserve_alumni_id_canonical( $redirect_url, $requested_url ) {
+		if ( isset( $_GET['alumni_id'] ) && $_GET['alumni_id'] !== '' ) {
+			return false; // disable canonical redirect to preserve query param
+		}
+		return $redirect_url;
+	}
+	add_filter( 'redirect_canonical', 'alumnus_preserve_alumni_id_canonical', 10, 2 );
+}
+
+/**
  * Enqueue profile styles
  */
 function alumnus_enqueue_profile_styles() {
@@ -39,28 +54,18 @@ function alumnus_render_profile_shortcode($atts = array()) {
 		'user_id' => '', // Can be set via shortcode attribute
 	), $atts);
 
-	// Check for URL parameter first (from directory links)
-	if (isset($_GET['alumni_id']) && !empty($_GET['alumni_id'])) {
+	// Choose which profile to display
+	// 1) If alumni_id is present, always respect it (viewing someone else's profile is allowed for display)
+	// 2) Else, if an alumni session exists, default to that user (own profile)
+	// 3) Else, no identity -> show login prompt (do not fall back to WP user)
+	if (isset($_GET['alumni_id']) && $_GET['alumni_id'] !== '') {
 		$user_id = sanitize_text_field(wp_unslash($_GET['alumni_id']));
 	} elseif (!empty($atts['user_id'])) {
-		// Use shortcode attribute if provided
-		$user_id = $atts['user_id'];
+		$user_id = sanitize_text_field((string) $atts['user_id']);
 	} else {
-		// Prefer our custom alumni session if available
-		if (function_exists('alumnus_current_username')) {
-			$session_user = alumnus_current_username();
-			if ($session_user !== '') {
-				$user_id = $session_user;
-			}
-		}
-		// If still empty, fall back to WP user info
-		if (empty($user_id)) {
-			$current_user_obj = wp_get_current_user();
-			if ($current_user_obj && $current_user_obj->exists() && !empty($current_user_obj->user_login)) {
-				$user_id = (string) $current_user_obj->user_login;
-			} else {
-				$user_id = (string) get_current_user_id();
-			}
+		$user_id = '';
+		if (function_exists('alumnus_is_logged_in') && alumnus_is_logged_in() && function_exists('alumnus_current_username')) {
+			$user_id = (string) alumnus_current_username();
 		}
 	}
 
@@ -104,20 +109,13 @@ function alumnus_render_profile_shortcode($atts = array()) {
 	}
 
 	// Check if viewing own profile.
-	// Prefer custom alumni session if present; otherwise fall back to native WP user.
+	// Only an active alumni session grants "own profile" privileges (Edit button, etc.).
 	$is_own_profile = false;
 	if ( function_exists('alumnus_is_logged_in') && alumnus_is_logged_in() ) {
 		$session_user = function_exists('alumnus_current_username') ? alumnus_current_username() : '';
 		if ($session_user !== '') {
 			$is_own_profile = ((string)$user_id === (string)$session_user);
 		}
-	} else {
-		$current_user_id = get_current_user_id();
-		$current_user_obj = wp_get_current_user();
-		$current_user_login = ($current_user_obj && $current_user_obj->exists()) ? (string) $current_user_obj->user_login : '';
-		$is_own_profile = is_user_logged_in() && (
-			(string)$user_id === $current_user_login || (string)$user_id === (string)$current_user_id
-		);
 	}
 
 	// Feature flag: control Recent Posts visibility (disabled by default; enable via filter)
@@ -150,10 +148,7 @@ function alumnus_render_profile_shortcode($atts = array()) {
 		<div class="aph-nav">
 			<?php if ($is_own_profile): ?>
 				<button class="aph-nav-btn" type="button" onclick="document.dispatchEvent(new CustomEvent('alumnus:editProfile')); alert('Edit feature coming soon');"><?php echo esc_html__('Edit', 'alumnus'); ?></button>
-				<?php $logout_url = function_exists('alumnus_logout_url') ? alumnus_logout_url( home_url('/login-2') ) : wp_logout_url( home_url('/login-2') ); ?>
-				<a class="aph-nav-btn" href="<?php echo esc_url( $logout_url ); ?>"><?php echo esc_html__('Logout', 'alumnus'); ?></a>
 			<?php endif; ?>
-			<a class="aph-nav-btn" href="<?php echo esc_url( apply_filters('alumnus_directory_page_url', home_url('/directory')) ); ?>"><?php echo esc_html__('Back to Directory', 'alumnus'); ?></a>
 		</div>
 		</div>
 
