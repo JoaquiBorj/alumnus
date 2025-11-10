@@ -14,8 +14,14 @@ body:has(.alumnus-profile-wrapper) .entry-content {
 	margin: 0 !important;
 }
 
-/* Remove theme padding/margin from parent containers */
-.alumnus-profile-wrapper:is(.ast-container *, .container *, .site-content *, .entry-content *) {
+/* Full-width only for header and wrapper background, not content */
+.alumnus-profile-wrapper {
+	width: 100% !important;
+	max-width: 100% !important;
+}
+
+.alumnus-profile-header,
+.alumnus-header-bar {
 	margin-left: calc(-50vw + 50%) !important;
 	margin-right: calc(-50vw + 50%) !important;
 	width: 100vw !important;
@@ -40,8 +46,13 @@ body:has(.alumnus-profile-wrapper) .entry-content {
 /* Header with Gradient */
 .alumnus-profile-header {
 	background: var(--alumnus-primary);
-	padding: 40px 20px 80px;
+	padding: 30px 20px 30px;
 	position: relative;
+}
+
+/* Increased padding when there's no navigation (visiting another user's profile) */
+.alumnus-profile-header:not(:has(.aph-nav)) {
+	padding: 50px 20px 50px;
 }
 
 .aph-gradient-bg {
@@ -117,16 +128,18 @@ button.aph-nav-btn {
 }
 
 .alumnus-profile-container {
-	max-width: 1200px;
-	margin: 0 auto;
-	padding: 0 20px 40px;
+	max-width: 1200px !important;
+	width: 100% !important;
+	margin: 0 auto !important;
+	padding: 0 20px 40px !important;
 }
 
 .alumnus-skills-container {
-	max-width: 1200px;
-	margin: 0 auto;
-	padding: 20px 0px 0px;
-	margin-top: 90px;
+	max-width: 1200px !important;
+	width: 100% !important;
+	margin: 0 auto !important;
+	padding: 20px 20px 0px !important;
+	margin-top: 90px !important;
 }
 
 .alumnus-profile-card {
@@ -136,6 +149,9 @@ button.aph-nav-btn {
 	padding: 80px 40px 20px;
 	position: relative;
 	margin-top: -60px;
+	width: 100%;
+	max-width: 100%;
+	box-sizing: border-box;
 }
 
 /* removed button variants and icon styles for unified buttons */
@@ -334,6 +350,9 @@ button.aph-nav-btn {
 	border-radius: 16px;
 	box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07), 0 10px 20px rgba(0, 0, 0, 0.05);
 	padding: 25px 40px 25px;
+	width: 100%;
+	max-width: 100%;
+	box-sizing: border-box;
 }
 
 .alumnus-skills-card .apc-section-title {
@@ -579,7 +598,7 @@ button.aph-nav-btn {
 	/* Navigation */
 	.aph-nav {
 		flex-wrap: wrap;
-		justify-content: center;
+		justify-content: right;
 	}
 
 	.aph-nav-btn {
