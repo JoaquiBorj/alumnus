@@ -185,11 +185,11 @@ function alumnus_render_profile_shortcode($atts = array()) {
 		<div class="alumnus-profile-wrapper" id="alumnus-profile-root" data-ajax-url="<?php echo esc_url( admin_url('admin-ajax.php') ); ?>" data-nonce="<?php echo esc_attr( wp_create_nonce('alumnus_update_career') ); ?>" data-nonce-bio="<?php echo esc_attr( wp_create_nonce('alumnus_update_bio_note') ); ?>" data-nonce-skills="<?php echo esc_attr( wp_create_nonce('alumnus_update_skills') ); ?>" data-user-id="<?php echo esc_attr( (string) $user_id ); ?>">
 		<div class="alumnus-profile-header">
 			<div class="aph-gradient-bg"></div>
-		<div class="aph-nav">
 			<?php if ($is_own_profile): ?>
-				<button id="alumnus-nav-edit" class="aph-nav-btn" type="button" onclick="alumnus_openModal()"><?php echo esc_html__('Edit', 'alumnus'); ?></button>
+				<div class="aph-nav">
+					<button id="alumnus-nav-edit" class="aph-nav-btn" type="button" onclick="alumnus_openModal()"><?php echo esc_html__('Edit', 'alumnus'); ?></button>
+				</div>
 			<?php endif; ?>
-		</div>
 		</div>
 
 
@@ -362,11 +362,11 @@ function alumnus_render_profile_shortcode($atts = array()) {
 							<textarea id="alumnus-modal-skills-input" name="skills" rows="3" class="alumnus-modal-textarea" placeholder="<?php echo esc_attr__('e.g., Project Management, Problem Solving, Data Analysis', 'alumnus'); ?>"><?php echo esc_textarea( (string) $alumni_data->skills ); ?></textarea>
 						</div>
 					</div>
-				</div>
 
-				<div class="alumnus-modal-footer">
-					<button type="button" class="aph-nav-btn alumnus-modal-btn-save" id="alumnus-modal-save"><?php echo esc_html__('Save Changes', 'alumnus'); ?></button>
-					<button type="button" class="aph-nav-btn alumnus-modal-btn-cancel" id="alumnus-modal-cancel"><?php echo esc_html__('Cancel', 'alumnus'); ?></button>
+					<div class="alumnus-modal-footer">
+						<button type="button" class="aph-nav-btn alumnus-modal-btn-save" id="alumnus-modal-save"><?php echo esc_html__('Save Changes', 'alumnus'); ?></button>
+						<button type="button" class="aph-nav-btn alumnus-modal-btn-cancel" id="alumnus-modal-cancel"><?php echo esc_html__('Cancel', 'alumnus'); ?></button>
+					</div>
 				</div>
 			</div>
 		</div>
