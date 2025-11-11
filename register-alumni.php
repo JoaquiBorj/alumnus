@@ -30,7 +30,7 @@ function alumni_register_form_shortcode() {
                 array('%s', '%d', '%s', '%s')
             );
 
-            // Insert into "alumni" table
+            // Insert into "alumni" table (skills column removed; normalized tables in use)
             $alumni_insert = $db->insert(
                 'alumni',
                 array(
@@ -42,10 +42,9 @@ function alumni_register_form_shortcode() {
                     'email'        => '',      // placeholders for optional fields
                     'contact_info' => 0,
                     'career'       => '',
-                    'skills'       => '',
                     'bio_note'     => ''
                 ),
-                array('%s', '%s', '%s', '%d', '%s', '%s', '%d', '%s', '%s', '%s')
+                array('%s', '%s', '%s', '%d', '%s', '%s', '%d', '%s', '%s')
             );
 
             if ($user_insert && $alumni_insert) {
