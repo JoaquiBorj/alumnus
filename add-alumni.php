@@ -240,14 +240,38 @@ function alumnus_handle_post() {
 		$plain_password = alumnus_generate_password();
 		$password_hash = function_exists('wp_hash_password') ? wp_hash_password($plain_password) : password_hash($plain_password, PASSWORD_DEFAULT);
 		
-		$insert_alumni = $wpdb->insert($tables['alumni'], [
-			'user_id' => $alumni_id, 'year' => $batch_year, 'course_id' => $course_id,
-			'firstname' => $first_name, 'lastname' => $last_name, 'email' => '',
-			'contact_info' => 0, 'career' => '', 'skills' => '', 'bio_note' => ''
-		], ['%d', '%d', '%d', '%s', '%s', '%s', '%d', '%s', '%s', '%s']);
+		// Get alumni table columns to ensure we only insert fields that exist
+		$alumni_columns = $wpdb->get_results("SHOW COLUMNS FROM {$tables['alumni']}");
+		$alumni_column_names = array_column($alumni_columns, 'Field');
+		
+		// Prepare data for insertion (only include columns that exist in your table)
+		$alumni_data = [
+			'user_id' => $alumni_id, 
+			'year' => $batch_year, 
+			'course_id' => $course_id,
+			'firstname' => $first_name, 
+			'lastname' => $last_name, 
+			'email' => '',
+			'contact_info' => 0, 
+			'career' => '', 
+			'bio_note' => ''
+		];
+		
+		// Remove fields that don't exist in the table
+		$alumni_data = array_filter($alumni_data, function($key) use ($alumni_column_names) {
+			return in_array($key, $alumni_column_names);
+		}, ARRAY_FILTER_USE_KEY);
+		
+		// Build format array dynamically based on data types
+		$alumni_formats = [];
+		foreach (array_keys($alumni_data) as $key) {
+			$alumni_formats[] = in_array($key, ['user_id', 'year', 'course_id', 'contact_info']) ? '%d' : '%s';
+		}
+		
+		$insert_alumni = $wpdb->insert($tables['alumni'], $alumni_data, $alumni_formats);
 		
 		if ($insert_alumni === false) {
-			add_settings_error('alumnus', 'alumni_insert_fail', __('Failed to add alumni.', 'alumnus'), 'error');
+			add_settings_error('alumnus', 'alumni_insert_fail', sprintf(__('Failed to add alumni. Error: %s', 'alumnus'), esc_html($wpdb->last_error)), 'error');
 			return;
 		}
 		
@@ -348,11 +372,27 @@ function alumnus_handle_post() {
 				$plain_password = alumnus_generate_password();
 				$password_hash = function_exists('wp_hash_password') ? wp_hash_password($plain_password) : password_hash($plain_password, PASSWORD_DEFAULT);
 				
-				$insert_alumni = $wpdb->insert($tables['alumni'], [
+				// Get alumni table columns
+				$alumni_columns = $wpdb->get_results("SHOW COLUMNS FROM {$tables['alumni']}");
+				$alumni_column_names = array_column($alumni_columns, 'Field');
+				
+				$alumni_data = [
 					'user_id' => $alumni_id, 'year' => $batch_year, 'course_id' => $course_id,
 					'firstname' => $first_name, 'lastname' => $last_name, 'email' => '',
-					'contact_info' => 0, 'career' => '', 'skills' => '', 'bio_note' => ''
-				], ['%d', '%d', '%d', '%s', '%s', '%s', '%d', '%s', '%s', '%s']);
+					'contact_info' => 0, 'career' => '', 'bio_note' => ''
+				];
+				
+				// Remove fields that don't exist
+				$alumni_data = array_filter($alumni_data, function($key) use ($alumni_column_names) {
+					return in_array($key, $alumni_column_names);
+				}, ARRAY_FILTER_USE_KEY);
+				
+				$alumni_formats = [];
+				foreach (array_keys($alumni_data) as $key) {
+					$alumni_formats[] = in_array($key, ['user_id', 'year', 'course_id', 'contact_info']) ? '%d' : '%s';
+				}
+				
+				$insert_alumni = $wpdb->insert($tables['alumni'], $alumni_data, $alumni_formats);
 				
 				$insert_user = $wpdb->insert($tables['user'], [
 					'user' => $alumni_id, 'course_id' => $course_id, 'year' => $batch_year, 'password' => $password_hash
