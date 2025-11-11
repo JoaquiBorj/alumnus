@@ -44,8 +44,12 @@ function alumnus_enqueue_directory_styles() {
 	);
 
 	// Determine the profile page URL
-	// By default, use current page. Can be overridden with 'alumnus_profile_page_url' filter
-	$profile_page_url = apply_filters('alumnus_profile_page_url', get_permalink());
+	// Prefer resolving the page that contains [alumni_profile]; allow override via filter
+	if ( function_exists('alumnus_resolve_profile_page_url') ) {
+		$profile_page_url = alumnus_resolve_profile_page_url();
+	} else {
+		$profile_page_url = apply_filters('alumnus_profile_page_url', home_url('/'));
+	}
 	
 	// Localize AJAX settings
 	wp_localize_script('alumnus-directory-filters', 'AlumnusDirectory', array(
@@ -172,9 +176,11 @@ function alumnus_render_alumni_card($row, $base_profile_url = '') {
 	if ($initials === '' && $full_name !== '') { $initials = strtoupper(substr($full_name, 0, 1)); }
 
 	// Generate profile URL using helper function
-	// If base_profile_url is provided (from AJAX), use it; otherwise use current page
+	// If base_profile_url is provided (from AJAX), use it; otherwise resolve the profile page
 	if (empty($base_profile_url)) {
-		$base_profile_url = get_permalink();
+		$base_profile_url = function_exists('alumnus_resolve_profile_page_url')
+			? alumnus_resolve_profile_page_url()
+			: get_permalink();
 	}
 	$profile_url = alumnus_get_profile_url($row->user_id, $base_profile_url);
 

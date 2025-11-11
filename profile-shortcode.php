@@ -6,6 +6,21 @@
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 
 /**
+ * Prevent WordPress canonical redirects from stripping our alumni_id query param.
+ * Some environments/plugins may trigger a redirect that drops unknown query vars,
+ * causing the page to reload without alumni_id and then fall back to the logged user.
+ */
+if ( ! function_exists( 'alumnus_preserve_alumni_id_canonical' ) ) {
+	function alumnus_preserve_alumni_id_canonical( $redirect_url, $requested_url ) {
+		if ( isset( $_GET['alumni_id'] ) && $_GET['alumni_id'] !== '' ) {
+			return false; // disable canonical redirect to preserve query param
+		}
+		return $redirect_url;
+	}
+	add_filter( 'redirect_canonical', 'alumnus_preserve_alumni_id_canonical', 10, 2 );
+}
+
+/**
  * Enqueue profile styles and scripts
  */
 function alumnus_enqueue_profile_styles() {
@@ -59,6 +74,9 @@ function alumnus_enqueue_profile_styles() {
 			'networkErrorSkills' => __( 'Network error updating skills.', 'alumnus' ),
 		)
 	);
+
+	// Enqueue jQuery if not already loaded
+	wp_enqueue_script('jquery');
 }
 
 /**
@@ -76,28 +94,18 @@ function alumnus_render_profile_shortcode($atts = array()) {
 		'user_id' => '', // Can be set via shortcode attribute
 	), $atts);
 
-	// Check for URL parameter first (from directory links)
-	if (isset($_GET['alumni_id']) && !empty($_GET['alumni_id'])) {
+	// Choose which profile to display
+	// 1) If alumni_id is present, always respect it (viewing someone else's profile is allowed for display)
+	// 2) Else, if an alumni session exists, default to that user (own profile)
+	// 3) Else, no identity -> show login prompt (do not fall back to WP user)
+	if (isset($_GET['alumni_id']) && $_GET['alumni_id'] !== '') {
 		$user_id = sanitize_text_field(wp_unslash($_GET['alumni_id']));
 	} elseif (!empty($atts['user_id'])) {
-		// Use shortcode attribute if provided
-		$user_id = $atts['user_id'];
+		$user_id = sanitize_text_field((string) $atts['user_id']);
 	} else {
-		// Prefer our custom alumni session if available
-		if (function_exists('alumnus_current_username')) {
-			$session_user = alumnus_current_username();
-			if ($session_user !== '') {
-				$user_id = $session_user;
-			}
-		}
-		// If still empty, fall back to WP user info
-		if (empty($user_id)) {
-			$current_user_obj = wp_get_current_user();
-			if ($current_user_obj && $current_user_obj->exists() && !empty($current_user_obj->user_login)) {
-				$user_id = (string) $current_user_obj->user_login;
-			} else {
-				$user_id = (string) get_current_user_id();
-			}
+		$user_id = '';
+		if (function_exists('alumnus_is_logged_in') && alumnus_is_logged_in() && function_exists('alumnus_current_username')) {
+			$user_id = (string) alumnus_current_username();
 		}
 	}
 
@@ -108,11 +116,17 @@ function alumnus_render_profile_shortcode($atts = array()) {
 
 	global $wpdb;
 
-	// Fetch alumni data from database
-	$sql = "SELECT a.user_id, a.year, a.course_id, a.firstname, a.lastname, a.email, a.contact_info, a.career, a.bio_note, a.skills, c.course AS course_name 
+	// Fetch alumni data from database, and aggregate skills from normalized tables
+	$sql = "SELECT 
+				a.user_id, a.year, a.course_id, a.firstname, a.lastname, a.email, a.contact_info, a.career, a.bio_note,
+				GROUP_CONCAT(DISTINCT sk.skill ORDER BY sk.skill SEPARATOR ', ') AS skills,
+				c.course AS course_name 
 			FROM alumni a
 			LEFT JOIN course c ON a.course_id = c.course_id
-			WHERE a.user_id = %s";
+			LEFT JOIN alumni_skills aks ON aks.user_id = a.user_id
+			LEFT JOIN skills sk ON sk.skill_id = aks.skill_id
+			WHERE a.user_id = %s
+			GROUP BY a.user_id";
 	
 	$alumni_data = $wpdb->get_row($wpdb->prepare($sql, $user_id));
 
@@ -141,20 +155,13 @@ function alumnus_render_profile_shortcode($atts = array()) {
 	}
 
 	// Check if viewing own profile.
-	// Prefer custom alumni session if present; otherwise fall back to native WP user.
+	// Only an active alumni session grants "own profile" privileges (Edit button, etc.).
 	$is_own_profile = false;
 	if ( function_exists('alumnus_is_logged_in') && alumnus_is_logged_in() ) {
 		$session_user = function_exists('alumnus_current_username') ? alumnus_current_username() : '';
 		if ($session_user !== '') {
 			$is_own_profile = ((string)$user_id === (string)$session_user);
 		}
-	} else {
-		$current_user_id = get_current_user_id();
-		$current_user_obj = wp_get_current_user();
-		$current_user_login = ($current_user_obj && $current_user_obj->exists()) ? (string) $current_user_obj->user_login : '';
-		$is_own_profile = is_user_logged_in() && (
-			(string)$user_id === $current_user_login || (string)$user_id === (string)$current_user_id
-		);
 	}
 
 	// Feature flag: control Recent Posts visibility (disabled by default; enable via filter)
@@ -184,14 +191,11 @@ function alumnus_render_profile_shortcode($atts = array()) {
 		<div class="alumnus-profile-wrapper" id="alumnus-profile-root" data-ajax-url="<?php echo esc_url( admin_url('admin-ajax.php') ); ?>" data-nonce="<?php echo esc_attr( wp_create_nonce('alumnus_update_career') ); ?>" data-nonce-bio="<?php echo esc_attr( wp_create_nonce('alumnus_update_bio_note') ); ?>" data-nonce-skills="<?php echo esc_attr( wp_create_nonce('alumnus_update_skills') ); ?>" data-user-id="<?php echo esc_attr( (string) $user_id ); ?>">
 		<div class="alumnus-profile-header">
 			<div class="aph-gradient-bg"></div>
-		<div class="aph-nav">
 			<?php if ($is_own_profile): ?>
-				<button id="alumnus-nav-edit" class="aph-nav-btn" type="button" onclick="alumnus_openModal()"><?php echo esc_html__('Edit', 'alumnus'); ?></button>
-				<?php $logout_url = function_exists('alumnus_logout_url') ? alumnus_logout_url( home_url('/login-2') ) : wp_logout_url( home_url('/login-2') ); ?>
-				<a class="aph-nav-btn" href="<?php echo esc_url( $logout_url ); ?>"><?php echo esc_html__('Logout', 'alumnus'); ?></a>
+				<div class="aph-nav">
+					<button id="alumnus-nav-edit" class="aph-nav-btn" type="button" onclick="alumnus_openModal()"><?php echo esc_html__('Edit', 'alumnus'); ?></button>
+				</div>
 			<?php endif; ?>
-			<a class="aph-nav-btn" href="<?php echo esc_url( apply_filters('alumnus_directory_page_url', home_url('/directory')) ); ?>"><?php echo esc_html__('Back to Directory', 'alumnus'); ?></a>
-		</div>
 		</div>
 
 
@@ -271,19 +275,31 @@ function alumnus_render_profile_shortcode($atts = array()) {
 				
 				<div id="alumnus-skills-view">
 					<?php if (!empty($alumni_data->skills)): ?>
-						<div class="apc-skills-list">
-							<?php 
-							// Split skills by comma or newline
-							$skills_array = preg_split('/[,\n]+/', $alumni_data->skills);
-							foreach ($skills_array as $skill): 
-								$skill = trim($skill);
-								if (!empty($skill)):
-							?>
-								<span class="apc-skill-tag"><?php echo esc_html($skill); ?></span>
-							<?php 
-								endif;
-							endforeach; 
-							?>
+						<?php
+							// Split skills by comma or newline and clean
+							$skills_array_raw = preg_split('/[,\n]+/', (string) $alumni_data->skills);
+							$skills_array = array();
+							foreach ($skills_array_raw as $s) {
+								$s = trim($s);
+								if ($s !== '') { $skills_array[] = $s; }
+							}
+							$total_skills = count($skills_array);
+							$threshold = 6; // show first N, rest behind dropdown
+						?>
+						<div class="apc-skills-collapsible" data-total="<?php echo esc_attr((string)$total_skills); ?>">
+							<div class="apc-skills-list">
+								<?php foreach ($skills_array as $idx => $skill): ?>
+									<span class="apc-skill-tag<?php echo ($idx >= $threshold) ? ' is-extra' : ''; ?>"><?php echo esc_html($skill); ?></span>
+								<?php endforeach; ?>
+							</div>
+							<?php if ($total_skills > $threshold): ?>
+								<button type="button" class="apc-skills-toggle" aria-expanded="false">
+									<span class="toggle-label"><?php echo esc_html__('Show all', 'alumnus'); ?></span>
+									<span class="toggle-count"><?php echo esc_html($total_skills); ?></span>
+									<span class="toggle-label-after"> <?php echo esc_html__('skills', 'alumnus'); ?></span>
+									<span class="toggle-caret" aria-hidden="true"></span>
+								</button>
+							<?php endif; ?>
 						</div>
 					<?php else: ?>
 						<div class="apc-info-content">
@@ -335,8 +351,8 @@ function alumnus_render_profile_shortcode($atts = array()) {
 							<?php endforeach; ?>
 						<?php endif; ?>
 					</div>
-			</div>
-		<?php endif; ?>
+				</div>
+			<?php endif; ?>
 
 		<?php if ($is_own_profile): ?>
 			<!-- Edit Profile Modal -->
@@ -344,7 +360,7 @@ function alumnus_render_profile_shortcode($atts = array()) {
 				<div class="alumnus-modal-card">
 					<button id="alumnus-modal-close" class="alumnus-modal-close-btn" type="button">&times;</button>
 					<h2 class="alumnus-modal-header"><?php echo esc_html__('Edit Profile', 'alumnus'); ?></h2>
-					
+			
 					<div class="alumnus-modal-body">
 						<div class="alumnus-modal-field">
 							<label for="alumnus-modal-career-input" class="alumnus-modal-label"><?php echo esc_html__('Current Career', 'alumnus'); ?></label>
@@ -371,6 +387,7 @@ function alumnus_render_profile_shortcode($atts = array()) {
 					</div>
 				</div>
 			</div>
+		</div>
 		<?php endif; ?>
 	</div>
 
@@ -473,23 +490,46 @@ function alumnus_update_skills_ajax() {
 	$csv = implode(', ', $clean);
 
 	global $wpdb;
-	$updated = $wpdb->update(
-		'alumni',
-		array( 'skills' => $csv ),
-		array( 'user_id' => $user_id ),
-		array( '%s' ),
-		array( '%s' )
-	);
+	// Replace user's skills with the new set in pivot table
+	// Delete existing links
+	$wpdb->delete('alumni_skills', array('user_id' => $user_id), array('%s'));
 
-	if ( $updated === false ) {
-		wp_send_json_error( array( 'message' => sprintf( __( 'Database error: %s', 'alumnus' ), $wpdb->last_error ) ), 500 );
+	// Insert new links (and upsert skills)
+	foreach ($clean as $s) {
+		// Ensure skill exists
+		$skill_id = $wpdb->get_var($wpdb->prepare("SELECT skill_id FROM skills WHERE skill = %s", $s));
+		if (empty($skill_id)) {
+			$ins = $wpdb->insert('skills', array('skill' => $s), array('%s'));
+			if ($ins !== false) {
+				$skill_id = $wpdb->insert_id;
+			} else {
+				// If insert failed due to race/duplicate, fetch again
+				$skill_id = $wpdb->get_var($wpdb->prepare("SELECT skill_id FROM skills WHERE skill = %s", $s));
+			}
+		}
+		if (!empty($skill_id)) {
+			$wpdb->insert('alumni_skills', array('user_id' => $user_id, 'skill_id' => (int)$skill_id), array('%s','%d'));
+		}
 	}
 
 	// Build refreshed HTML for the skills view
 	if ( ! empty($clean) ) {
-		$html = '<div class="apc-skills-list">';
-		foreach ($clean as $s) {
-			$html .= '<span class="apc-skill-tag">' . esc_html( $s ) . '</span>';
+		$threshold = 6;
+		$total = count($clean);
+		$html  = '<div class="apc-skills-collapsible" data-total="' . esc_attr((string)$total) . '">';
+		$html .= '<div class="apc-skills-list">';
+		foreach ($clean as $idx => $s) {
+			$extra = ($idx >= $threshold) ? ' is-extra' : '';
+			$html .= '<span class="apc-skill-tag' . $extra . '">' . esc_html( $s ) . '</span>';
+		}
+		$html .= '</div>';
+		if ($total > $threshold) {
+			$html .= '<button type="button" class="apc-skills-toggle" aria-expanded="false">'
+				  . '<span class="toggle-label">' . esc_html__('Show all', 'alumnus') . '</span>'
+				  . '<span class="toggle-count">' . esc_html( (string) $total ) . '</span>'
+				  . '<span class="toggle-label-after"> ' . esc_html__('skills', 'alumnus') . '</span>'
+				  . '<span class="toggle-caret" aria-hidden="true"></span>'
+				  . '</button>';
 		}
 		$html .= '</div>';
 	} else {

@@ -137,11 +137,6 @@ function coenect_login_form_shortcode() {
                         alumnus_set_login_state($user, (bool) $remember_me);
                     }
 
-                    // Build redirect params (keep compatibility for existing pages expecting query args)
-                    $course_id = rawurlencode((string) $user->course_id);
-                    $year = rawurlencode((string) $user->year);
-                    $username_encoded = rawurlencode((string) $user->user);
-
                     // If password is default 123456 -> show reset modal
                     if ($password === '123456') {
                         ?>
@@ -153,14 +148,13 @@ function coenect_login_form_shortcode() {
                         </script>
                         <?php
                     } else {
-                        // Prefer redirect to profile page if available
-                        $profile_page_url = function_exists('alumnus_resolve_profile_page_url') ? alumnus_resolve_profile_page_url() : get_permalink();
-                        $redirect_url = add_query_arg([
-                            'alumni_id' => $username_encoded,
-                            'course_id' => $course_id,
-                            'year' => $year
-                        ], $profile_page_url);
-                        echo '<script>window.location.href="' . esc_url($redirect_url) . '";</script>';
+                        // Prefer redirect to provided safe URL; fallback to profile page
+                        $profile_page_url = function_exists('alumnus_resolve_profile_page_url') ? alumnus_resolve_profile_page_url() : home_url('/');
+                        $redir_post      = isset($_POST['redirect_to']) ? (string) wp_unslash($_POST['redirect_to']) : '';
+                        $safe_redirect   = $redir_post !== '' ? wp_validate_redirect($redir_post, '') : '';
+                        $target_url      = $safe_redirect !== '' ? $safe_redirect : $profile_page_url;
+                        wp_safe_redirect( $target_url );
+                        exit;
                     }
                 } else {
                     $errors[] = __('Incorrect password.', 'alumnus');
@@ -195,16 +189,10 @@ function coenect_login_form_shortcode() {
                 if ($updated !== false) {
                     $user = $db->get_row($db->prepare("SELECT * FROM `{$tables['user']}` WHERE `user` = %s", $username));
                     if ($user) {
-                        $course_id = rawurlencode((string) $user->course_id);
-                        $year = rawurlencode((string) $user->year);
-                        $username_encoded = rawurlencode((string) $user->user);
-
-                        $redirect_url = add_query_arg([
-                            'user' => $username_encoded,
-                            'course_id' => $course_id,
-                            'year' => $year
-                        ], get_permalink());
-                        echo "<script>alert('" . esc_js(__('Password reset successfully! Redirecting...', 'alumnus')) . "'); window.location.href='" . esc_url($redirect_url) . "';</script>";
+                        $profile_page_url = function_exists('alumnus_resolve_profile_page_url') ? alumnus_resolve_profile_page_url() : home_url('/');
+                        // On successful reset, redirect to profile page
+                        wp_safe_redirect( $profile_page_url );
+                        exit;
                     } else {
                         $errors[] = __('User not found after reset.', 'alumnus');
                     }
@@ -218,7 +206,7 @@ function coenect_login_form_shortcode() {
 
     <div class="coenect-login-wrapper">
         <!-- Home Button -->
-        <a href="<?php echo esc_url(home_url('/')); ?>" class="coenect-login-home-btn">
+        <a href="<?php echo esc_url(home_url('/landing-page/')); ?>" class="coenect-login-home-btn">
             <div class="coenect-login-home-icon">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
@@ -233,7 +221,7 @@ function coenect_login_form_shortcode() {
             <div class="coenect-login-split">
                 <!-- Left Side - Logo -->
                 <div class="coenect-login-left">
-                    <h1 class="coenect-logo-text">Logo of COE</h1>
+                    <img src="<?php echo plugin_dir_url(__FILE__) . 'assets/images/logo.png'; ?>" alt="XU Engineering Logo" class="coenect-logo-image">
                 </div>
 
                 <!-- Vertical Divider -->
@@ -277,7 +265,11 @@ function coenect_login_form_shortcode() {
                             <a href="#" class="coenect-forgot-link"><?php echo esc_html__('Forgot password', 'alumnus'); ?></a>
                         </div>
 
-                        <input type="hidden" name="redirect_to" value="<?php echo isset($_GET['redirect_to']) ? esc_url(wp_unslash($_GET['redirect_to'])) : ''; ?>">
+                        <?php 
+                        $redirect_raw   = isset($_GET['redirect_to']) ? (string) wp_unslash($_GET['redirect_to']) : '';
+                        $redirect_safe  = $redirect_raw !== '' ? wp_validate_redirect($redirect_raw, '') : '';
+                        ?>
+                        <input type="hidden" name="redirect_to" value="<?php echo esc_url( $redirect_safe ); ?>">
 
                         <button type="submit" name="login_submit" class="coenect-login-btn">
                             <?php echo esc_html__('Log in', 'alumnus'); ?>

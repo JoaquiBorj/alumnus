@@ -146,7 +146,13 @@
 			.then(function(json){
 				if (json && json.success) {
 					var view = document.getElementById('alumnus-skills-view');
-					if (view) { view.innerHTML = json.data.html; }
+					if (view) { 
+						view.innerHTML = json.data.html; 
+						// Re-bind dropdown toggle handlers for new markup
+						if (typeof initializeSkillsToggle === 'function') {
+							initializeSkillsToggle();
+						}
+					}
 				} else {
 					hasError = true;
 					alert((json && json.data && json.data.message) ? json.data.message : (strings.errorSkills || 'Failed to update skills.'));
@@ -201,10 +207,48 @@
 
 	// Initialize when DOM is ready
 	if (document.readyState === 'loading') {
-		document.addEventListener('DOMContentLoaded', initializeModal);
+		document.addEventListener('DOMContentLoaded', function(){
+			initializeModal();
+			initializeSkillsToggle();
+		});
 	} else {
 		initializeModal();
+		initializeSkillsToggle();
 	}
 
 })();
+
+/**
+ * Collapsible Skills: show first N skills, toggle to reveal all
+ */
+function initializeSkillsToggle() {
+	var containers = document.querySelectorAll('.apc-skills-collapsible');
+	if (!containers || !containers.length) return;
+
+	containers.forEach(function(container){
+		var toggle = container.querySelector('.apc-skills-toggle');
+		if (!toggle) return;
+
+		// Reset state
+		container.classList.remove('expanded');
+		toggle.setAttribute('aria-expanded', 'false');
+		updateToggleLabel(toggle, container, false);
+
+		toggle.addEventListener('click', function(){
+			var expanded = container.classList.toggle('expanded');
+			toggle.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+			updateToggleLabel(toggle, container, expanded);
+		});
+	});
+}
+
+function updateToggleLabel(btn, container, expanded) {
+	var total = container.getAttribute('data-total') || '';
+	var label = btn.querySelector('.toggle-label');
+	var count = btn.querySelector('.toggle-count');
+	var after = btn.querySelector('.toggle-label-after');
+	if (label) { label.textContent = expanded ? 'Show less' : 'Show all'; }
+	if (count) { count.textContent = total; }
+	if (after) { after.textContent = expanded ? '' : ' skills'; }
+}
 

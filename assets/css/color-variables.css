@@ -19,7 +19,7 @@
 	--alumnus-primary-hover: #450410;       /* Used in: hover states when using alumnus-primary color */
 	
 	/* Header Colors */
-	--alumnus-header-bg: #004568;           /* Used in: header (background) */
+	--alumnus-header-bg: var(--alumnus-primary);  /* Used in: header (background) - uses primary color #5a0616 (complementary color to primary color - #065A4A) */
 	
 	/* Event Background */
 	--alumnus-event-bg: #023D56;            /* Used in: event-list (grid background) */
