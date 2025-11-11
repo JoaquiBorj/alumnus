@@ -2,10 +2,15 @@
  * Alumni Directory Filters
  * Handles filtering of alumni cards by year and course
  */
+
+// Auto-load alumni results on initial page view without requiring an explicit Search click.
 (function() {
 	'use strict';
-	
+    
+	// Prevent double initialization if script runs twice (DOMContentLoaded + load timeout)
 	function initFilters() {
+		if (window.AlumnusDirectoryFiltersInitialized) { return; }
+		window.AlumnusDirectoryFiltersInitialized = true;
 		const yearFilter = document.getElementById('filter-year');
 		const courseFilter = document.getElementById('filter-course');
 		const searchInput = document.getElementById('alumnus-directory-search');
@@ -70,8 +75,13 @@
 			});
 		}
 
-		// Remove automatic fetching on filter changes; require explicit search
-		// Users can still adjust filters before clicking Search
+		// Initial automatic fetch so users immediately see results.
+		// Only trigger if the grid exists and hasn't already been populated during this run.
+		if (grid && grid.querySelector('[data-initial="1"]')) {
+			fetchAlumni();
+		} else if (grid && grid.children.length === 0) {
+			fetchAlumni();
+		}
 	}
 	
 	// Initialize on DOM ready
