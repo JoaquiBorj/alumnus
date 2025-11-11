@@ -142,6 +142,14 @@ button.aph-nav-btn {
 	margin-top: 90px !important;
 }
 
+/* Experience container mirrors skills container spacing */
+.alumnus-experience-container {
+    max-width: 1200px !important;
+    width: 100% !important;
+    margin: 0 auto !important;
+    padding: 20px 20px 40px !important;
+}
+
 .alumnus-profile-card {
 	background: white;
 	border-radius: 16px;
@@ -355,6 +363,17 @@ button.aph-nav-btn {
 	box-sizing: border-box;
 }
 
+/* Experience card */
+.alumnus-experience-card {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07), 0 10px 20px rgba(0, 0, 0, 0.05);
+    padding: 25px 40px 25px;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
 .alumnus-skills-card .apc-section-title {
 	margin-bottom: 15px !important;
 }
@@ -422,6 +441,97 @@ button.aph-nav-btn {
 .apc-skills-toggle:hover {
 	border-color: var(--alumnus-text-lighter);
 }
+
+/* Experience list */
+.apc-exp-list {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+.apc-exp-item {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	padding: 14px 0;
+	border-bottom: 1px solid var(--alumnus-border-medium);
+}
+
+.apc-exp-item:last-child { border-bottom: none; }
+
+.apc-exp-title {
+	font-weight: 700;
+	font-size: 16px;
+	color: var(--alumnus-text-heading);
+}
+
+.apc-exp-company {
+	font-weight: 500;
+	color: var(--alumnus-text-secondary);
+}
+
+.apc-exp-meta {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 10px;
+	color: var(--alumnus-text-lighter);
+	font-size: 14px;
+}
+
+.apc-exp-skills {
+	margin-top: 4px;
+	color: var(--alumnus-text-secondary);
+	font-size: 14px;
+}
+
+.apc-exp-skills-label {
+	font-weight: 600;
+	color: var(--alumnus-text-heading);
+}
+
+/* Experience header row with add button */
+.apc-section-header-row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+}
+
+.apc-add-btn {
+	background: transparent;
+	border: 2px solid var(--alumnus-border-medium);
+	color: var(--alumnus-text-body);
+	padding: 8px 12px;
+	border-radius: 8px;
+	cursor: pointer;
+	font-weight: 700;
+}
+
+.apc-add-btn:hover {
+	border-color: var(--alumnus-text-lighter);
+}
+
+/* Experience row action buttons */
+.apc-exp-actions {
+	display: flex;
+	gap: 10px;
+	margin-top: 8px;
+}
+
+.apc-exp-action-btn {
+	background: transparent;
+	border: 2px solid var(--alumnus-border-medium);
+	color: var(--alumnus-text-body);
+	padding: 6px 10px;
+	border-radius: 6px;
+	cursor: pointer;
+	font-weight: 600;
+	font-size: 13px;
+}
+
+.apc-exp-action-btn:hover { border-color: var(--alumnus-text-lighter); }
+.apc-exp-action-btn.apc-exp-delete { border-color: var(--alumnus-error-text, #c62828); color: var(--alumnus-error-text, #c62828); }
+.apc-exp-action-btn.apc-exp-delete:hover { background: rgba(198,40,40,0.06); }
 
 /* Posts Section */
 .apc-posts-section {
