@@ -72,6 +72,9 @@ function alumnus_enqueue_profile_styles() {
 			'networkErrorCareer' => __( 'Network error updating career.', 'alumnus' ),
 			'networkErrorBio'    => __( 'Network error updating bio.', 'alumnus' ),
 			'networkErrorSkills' => __( 'Network error updating skills.', 'alumnus' ),
+			'savingExperience'   => __( 'Saving Experience…', 'alumnus' ),
+			'errorExperience'    => __( 'Failed to add experience.', 'alumnus' ),
+			'networkErrorExperience' => __( 'Network error adding experience.', 'alumnus' ),
 		)
 	);
 
@@ -116,11 +119,17 @@ function alumnus_render_profile_shortcode($atts = array()) {
 
 	global $wpdb;
 
-	// Fetch alumni data from database
-	$sql = "SELECT a.user_id, a.year, a.course_id, a.firstname, a.lastname, a.email, a.contact_info, a.career, a.bio_note, a.skills, c.course AS course_name 
+	// Fetch alumni data from database, and aggregate skills from normalized tables
+	$sql = "SELECT 
+				a.user_id, a.year, a.course_id, a.firstname, a.lastname, a.email, a.contact_info, a.career, a.bio_note,
+				GROUP_CONCAT(DISTINCT sk.skill ORDER BY sk.skill SEPARATOR ', ') AS skills,
+				c.course AS course_name 
 			FROM alumni a
 			LEFT JOIN course c ON a.course_id = c.course_id
-			WHERE a.user_id = %s";
+			LEFT JOIN alumni_skills aks ON aks.user_id = a.user_id
+			LEFT JOIN skills sk ON sk.skill_id = aks.skill_id
+			WHERE a.user_id = %s
+			GROUP BY a.user_id";
 	
 	$alumni_data = $wpdb->get_row($wpdb->prepare($sql, $user_id));
 
@@ -176,13 +185,55 @@ function alumnus_render_profile_shortcode($atts = array()) {
 		$full_name = 'Alumni User';
 	}
 
+	// Experiences now link directly to alumni user_id (no WP user dependency)
+
+	// Build skills array once for reuse
+	$skills_array = array();
+	if ( ! empty( $alumni_data->skills ) ) {
+		$skills_array = preg_split('/[,\n]+/', (string) $alumni_data->skills);
+		$skills_array = array_values( array_filter( array_map( 'trim', (array) $skills_array ) ) );
+	}
+
 	// Fetch user posts (from community feed or custom posts table if exists)
 	// For now, we'll show placeholder posts. You can integrate with your posts table later
 	$posts = array(); // This can be populated from your database
 
+	// Fetch Experience rows by alumni user_id (string)
+	$experiences = $wpdb->get_results(
+		$wpdb->prepare(
+			"SELECT experience_id, company_name, title, location, start_date, end_date
+			 FROM experience WHERE user_id = %s ORDER BY start_date DESC",
+			$user_id
+		)
+	);
+
+	// Helper to format date range like: Aug 2025 - Present · 4 mos
+	$format_range = function( $start, $end ) {
+		if ( empty( $start ) ) { return ''; }
+		try {
+			$startDt = new DateTime( $start );
+			$startStr = $startDt->format( 'M Y' );
+			$endStr = 'Present';
+			$endDt = null;
+			if ( ! empty( $end ) ) {
+				$endDt = new DateTime( $end );
+				$endStr = $endDt->format( 'M Y' );
+			} else {
+				$endDt = new DateTime();
+			}
+			$diff = $startDt->diff( $endDt );
+			$months = ( $diff->y * 12 ) + $diff->m;
+			if ( $months <= 0 ) { $months = 1; }
+			$dur  = sprintf( _n( '%d mo', '%d mos', $months, 'alumnus' ), $months );
+			return $startStr . ' - ' . $endStr . ' · ' . $dur;
+		} catch ( Exception $e ) {
+			return '';
+		}
+	};
+
 	ob_start();
 	?>
-		<div class="alumnus-profile-wrapper" id="alumnus-profile-root" data-ajax-url="<?php echo esc_url( admin_url('admin-ajax.php') ); ?>" data-nonce="<?php echo esc_attr( wp_create_nonce('alumnus_update_career') ); ?>" data-nonce-bio="<?php echo esc_attr( wp_create_nonce('alumnus_update_bio_note') ); ?>" data-nonce-skills="<?php echo esc_attr( wp_create_nonce('alumnus_update_skills') ); ?>" data-user-id="<?php echo esc_attr( (string) $user_id ); ?>">
+		<div class="alumnus-profile-wrapper" id="alumnus-profile-root" data-ajax-url="<?php echo esc_url( admin_url('admin-ajax.php') ); ?>" data-nonce="<?php echo esc_attr( wp_create_nonce('alumnus_update_career') ); ?>" data-nonce-bio="<?php echo esc_attr( wp_create_nonce('alumnus_update_bio_note') ); ?>" data-nonce-skills="<?php echo esc_attr( wp_create_nonce('alumnus_update_skills') ); ?>" data-nonce-exp="<?php echo esc_attr( wp_create_nonce('alumnus_add_experience') ); ?>" data-user-id="<?php echo esc_attr( (string) $user_id ); ?>">
 		<div class="alumnus-profile-header">
 			<div class="aph-gradient-bg"></div>
 			<?php if ($is_own_profile): ?>
@@ -266,31 +317,105 @@ function alumnus_render_profile_shortcode($atts = array()) {
 		<div class="alumnus-skills-container">
 			<div class="alumnus-skills-card">
 				<h2 class="apc-section-title">Skills</h2>
-				
 				<div id="alumnus-skills-view">
-					<?php if (!empty($alumni_data->skills)): ?>
+					<?php if (!empty($skills_array)): ?>
 						<div class="apc-skills-list">
-							<?php 
-							// Split skills by comma or newline
-							$skills_array = preg_split('/[,\n]+/', $alumni_data->skills);
-							foreach ($skills_array as $skill): 
-								$skill = trim($skill);
-								if (!empty($skill)):
-							?>
+							<?php foreach ($skills_array as $skill): ?>
 								<span class="apc-skill-tag"><?php echo esc_html($skill); ?></span>
-							<?php 
-								endif;
-							endforeach; 
-							?>
+							<?php endforeach; ?>
 						</div>
 					<?php else: ?>
-						<div class="apc-info-content">
-							<p class="apc-placeholder"><?php echo esc_html__('No skills listed yet.', 'alumnus'); ?></p>
-						</div>
+						<div class="apc-info-content"><p class="apc-placeholder"><?php echo esc_html__('No skills listed yet.', 'alumnus'); ?></p></div>
 					<?php endif; ?>
 				</div>
 			</div>
 		</div>
+
+		<!-- Experience Card (Separate) -->
+		<div class="alumnus-experience-container">
+			<div class="alumnus-experience-card">
+				<div class="apc-section-header-row">
+					<h2 class="apc-section-title">Experience</h2>
+					<?php if ( $is_own_profile ): ?>
+						<button type="button" class="apc-add-btn" id="alumnus-exp-add-btn" aria-haspopup="dialog" aria-controls="alumnus-exp-modal-overlay">+ Add</button>
+					<?php endif; ?>
+				</div>
+				<div id="alumnus-experience-view">
+					<?php if ( ! empty( $experiences ) ): ?>
+						<ul class="apc-exp-list">
+							<?php foreach ( $experiences as $exp ): ?>
+								<li class="apc-exp-item" data-exp-id="<?php echo esc_attr( $exp->experience_id ); ?>" data-start="<?php echo esc_attr( $exp->start_date ); ?>" data-end="<?php echo esc_attr( $exp->end_date ); ?>">
+									<div class="apc-exp-header">
+										<div class="apc-exp-title"><?php echo esc_html( $exp->title ); ?></div>
+										<div class="apc-exp-company">
+											<?php echo esc_html( $exp->company_name ); ?><?php echo $exp->location ? ' · ' . esc_html( $exp->location ) : ''; ?>
+										</div>
+									</div>
+									<div class="apc-exp-meta">
+										<div class="apc-exp-dates"><?php echo esc_html( $format_range( $exp->start_date, $exp->end_date ) ); ?></div>
+									</div>
+									<?php if ( ! empty( $skills_array ) ): ?>
+										<div class="apc-exp-skills"><span class="apc-exp-skills-label">Skills:</span>
+											<?php 
+												$show_skills = array_slice( $skills_array, 0, 3 );
+												echo esc_html( implode( ' · ', $show_skills ) );
+											?>
+										</div>
+									<?php endif; ?>
+									<?php if ( $is_own_profile ): ?>
+										<div class="apc-exp-actions">
+											<button type="button" class="apc-exp-action-btn apc-exp-edit" data-exp-id="<?php echo esc_attr( $exp->experience_id ); ?>">Edit</button>
+											<button type="button" class="apc-exp-action-btn apc-exp-delete" data-exp-id="<?php echo esc_attr( $exp->experience_id ); ?>">Delete</button>
+										</div>
+									<?php endif; ?>
+								</li>
+							<?php endforeach; ?>
+						</ul>
+					<?php else: ?>
+						<div class="apc-info-content"><p class="apc-placeholder"><?php echo esc_html__('No experience added yet.', 'alumnus'); ?></p></div>
+					<?php endif; ?>
+				</div>
+			</div>
+		</div>
+
+		<?php if ( $is_own_profile ): ?>
+			<!-- Add Experience Modal -->
+			<div id="alumnus-exp-modal-overlay" class="alumnus-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="alumnus-exp-modal-title">
+				<div class="alumnus-modal-card">
+					<button id="alumnus-exp-modal-close" class="alumnus-modal-close-btn" type="button" aria-label="Close">&times;</button>
+					<h2 class="alumnus-modal-header" id="alumnus-exp-modal-title"><?php echo esc_html__('Add Experience', 'alumnus'); ?></h2>
+					<div class="alumnus-modal-body">
+						<div class="alumnus-modal-field">
+							<label for="alumnus-exp-title" class="alumnus-modal-label"><?php echo esc_html__('Title', 'alumnus'); ?></label>
+							<input type="text" id="alumnus-exp-title" class="alumnus-modal-input" maxlength="40">
+						</div>
+						<div class="alumnus-modal-field">
+							<label for="alumnus-exp-company" class="alumnus-modal-label"><?php echo esc_html__('Company', 'alumnus'); ?></label>
+							<input type="text" id="alumnus-exp-company" class="alumnus-modal-input" maxlength="40">
+						</div>
+						<div class="alumnus-modal-field">
+							<label for="alumnus-exp-location" class="alumnus-modal-label"><?php echo esc_html__('Location', 'alumnus'); ?></label>
+							<input type="text" id="alumnus-exp-location" class="alumnus-modal-input" maxlength="40">
+						</div>
+						<div class="alumnus-modal-field">
+							<label class="alumnus-modal-label"><?php echo esc_html__('Dates', 'alumnus'); ?></label>
+							<div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+								<input type="date" id="alumnus-exp-start" class="alumnus-modal-input" style="max-width:220px;">
+								<span>—</span>
+								<input type="date" id="alumnus-exp-end" class="alumnus-modal-input" style="max-width:220px;">
+								<label style="display:flex; gap:6px; align-items:center; font-size:14px;">
+									<input type="checkbox" id="alumnus-exp-current"> <?php echo esc_html__('I currently work here', 'alumnus'); ?>
+								</label>
+							</div>
+						</div>
+					</div>
+					<div class="alumnus-modal-footer">
+						<button type="button" class="aph-nav-btn alumnus-modal-btn-save" id="alumnus-exp-save"><?php echo esc_html__('Save', 'alumnus'); ?></button>
+						<button type="button" class="aph-nav-btn alumnus-modal-btn-cancel" id="alumnus-exp-cancel"><?php echo esc_html__('Cancel', 'alumnus'); ?></button>
+					</div>
+				</div>
+			</div>
+		<?php endif; ?>
 
 		<?php if ( $alumnus_show_recent_posts ) : ?>
 			<div class="alumnus-profile-container">
@@ -370,6 +495,44 @@ function alumnus_render_profile_shortcode($atts = array()) {
 				</div>
 			</div>
 		</div>
+
+			<!-- Edit Experience Modal -->
+			<div id="alumnus-exp-edit-modal-overlay" class="alumnus-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="alumnus-exp-edit-modal-title">
+				<div class="alumnus-modal-card">
+					<button id="alumnus-exp-edit-modal-close" class="alumnus-modal-close-btn" type="button" aria-label="Close">&times;</button>
+					<h2 class="alumnus-modal-header" id="alumnus-exp-edit-modal-title"><?php echo esc_html__('Edit Experience', 'alumnus'); ?></h2>
+					<div class="alumnus-modal-body">
+						<input type="hidden" id="alumnus-exp-edit-id" value="" />
+						<div class="alumnus-modal-field">
+							<label for="alumnus-exp-edit-title" class="alumnus-modal-label"><?php echo esc_html__('Title', 'alumnus'); ?></label>
+							<input type="text" id="alumnus-exp-edit-title" class="alumnus-modal-input" maxlength="40">
+						</div>
+						<div class="alumnus-modal-field">
+							<label for="alumnus-exp-edit-company" class="alumnus-modal-label"><?php echo esc_html__('Company', 'alumnus'); ?></label>
+							<input type="text" id="alumnus-exp-edit-company" class="alumnus-modal-input" maxlength="40">
+						</div>
+						<div class="alumnus-modal-field">
+							<label for="alumnus-exp-edit-location" class="alumnus-modal-label"><?php echo esc_html__('Location', 'alumnus'); ?></label>
+							<input type="text" id="alumnus-exp-edit-location" class="alumnus-modal-input" maxlength="40">
+						</div>
+						<div class="alumnus-modal-field">
+							<label class="alumnus-modal-label"><?php echo esc_html__('Dates', 'alumnus'); ?></label>
+							<div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+								<input type="date" id="alumnus-exp-edit-start" class="alumnus-modal-input" style="max-width:220px;">
+								<span>—</span>
+								<input type="date" id="alumnus-exp-edit-end" class="alumnus-modal-input" style="max-width:220px;">
+								<label style="display:flex; gap:6px; align-items:center; font-size:14px;">
+									<input type="checkbox" id="alumnus-exp-edit-current"> <?php echo esc_html__('I currently work here', 'alumnus'); ?>
+								</label>
+							</div>
+						</div>
+					</div>
+					<div class="alumnus-modal-footer">
+						<button type="button" class="aph-nav-btn alumnus-modal-btn-save" id="alumnus-exp-edit-save"><?php echo esc_html__('Update', 'alumnus'); ?></button>
+						<button type="button" class="aph-nav-btn alumnus-modal-btn-cancel" id="alumnus-exp-edit-cancel"><?php echo esc_html__('Cancel', 'alumnus'); ?></button>
+					</div>
+				</div>
+			</div>
 		<?php endif; ?>
 	</div>
 
@@ -378,6 +541,284 @@ function alumnus_render_profile_shortcode($atts = array()) {
 }
 
 add_shortcode( 'alumni_profile', 'alumnus_render_profile_shortcode' );
+/**
+ * AJAX: Add an experience entry for the logged-in alumni user.
+ * POST: user_id, title, company_name, location, start_date, end_date, _ajax_nonce
+ */
+function alumnus_add_experience_ajax() {
+	// Nonce check
+	if ( ! isset($_POST['_ajax_nonce']) || ! wp_verify_nonce( (string) $_POST['_ajax_nonce'], 'alumnus_add_experience' ) ) {
+		wp_send_json_error( array( 'message' => __( 'Security check failed.', 'alumnus' ) ), 403 );
+	}
+
+	// Must have alumni session and match user_id
+	if ( ! function_exists('alumnus_is_logged_in') || ! alumnus_is_logged_in() ) {
+		wp_send_json_error( array( 'message' => __( 'You must be logged in.', 'alumnus' ) ), 401 );
+	}
+
+	$session_user = function_exists('alumnus_current_username') ? alumnus_current_username() : '';
+	$user_id = isset($_POST['user_id']) ? sanitize_text_field( wp_unslash($_POST['user_id']) ) : '';
+	if ( $user_id === '' || (string) $user_id !== (string) $session_user ) {
+		wp_send_json_error( array( 'message' => __( 'Permission denied for this user.', 'alumnus' ) ), 403 );
+	}
+
+	// Inputs
+	$title   = isset($_POST['title']) ? sanitize_text_field( wp_unslash($_POST['title']) ) : '';
+	$company = isset($_POST['company_name']) ? sanitize_text_field( wp_unslash($_POST['company_name']) ) : '';
+	$location= isset($_POST['location']) ? sanitize_text_field( wp_unslash($_POST['location']) ) : '';
+	$start   = isset($_POST['start_date']) ? sanitize_text_field( wp_unslash($_POST['start_date']) ) : '';
+	$end     = isset($_POST['end_date']) ? sanitize_text_field( wp_unslash($_POST['end_date']) ) : '';
+
+	if ( $title === '' || $company === '' || $start === '' ) {
+		wp_send_json_error( array( 'message' => __( 'Please provide Title, Company, and Start date.', 'alumnus' ) ), 400 );
+	}
+
+    global $wpdb; // direct alumni linkage; no WP user mapping required
+
+	// Validate date strings (YYYY-MM-DD)
+	$start_ok = preg_match('/^\d{4}-\d{2}-\d{2}$/', $start);
+	$end_ok = ($end === '' || preg_match('/^\d{4}-\d{2}-\d{2}$/', $end));
+	if ( ! $start_ok || ! $end_ok ) {
+		wp_send_json_error( array( 'message' => __( 'Invalid date format. Use YYYY-MM-DD.', 'alumnus' ) ), 400 );
+	}
+
+	// Insert row
+	$ins = $wpdb->insert(
+		'experience',
+		array(
+			'user_id'      => $user_id,
+			'company_name' => $company,
+			'title'        => $title,
+			'location'     => $location,
+			'start_date'   => $start,
+			'end_date'     => ( $end === '' ? null : $end ),
+		),
+		array( '%s','%s','%s','%s','%s','%s' )
+	);
+
+	if ( $ins === false ) {
+		wp_send_json_error( array( 'message' => sprintf( __( 'Database error: %s', 'alumnus' ), $wpdb->last_error ) ), 500 );
+	}
+
+	// Rebuild experience HTML like in the profile render
+	$experiences = $wpdb->get_results( $wpdb->prepare(
+		"SELECT experience_id, company_name, title, location, start_date, end_date FROM experience WHERE user_id = %s ORDER BY start_date DESC",
+		$user_id
+	) );
+
+	$skills_csv = '';
+	$skills_arr = array();
+	$row2 = $wpdb->get_row( $wpdb->prepare(
+		"SELECT GROUP_CONCAT(DISTINCT sk.skill ORDER BY sk.skill SEPARATOR ', ') AS skills
+		 FROM alumni a LEFT JOIN alumni_skills aks ON aks.user_id = a.user_id
+		 LEFT JOIN skills sk ON sk.skill_id = aks.skill_id WHERE a.user_id = %s GROUP BY a.user_id",
+		$user_id
+	) );
+	if ( $row2 && ! empty( $row2->skills ) ) {
+		$skills_csv = (string) $row2->skills;
+		$skills_arr = array_values( array_filter( array_map( 'trim', preg_split('/[,\n]+/', $skills_csv) ) ) );
+	}
+
+	$format_range = function( $start, $end ) {
+		if ( empty( $start ) ) return '';
+		try {
+			$s = new DateTime($start);
+			$e = $end ? new DateTime($end) : new DateTime();
+			$months = $s->diff($e);
+			$m = ($months->y * 12) + $months->m;
+			if ($m <= 0) { $m = 1; }
+			$dur = sprintf( _n('%d mo','%d mos',$m,'alumnus'), $m );
+			return $s->format('M Y') . ' - ' . ($end ? (new DateTime($end))->format('M Y') : 'Present') . ' · ' . $dur;
+		} catch (Exception $ex) { return ''; }
+	};
+
+	ob_start();
+	if ( ! empty( $experiences ) ) {
+		echo '<ul class="apc-exp-list">';
+		foreach ( $experiences as $exp ) {
+			echo '<li class="apc-exp-item" data-exp-id="'.esc_attr($exp->experience_id).'" data-start="'.esc_attr($exp->start_date).'" data-end="'.esc_attr($exp->end_date).'">';
+			echo '<div class="apc-exp-header">';
+			echo '<div class="apc-exp-title">' . esc_html($exp->title) . '</div>';
+			echo '<div class="apc-exp-company">' . esc_html($exp->company_name) . ( $exp->location ? ' · ' . esc_html($exp->location) : '' ) . '</div>';
+			echo '</div>';
+			echo '<div class="apc-exp-meta">';
+			echo '<div class="apc-exp-dates">' . esc_html( $format_range($exp->start_date, $exp->end_date) ) . '</div>';
+			echo '</div>';
+			if ( ! empty( $skills_arr ) ) {
+				$show = array_slice( $skills_arr, 0, 3 );
+				echo '<div class="apc-exp-skills"><span class="apc-exp-skills-label">' . esc_html__('Skills:', 'alumnus') . '</span> ' . esc_html( implode(' · ', $show) ) . '</div>';
+			}
+			// Since only the owner can add, show actions
+			echo '<div class="apc-exp-actions">';
+			echo '<button type="button" class="apc-exp-action-btn apc-exp-edit" data-exp-id="'.esc_attr($exp->experience_id).'">'.esc_html__('Edit','alumnus').'</button>';
+			echo '<button type="button" class="apc-exp-action-btn apc-exp-delete" data-exp-id="'.esc_attr($exp->experience_id).'">'.esc_html__('Delete','alumnus').'</button>';
+			echo '</div>';
+			echo '</li>';
+		}
+		echo '</ul>';
+	} else {
+		echo '<div class="apc-info-content"><p class="apc-placeholder">' . esc_html__('No experience added yet.', 'alumnus') . '</p></div>';
+	}
+	$html = ob_get_clean();
+
+	wp_send_json_success( array( 'html' => $html ) );
+}
+add_action( 'wp_ajax_alumnus_add_experience', 'alumnus_add_experience_ajax' );
+add_action( 'wp_ajax_nopriv_alumnus_add_experience', 'alumnus_add_experience_ajax' );
+
+/**
+ * AJAX: Update an existing experience
+ */
+function alumnus_update_experience_ajax() {
+	if ( ! isset($_POST['_ajax_nonce']) || ! wp_verify_nonce( (string) $_POST['_ajax_nonce'], 'alumnus_add_experience' ) ) {
+		wp_send_json_error( array( 'message' => __( 'Security check failed.', 'alumnus' ) ), 403 );
+	}
+	if ( ! function_exists('alumnus_is_logged_in') || ! alumnus_is_logged_in() ) {
+		wp_send_json_error( array( 'message' => __( 'You must be logged in.', 'alumnus' ) ), 401 );
+	}
+	$session_user = function_exists('alumnus_current_username') ? alumnus_current_username() : '';
+	$user_id = isset($_POST['user_id']) ? sanitize_text_field( wp_unslash($_POST['user_id']) ) : '';
+	if ( $user_id === '' || (string) $user_id !== (string) $session_user ) {
+		wp_send_json_error( array( 'message' => __( 'Permission denied for this user.', 'alumnus' ) ), 403 );
+	}
+
+	$exp_id  = isset($_POST['experience_id']) ? intval($_POST['experience_id']) : 0;
+	$title   = isset($_POST['title']) ? sanitize_text_field( wp_unslash($_POST['title']) ) : '';
+	$company = isset($_POST['company_name']) ? sanitize_text_field( wp_unslash($_POST['company_name']) ) : '';
+	$location= isset($_POST['location']) ? sanitize_text_field( wp_unslash($_POST['location']) ) : '';
+	$start   = isset($_POST['start_date']) ? sanitize_text_field( wp_unslash($_POST['start_date']) ) : '';
+	$end     = isset($_POST['end_date']) ? sanitize_text_field( wp_unslash($_POST['end_date']) ) : '';
+	if (!$exp_id || $title === '' || $company === '') {
+		wp_send_json_error( array( 'message' => __( 'Missing fields.', 'alumnus' ) ), 400 );
+	}
+	$start_ok = ($start === '' || preg_match('/^\d{4}-\d{2}-\d{2}$/', $start));
+	$end_ok = ($end === '' || preg_match('/^\d{4}-\d{2}-\d{2}$/', $end));
+	if (!$start_ok || !$end_ok) {
+		wp_send_json_error( array( 'message' => __( 'Invalid date format. Use YYYY-MM-DD.', 'alumnus' ) ), 400 );
+	}
+
+	global $wpdb;
+	// Ensure the row belongs to this user
+	$owner = $wpdb->get_var( $wpdb->prepare("SELECT COUNT(*) FROM experience WHERE experience_id = %d AND user_id = %s", $exp_id, $user_id) );
+	if (!$owner) {
+		wp_send_json_error( array( 'message' => __( 'Experience not found.', 'alumnus' ) ), 404 );
+	}
+
+	$wpdb->update(
+		'experience',
+		array(
+			'title' => $title,
+			'company_name' => $company,
+			'location' => $location,
+			'start_date' => ($start === '' ? null : $start),
+			'end_date' => ($end === '' ? null : $end),
+		),
+		array('experience_id' => $exp_id, 'user_id' => $user_id),
+		array('%s','%s','%s','%s','%s'),
+		array('%d','%s')
+	);
+
+	$experiences = $wpdb->get_results( $wpdb->prepare(
+		"SELECT experience_id, company_name, title, location, start_date, end_date FROM experience WHERE user_id = %s ORDER BY start_date DESC",
+		$user_id
+	) );
+
+	$skills_arr = array();
+	$row2 = $wpdb->get_row( $wpdb->prepare(
+		"SELECT GROUP_CONCAT(DISTINCT sk.skill ORDER BY sk.skill SEPARATOR ', ') AS skills FROM alumni a LEFT JOIN alumni_skills aks ON aks.user_id = a.user_id LEFT JOIN skills sk ON sk.skill_id = aks.skill_id WHERE a.user_id = %s GROUP BY a.user_id",
+		$user_id
+	) );
+	if ($row2 && !empty($row2->skills)) {
+		$skills_arr = array_values( array_filter( array_map( 'trim', preg_split('/[,\n]+/', (string)$row2->skills) ) ) );
+	}
+
+	$format_range = function( $start, $end ) {
+		if ( empty( $start ) ) return '';
+		try { $s=new DateTime($start); $e=$end?new DateTime($end):new DateTime(); $m=$s->diff($e); $mm=($m->y*12)+$m->m; if($mm<=0){$mm=1;} $dur=sprintf(_n('%d mo','%d mos',$mm,'alumnus'),$mm); return $s->format('M Y').' - '.($end?(new DateTime($end))->format('M Y'):'Present').' · '.$dur; } catch(Exception $x){ return ''; }
+	};
+
+	ob_start();
+	if ( ! empty( $experiences ) ) {
+		echo '<ul class="apc-exp-list">';
+		foreach ( $experiences as $exp ) {
+			echo '<li class="apc-exp-item" data-exp-id="'.esc_attr($exp->experience_id).'" data-start="'.esc_attr($exp->start_date).'" data-end="'.esc_attr($exp->end_date).'">';
+			echo '<div class="apc-exp-header">';
+			echo '<div class="apc-exp-title">'.esc_html($exp->title).'</div>';
+			echo '<div class="apc-exp-company">'.esc_html($exp->company_name).($exp->location?' · '.esc_html($exp->location):'').'</div>';
+			echo '</div>';
+			echo '<div class="apc-exp-meta">';
+			echo '<div class="apc-exp-dates">'.esc_html($format_range($exp->start_date,$exp->end_date)).'</div>';
+			echo '</div>';
+			if (!empty($skills_arr)) { $show=array_slice($skills_arr,0,3); echo '<div class="apc-exp-skills"><span class="apc-exp-skills-label">'.esc_html__('Skills:','alumnus').'</span> '.esc_html(implode(' · ',$show)).'</div>'; }
+			echo '<div class="apc-exp-actions">';
+			echo '<button type="button" class="apc-exp-action-btn apc-exp-edit" data-exp-id="'.esc_attr($exp->experience_id).'">'.esc_html__('Edit','alumnus').'</button>';
+			echo '<button type="button" class="apc-exp-action-btn apc-exp-delete" data-exp-id="'.esc_attr($exp->experience_id).'">'.esc_html__('Delete','alumnus').'</button>';
+			echo '</div>';
+			echo '</li>';
+		}
+		echo '</ul>';
+	} else {
+		echo '<div class="apc-info-content"><p class="apc-placeholder">' . esc_html__('No experience added yet.', 'alumnus') . '</p></div>';
+	}
+	$html = ob_get_clean();
+	wp_send_json_success( array( 'html' => $html ) );
+}
+add_action( 'wp_ajax_alumnus_update_experience', 'alumnus_update_experience_ajax' );
+add_action( 'wp_ajax_nopriv_alumnus_update_experience', 'alumnus_update_experience_ajax' );
+
+/**
+ * AJAX: Delete experience
+ */
+function alumnus_delete_experience_ajax() {
+	if ( ! isset($_POST['_ajax_nonce']) || ! wp_verify_nonce( (string) $_POST['_ajax_nonce'], 'alumnus_add_experience' ) ) {
+		wp_send_json_error( array( 'message' => __( 'Security check failed.', 'alumnus' ) ), 403 );
+	}
+	if ( ! function_exists('alumnus_is_logged_in') || ! alumnus_is_logged_in() ) {
+		wp_send_json_error( array( 'message' => __( 'You must be logged in.', 'alumnus' ) ), 401 );
+	}
+	$session_user = function_exists('alumnus_current_username') ? alumnus_current_username() : '';
+	$user_id = isset($_POST['user_id']) ? sanitize_text_field( wp_unslash($_POST['user_id']) ) : '';
+	if ( $user_id === '' || (string) $user_id !== (string) $session_user ) {
+		wp_send_json_error( array( 'message' => __( 'Permission denied for this user.', 'alumnus' ) ), 403 );
+	}
+	$exp_id = isset($_POST['experience_id']) ? intval($_POST['experience_id']) : 0;
+	if (!$exp_id) {
+		wp_send_json_error( array( 'message' => __( 'Invalid request.', 'alumnus' ) ), 400 );
+	}
+	global $wpdb;
+	$wpdb->delete('experience', array('experience_id' => $exp_id, 'user_id' => $user_id), array('%d','%s'));
+	$experiences = $wpdb->get_results( $wpdb->prepare(
+		"SELECT experience_id, company_name, title, location, start_date, end_date FROM experience WHERE user_id = %s ORDER BY start_date DESC",
+		$user_id
+	) );
+
+	ob_start();
+	if ( ! empty( $experiences ) ) {
+		echo '<ul class="apc-exp-list">';
+		foreach ( $experiences as $exp ) {
+			echo '<li class="apc-exp-item" data-exp-id="'.esc_attr($exp->experience_id).'">';
+			echo '<div class="apc-exp-header">';
+			echo '<div class="apc-exp-title">'.esc_html($exp->title).'</div>';
+			echo '<div class="apc-exp-company">'.esc_html($exp->company_name).($exp->location?' · '.esc_html($exp->location):'').'</div>';
+			echo '</div>';
+			echo '<div class="apc-exp-meta">';
+			echo '<div class="apc-exp-dates">'.esc_html($exp->start_date).' - '.esc_html($exp->end_date ?: 'Present').'</div>';
+			echo '</div>';
+			echo '<div class="apc-exp-actions">';
+			echo '<button type="button" class="apc-exp-action-btn apc-exp-edit" data-exp-id="'.esc_attr($exp->experience_id).'">'.esc_html__('Edit','alumnus').'</button>';
+			echo '<button type="button" class="apc-exp-action-btn apc-exp-delete" data-exp-id="'.esc_attr($exp->experience_id).'">'.esc_html__('Delete','alumnus').'</button>';
+			echo '</div>';
+			echo '</li>';
+		}
+		echo '</ul>';
+	} else {
+		echo '<div class="apc-info-content"><p class="apc-placeholder">' . esc_html__('No experience added yet.', 'alumnus') . '</p></div>';
+	}
+	$html = ob_get_clean();
+	wp_send_json_success( array( 'html' => $html ) );
+}
+add_action( 'wp_ajax_alumnus_delete_experience', 'alumnus_delete_experience_ajax' );
+add_action( 'wp_ajax_nopriv_alumnus_delete_experience', 'alumnus_delete_experience_ajax' );
 
 /**
  * AJAX handler to update current career of the logged-in alumni user.
@@ -472,19 +913,29 @@ function alumnus_update_skills_ajax() {
 	$csv = implode(', ', $clean);
 
 	global $wpdb;
-	$updated = $wpdb->update(
-		'alumni',
-		array( 'skills' => $csv ),
-		array( 'user_id' => $user_id ),
-		array( '%s' ),
-		array( '%s' )
-	);
+	// Replace user's skills with the new set in pivot table
+	// Delete existing links
+	$wpdb->delete('alumni_skills', array('user_id' => $user_id), array('%s'));
 
-	if ( $updated === false ) {
-		wp_send_json_error( array( 'message' => sprintf( __( 'Database error: %s', 'alumnus' ), $wpdb->last_error ) ), 500 );
+	// Insert new links (and upsert skills)
+	foreach ($clean as $s) {
+		// Ensure skill exists
+		$skill_id = $wpdb->get_var($wpdb->prepare("SELECT skill_id FROM skills WHERE skill = %s", $s));
+		if (empty($skill_id)) {
+			$ins = $wpdb->insert('skills', array('skill' => $s), array('%s'));
+			if ($ins !== false) {
+				$skill_id = $wpdb->insert_id;
+			} else {
+				// If insert failed due to race/duplicate, fetch again
+				$skill_id = $wpdb->get_var($wpdb->prepare("SELECT skill_id FROM skills WHERE skill = %s", $s));
+			}
+		}
+		if (!empty($skill_id)) {
+			$wpdb->insert('alumni_skills', array('user_id' => $user_id, 'skill_id' => (int)$skill_id), array('%s','%d'));
+		}
 	}
 
-	// Build refreshed HTML for the skills view
+	// Build refreshed HTML for the skills view with skill tags
 	if ( ! empty($clean) ) {
 		$html = '<div class="apc-skills-list">';
 		foreach ($clean as $s) {

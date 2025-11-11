@@ -1,8 +1,8 @@
 <?php
 /*
 Plugin Name: Alumnus Alumni Manager
-Description: Admin page to add Courses and Alumni records into custom tables (courses, alumni).
-Version: 1.0.0
+Description: Admin page to add Courses and Alumni records with list view, edit/delete, and bulk JSON import.
+Version: 2.0.0
 Author: Your Name
 */
 
@@ -47,17 +47,10 @@ function alumnus_get_table_names() {
 }
 
 /**
- * Detect if a provided password string already looks like a hash (bcrypt/argon2, WordPress portable, md5, sha1).
+ * Generate a random 6-digit password
  */
-function alumnus_is_password_hash($value) {
-	if (!is_string($value) || $value === '') return false;
-	// bcrypt or argon2
-	if (preg_match('/^\$(2y|2a|argon2id|argon2i)\$/', $value)) return true;
-	// WordPress portable hashes ($P$ or $H$)
-	if (preg_match('/^\$(P|H)\$/', $value)) return true;
-	// md5 / sha1 hex digests
-	if (ctype_xdigit($value) && (strlen($value) === 32 || strlen($value) === 40)) return true;
-	return false;
+function alumnus_generate_password() {
+	return str_pad(mt_rand(100000, 999999), 6, '0', STR_PAD_LEFT);
 }
 
 /**
@@ -77,147 +70,348 @@ function alumnus_admin_menu() {
 add_action('admin_menu', 'alumnus_admin_menu');
 
 /**
+ * Enqueue admin styles and scripts
+ */
+function alumnus_admin_scripts($hook) {
+	if ($hook !== 'toplevel_page_alumnus-add-alumni') return;
+	
+	wp_add_inline_style('wp-admin', '
+		.alumnus-table { margin-top: 20px; }
+		.alumnus-modal { display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); }
+		.alumnus-modal-content { background-color: #fefefe; margin: 5% auto; padding: 20px; border: 1px solid #888; width: 80%; max-width: 600px; border-radius: 5px; }
+		.alumnus-close { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
+		.alumnus-close:hover { color: #000; }
+		.alumnus-tabs { border-bottom: 1px solid #ccc; margin-bottom: 20px; }
+		.alumnus-tab { display: inline-block; padding: 10px 20px; cursor: pointer; border: 1px solid transparent; margin-bottom: -1px; }
+		.alumnus-tab.active { border: 1px solid #ccc; border-bottom-color: white; background: white; }
+		.alumnus-tab-content { display: none; }
+		.alumnus-tab-content.active { display: block; }
+		.alumnus-password-display { background: #ffffcc; padding: 5px 10px; border-radius: 3px; font-family: monospace; font-weight: bold; }
+		.alumnus-json-textarea { width: 100%; min-height: 200px; font-family: monospace; }
+	');
+	
+	wp_add_inline_script('jquery', '
+		jQuery(document).ready(function($) {
+			$(".alumnus-tab").click(function() {
+				var tab = $(this).data("tab");
+				$(".alumnus-tab").removeClass("active");
+				$(".alumnus-tab-content").removeClass("active");
+				$(this).addClass("active");
+				$("#tab-" + tab).addClass("active");
+			});
+			
+			$(".edit-course-btn").click(function() {
+				var id = $(this).data("id");
+				var name = $(this).data("name");
+				$("#edit_course_id").val(id);
+				$("#edit_course_name").val(name);
+				$("#editCourseModal").show();
+			});
+			
+			$(".delete-course-btn").click(function() {
+				var id = $(this).data("id");
+				if (confirm("Are you sure you want to delete this course?")) {
+					$("#delete_course_id").val(id);
+					$("#deleteCourseForm").submit();
+				}
+			});
+			
+			$(".edit-alumni-btn").click(function() {
+				var id = $(this).data("id");
+				var courseId = $(this).data("course");
+				var firstName = $(this).data("firstname");
+				var lastName = $(this).data("lastname");
+				var year = $(this).data("year");
+				
+				$("#edit_alumni_id").val(id);
+				$("#edit_alumni_course_id").val(courseId);
+				$("#edit_alumni_first_name").val(firstName);
+				$("#edit_alumni_last_name").val(lastName);
+				$("#edit_alumni_batch_year").val(year);
+				$("#editAlumniModal").show();
+			});
+			
+			$(".delete-alumni-btn").click(function() {
+				var id = $(this).data("id");
+				if (confirm("Are you sure you want to delete this alumni record?")) {
+					$("#delete_alumni_id").val(id);
+					$("#deleteAlumniForm").submit();
+				}
+			});
+			
+			$(".alumnus-close").click(function() {
+				$(".alumnus-modal").hide();
+			});
+			
+			$(window).click(function(event) {
+				if ($(event.target).hasClass("alumnus-modal")) {
+					$(".alumnus-modal").hide();
+				}
+			});
+		});
+	');
+}
+add_action('admin_enqueue_scripts', 'alumnus_admin_scripts');
+
+/**
  * Handle form submissions
  */
 function alumnus_handle_post() {
-	if (!is_admin()) return;
-	if (!current_user_can('manage_options')) return;
-
-	if (!isset($_POST['alumnus_action'])) return;
-
+	if (!is_admin() || !current_user_can('manage_options') || !isset($_POST['alumnus_action'])) return;
+	
 	$tables = alumnus_get_table_names();
 	global $wpdb;
-
+	
 	// Add Course
 	if ($_POST['alumnus_action'] === 'add_course') {
 		check_admin_referer('alumnus_add_course');
-
-		$course_id   = isset($_POST['course_id']) ? intval($_POST['course_id']) : 0;
+		$course_id = isset($_POST['course_id']) ? intval($_POST['course_id']) : 0;
 		$course_name = isset($_POST['course_name']) ? sanitize_text_field(wp_unslash($_POST['course_name'])) : '';
-
-		if ($course_id <= 0) {
-			add_settings_error('alumnus', 'course_id_empty', __('Course ID is required and must be a positive number.', 'alumnus'), 'error');
+		
+		if ($course_id <= 0 || $course_name === '') {
+			add_settings_error('alumnus', 'course_empty', __('Course ID and name are required.', 'alumnus'), 'error');
 			return;
 		}
-		if ($course_name === '') {
-			add_settings_error('alumnus', 'course_empty', __('Course name is required.', 'alumnus'), 'error');
-			return;
-		}
-
-		// Check duplicate id or name
+		
 		$exists_id = $wpdb->get_var($wpdb->prepare("SELECT course_id FROM {$tables['courses']} WHERE course_id = %d LIMIT 1", $course_id));
 		if ($exists_id) {
-			add_settings_error('alumnus', 'course_id_exists', __('A course with that ID already exists.', 'alumnus'), 'error');
+			add_settings_error('alumnus', 'course_id_exists', __('Course ID already exists.', 'alumnus'), 'error');
 			return;
 		}
-		// Attempt to detect name column ('course' in new schema)
-		$name_col = 'course';
-		$exists_name = $wpdb->get_var($wpdb->prepare("SELECT {$name_col} FROM {$tables['courses']} WHERE {$name_col} = %s LIMIT 1", $course_name));
-		if ($exists_name) {
-			add_settings_error('alumnus', 'course_exists', __('Course name already exists.', 'alumnus'), 'error');
-			return;
-		}
-
-		$inserted = $wpdb->insert(
-			$tables['courses'],
-			[ 'course_id' => $course_id, $name_col => $course_name ],
-			[ '%d', '%s' ]
-		);
-
+		
+		$inserted = $wpdb->insert($tables['courses'], ['course_id' => $course_id, 'course' => $course_name], ['%d', '%s']);
 		if ($inserted === false) {
 			add_settings_error('alumnus', 'course_insert_fail', sprintf(__('Failed to add course. DB error: %s', 'alumnus'), esc_html($wpdb->last_error)), 'error');
 		} else {
 			add_settings_error('alumnus', 'course_insert_ok', __('Course added successfully.', 'alumnus'), 'updated');
 		}
 	}
-
+	
+	// Edit Course
+	if ($_POST['alumnus_action'] === 'edit_course') {
+		check_admin_referer('alumnus_edit_course');
+		$course_id = isset($_POST['course_id']) ? intval($_POST['course_id']) : 0;
+		$course_name = isset($_POST['course_name']) ? sanitize_text_field(wp_unslash($_POST['course_name'])) : '';
+		
+		if ($course_name === '') {
+			add_settings_error('alumnus', 'course_empty', __('Course name is required.', 'alumnus'), 'error');
+			return;
+		}
+		
+		$updated = $wpdb->update($tables['courses'], ['course' => $course_name], ['course_id' => $course_id], ['%s'], ['%d']);
+		if ($updated === false) {
+			add_settings_error('alumnus', 'course_update_fail', __('Failed to update course.', 'alumnus'), 'error');
+		} else {
+			add_settings_error('alumnus', 'course_update_ok', __('Course updated successfully.', 'alumnus'), 'updated');
+		}
+	}
+	
+	// Delete Course
+	if ($_POST['alumnus_action'] === 'delete_course') {
+		check_admin_referer('alumnus_delete_course');
+		$course_id = isset($_POST['course_id']) ? intval($_POST['course_id']) : 0;
+		$deleted = $wpdb->delete($tables['courses'], ['course_id' => $course_id], ['%d']);
+		add_settings_error('alumnus', 'course_delete_ok', __('Course deleted successfully.', 'alumnus'), 'updated');
+	}
+	
 	// Add Alumni
 	if ($_POST['alumnus_action'] === 'add_alumni') {
 		check_admin_referer('alumnus_add_alumni');
-
-		$alumni_id  = isset($_POST['alumni_id']) ? intval($_POST['alumni_id']) : 0;
-		$course_id  = isset($_POST['course_id']) ? intval($_POST['course_id']) : 0;
+		$alumni_id = isset($_POST['alumni_id']) ? intval($_POST['alumni_id']) : 0;
+		$course_id = isset($_POST['course_id']) ? intval($_POST['course_id']) : 0;
 		$first_name = isset($_POST['first_name']) ? sanitize_text_field(wp_unslash($_POST['first_name'])) : '';
-		$last_name  = isset($_POST['last_name']) ? sanitize_text_field(wp_unslash($_POST['last_name'])) : '';
+		$last_name = isset($_POST['last_name']) ? sanitize_text_field(wp_unslash($_POST['last_name'])) : '';
 		$batch_year = isset($_POST['batch_year']) ? intval($_POST['batch_year']) : 0;
-
-		// Basic validation
+		
 		$errors = [];
-		if ($alumni_id <= 0) $errors[] = __('User ID is required and must be a positive number.', 'alumnus');
+		if ($alumni_id <= 0) $errors[] = __('User ID is required.', 'alumnus');
 		if ($course_id <= 0) $errors[] = __('Course is required.', 'alumnus');
-		if ($first_name === '') $errors[] = __('First name is required.', 'alumnus');
-		if ($last_name === '') $errors[] = __('Last name is required.', 'alumnus');
-		$current_year = (int) date('Y');
-		if ($batch_year < 1900 || $batch_year > $current_year) $errors[] = __('Batch year must be between 1900 and current year.', 'alumnus');
-
-		// Validate course exists
-        $course_exists = $wpdb->get_var(
-            $wpdb->prepare("SELECT course_id FROM {$tables['courses']} WHERE course_id = %d LIMIT 1", $course_id)
-        );
-        if (!$course_exists) $errors[] = __('Selected course does not exist.', 'alumnus');
-
-		// Check alumni user_id uniqueness
+		if ($first_name === '' || $last_name === '') $errors[] = __('First and last name are required.', 'alumnus');
+		if ($batch_year < 1900 || $batch_year > date('Y')) $errors[] = __('Invalid batch year.', 'alumnus');
+		
 		$alumni_exists = $wpdb->get_var($wpdb->prepare("SELECT user_id FROM {$tables['alumni']} WHERE user_id = %d LIMIT 1", $alumni_id));
-		if ($alumni_exists) $errors[] = __('An alumni with that User ID already exists.', 'alumnus');
-
+		if ($alumni_exists) $errors[] = __('Alumni ID already exists.', 'alumnus');
+		
 		if (!empty($errors)) {
-			foreach ($errors as $e) {
-				add_settings_error('alumnus', 'alumni_error_' . md5($e), $e, 'error');
-			}
+			foreach ($errors as $e) add_settings_error('alumnus', 'alumni_error', $e, 'error');
 			return;
 		}
-
-		// Always set default initial password to '123456' (store as hash)
-		$__default_plain = '123456';
-		if (function_exists('wp_hash_password')) {
-			$password_hash = wp_hash_password($__default_plain);
-		} else {
-			$password_hash = password_hash($__default_plain, PASSWORD_DEFAULT);
+		
+		$plain_password = alumnus_generate_password();
+		$password_hash = function_exists('wp_hash_password') ? wp_hash_password($plain_password) : password_hash($plain_password, PASSWORD_DEFAULT);
+		
+		// Get alumni table columns to ensure we only insert fields that exist
+		$alumni_columns = $wpdb->get_results("SHOW COLUMNS FROM {$tables['alumni']}");
+		$alumni_column_names = array_column($alumni_columns, 'Field');
+		
+		// Prepare data for insertion (only include columns that exist in your table)
+		$alumni_data = [
+			'user_id' => $alumni_id, 
+			'year' => $batch_year, 
+			'course_id' => $course_id,
+			'firstname' => $first_name, 
+			'lastname' => $last_name, 
+			'email' => '',
+			'contact_info' => 0, 
+			'career' => '', 
+			'bio_note' => ''
+		];
+		
+		// Remove fields that don't exist in the table
+		$alumni_data = array_filter($alumni_data, function($key) use ($alumni_column_names) {
+			return in_array($key, $alumni_column_names);
+		}, ARRAY_FILTER_USE_KEY);
+		
+		// Build format array dynamically based on data types
+		$alumni_formats = [];
+		foreach (array_keys($alumni_data) as $key) {
+			$alumni_formats[] = in_array($key, ['user_id', 'year', 'course_id', 'contact_info']) ? '%d' : '%s';
 		}
-
-		// Insert into alumni (fill required non-null fields with safe defaults)
-		$insert_alumni = $wpdb->insert(
-			$tables['alumni'],
-			[
-				'user_id'   => $alumni_id,
-				'year'      => $batch_year,
-				'course_id' => $course_id,
-				'firstname' => $first_name,
-				'lastname'  => $last_name,
-				'email'     => '',        // placeholder; not collected here
-				'contact_info' => 0,      // placeholder; not collected here
-				'career'    => '',        // placeholder
-				'skills'    => '',        // placeholder
-				'bio_note'  => '',        // placeholder
-			],
-			[ '%d', '%d', '%d', '%s', '%s', '%s', '%d', '%s', '%s', '%s' ]
-		);
+		
+		$insert_alumni = $wpdb->insert($tables['alumni'], $alumni_data, $alumni_formats);
+		
 		if ($insert_alumni === false) {
-			add_settings_error('alumnus', 'alumni_insert_fail', sprintf(__('Failed to add alumni. DB error: %s', 'alumnus'), esc_html($wpdb->last_error)), 'error');
+			add_settings_error('alumnus', 'alumni_insert_fail', sprintf(__('Failed to add alumni. Error: %s', 'alumnus'), esc_html($wpdb->last_error)), 'error');
 			return;
 		}
-
-		// Insert into user table
-		$insert_user = $wpdb->insert(
-			$tables['user'],
-			[
-				'user'      => $alumni_id,
-				'course_id' => $course_id,
-				'year'      => $batch_year,
-				'password'  => $password_hash,
-			],
-			[ '%d', '%d', '%d', '%s' ]
-		);
-
+		
+		$insert_user = $wpdb->insert($tables['user'], [
+			'user' => $alumni_id, 'course_id' => $course_id, 'year' => $batch_year, 'password' => $password_hash
+		], ['%d', '%d', '%d', '%s']);
+		
 		if ($insert_user === false) {
-			// Roll back alumni insert to keep consistency
-			$wpdb->delete($tables['alumni'], [ 'user_id' => $alumni_id ], [ '%d' ]);
-			add_settings_error('alumnus', 'user_insert_fail', sprintf(__('Failed to add user credentials. DB error: %s', 'alumnus'), esc_html($wpdb->last_error)), 'error');
+			$wpdb->delete($tables['alumni'], ['user_id' => $alumni_id], ['%d']);
+			add_settings_error('alumnus', 'user_insert_fail', __('Failed to add user credentials.', 'alumnus'), 'error');
 			return;
 		}
-
-		// Success: custom tables only (no WordPress user creation)
-		add_settings_error('alumnus', 'alumni_insert_ok', __('Alumni added successfully. Default password set to 123456.', 'alumnus'), 'updated');
+		
+		set_transient('alumnus_new_password_' . $alumni_id, $plain_password, 300);
+		add_settings_error('alumnus', 'alumni_insert_ok', sprintf(__('Alumni added successfully. Password: <span class="alumnus-password-display">%s</span>', 'alumnus'), $plain_password), 'updated');
+	}
+	
+	// Edit Alumni
+	if ($_POST['alumnus_action'] === 'edit_alumni') {
+		check_admin_referer('alumnus_edit_alumni');
+		$alumni_id = isset($_POST['alumni_id']) ? intval($_POST['alumni_id']) : 0;
+		$course_id = isset($_POST['course_id']) ? intval($_POST['course_id']) : 0;
+		$first_name = isset($_POST['first_name']) ? sanitize_text_field(wp_unslash($_POST['first_name'])) : '';
+		$last_name = isset($_POST['last_name']) ? sanitize_text_field(wp_unslash($_POST['last_name'])) : '';
+		$batch_year = isset($_POST['batch_year']) ? intval($_POST['batch_year']) : 0;
+		
+		$wpdb->update($tables['alumni'], [
+			'year' => $batch_year, 'course_id' => $course_id, 'firstname' => $first_name, 'lastname' => $last_name
+		], ['user_id' => $alumni_id], ['%d', '%d', '%s', '%s'], ['%d']);
+		
+		$wpdb->update($tables['user'], ['course_id' => $course_id, 'year' => $batch_year], ['user' => $alumni_id], ['%d', '%d'], ['%d']);
+		add_settings_error('alumnus', 'alumni_update_ok', __('Alumni updated successfully.', 'alumnus'), 'updated');
+	}
+	
+	// Delete Alumni
+	if ($_POST['alumnus_action'] === 'delete_alumni') {
+		check_admin_referer('alumnus_delete_alumni');
+		$alumni_id = isset($_POST['alumni_id']) ? intval($_POST['alumni_id']) : 0;
+		$wpdb->delete($tables['user'], ['user' => $alumni_id], ['%d']);
+		$wpdb->delete($tables['alumni'], ['user_id' => $alumni_id], ['%d']);
+		add_settings_error('alumnus', 'alumni_delete_ok', __('Alumni deleted successfully.', 'alumnus'), 'updated');
+	}
+	
+	// Bulk Import JSON
+	if ($_POST['alumnus_action'] === 'bulk_import') {
+		check_admin_referer('alumnus_bulk_import');
+		$json_data = isset($_POST['json_data']) ? wp_unslash($_POST['json_data']) : '';
+		$data = json_decode($json_data, true);
+		
+		if (json_last_error() !== JSON_ERROR_NONE) {
+			add_settings_error('alumnus', 'json_error', __('Invalid JSON format.', 'alumnus'), 'error');
+			return;
+		}
+		
+		$success_count = 0;
+		$error_count = 0;
+		$passwords = [];
+		
+		foreach ($data as $index => $record) {
+			$type = isset($record['type']) ? $record['type'] : '';
+			
+			if ($type === 'course') {
+				$course_id = isset($record['course_id']) ? intval($record['course_id']) : 0;
+				$course_name = isset($record['course_name']) ? sanitize_text_field($record['course_name']) : '';
+				
+				if ($course_id <= 0 || $course_name === '') {
+					$error_count++;
+					continue;
+				}
+				
+				$exists = $wpdb->get_var($wpdb->prepare("SELECT course_id FROM {$tables['courses']} WHERE course_id = %d LIMIT 1", $course_id));
+				if ($exists) {
+					$error_count++;
+					continue;
+				}
+				
+				$inserted = $wpdb->insert($tables['courses'], ['course_id' => $course_id, 'course' => $course_name], ['%d', '%s']);
+				if ($inserted) $success_count++; else $error_count++;
+				
+			} elseif ($type === 'alumni') {
+				$alumni_id = isset($record['alumni_id']) ? intval($record['alumni_id']) : 0;
+				$course_id = isset($record['course_id']) ? intval($record['course_id']) : 0;
+				$first_name = isset($record['first_name']) ? sanitize_text_field($record['first_name']) : '';
+				$last_name = isset($record['last_name']) ? sanitize_text_field($record['last_name']) : '';
+				$batch_year = isset($record['batch_year']) ? intval($record['batch_year']) : 0;
+				
+				if ($alumni_id <= 0 || $course_id <= 0 || $first_name === '' || $last_name === '' || $batch_year < 1900) {
+					$error_count++;
+					continue;
+				}
+				
+				$exists = $wpdb->get_var($wpdb->prepare("SELECT user_id FROM {$tables['alumni']} WHERE user_id = %d LIMIT 1", $alumni_id));
+				if ($exists) {
+					$error_count++;
+					continue;
+				}
+				
+				$plain_password = alumnus_generate_password();
+				$password_hash = function_exists('wp_hash_password') ? wp_hash_password($plain_password) : password_hash($plain_password, PASSWORD_DEFAULT);
+				
+				// Get alumni table columns
+				$alumni_columns = $wpdb->get_results("SHOW COLUMNS FROM {$tables['alumni']}");
+				$alumni_column_names = array_column($alumni_columns, 'Field');
+				
+				$alumni_data = [
+					'user_id' => $alumni_id, 'year' => $batch_year, 'course_id' => $course_id,
+					'firstname' => $first_name, 'lastname' => $last_name, 'email' => '',
+					'contact_info' => 0, 'career' => '', 'bio_note' => ''
+				];
+				
+				// Remove fields that don't exist
+				$alumni_data = array_filter($alumni_data, function($key) use ($alumni_column_names) {
+					return in_array($key, $alumni_column_names);
+				}, ARRAY_FILTER_USE_KEY);
+				
+				$alumni_formats = [];
+				foreach (array_keys($alumni_data) as $key) {
+					$alumni_formats[] = in_array($key, ['user_id', 'year', 'course_id', 'contact_info']) ? '%d' : '%s';
+				}
+				
+				$insert_alumni = $wpdb->insert($tables['alumni'], $alumni_data, $alumni_formats);
+				
+				$insert_user = $wpdb->insert($tables['user'], [
+					'user' => $alumni_id, 'course_id' => $course_id, 'year' => $batch_year, 'password' => $password_hash
+				], ['%d', '%d', '%d', '%s']);
+				
+				if ($insert_alumni && $insert_user) {
+					$success_count++;
+					$passwords[] = "ID {$alumni_id}: {$plain_password}";
+				} else {
+					$error_count++;
+				}
+			}
+		}
+		
+		$message = sprintf(__('Import complete. Success: %d, Errors: %d', 'alumnus'), $success_count, $error_count);
+		if (!empty($passwords)) {
+			$message .= '<br><strong>Generated Passwords:</strong><br>' . implode('<br>', $passwords);
+		}
+		add_settings_error('alumnus', 'bulk_import_complete', $message, $error_count > 0 ? 'error' : 'updated');
 	}
 }
 add_action('admin_init', 'alumnus_handle_post');
@@ -229,89 +423,182 @@ function alumnus_render_admin_page() {
 	if (!current_user_can('manage_options')) {
 		wp_die(__('You do not have sufficient permissions to access this page.'));
 	}
-
+	
 	$tables = alumnus_get_table_names();
 	global $wpdb;
-	// Fetch courses according to new schema (course_id, course)
 	$courses = $wpdb->get_results("SELECT course_id, course FROM {$tables['courses']} ORDER BY course ASC");
-
+	$alumni_list = $wpdb->get_results("
+		SELECT a.user_id, a.firstname, a.lastname, a.year, a.course_id, c.course 
+		FROM {$tables['alumni']} a
+		LEFT JOIN {$tables['courses']} c ON a.course_id = c.course_id
+		ORDER BY a.user_id ASC
+	");
+	
 	echo '<div class="wrap">';
 	echo '<h1>' . esc_html__('Alumnus Manager', 'alumnus') . '</h1>';
-
 	settings_errors('alumnus');
-
-	// Add Course Form
-	echo '<h2>' . esc_html__('Add Course', 'alumnus') . '</h2>';
+	
+	// Tabs
+	echo '<div class="alumnus-tabs">';
+	echo '<span class="alumnus-tab active" data-tab="courses">Courses</span>';
+	echo '<span class="alumnus-tab" data-tab="alumni">Alumni</span>';
+	echo '<span class="alumnus-tab" data-tab="import">Bulk Import</span>';
+	echo '</div>';
+	
+	// Courses Tab
+	echo '<div id="tab-courses" class="alumnus-tab-content active">';
+	echo '<h2>Add Course</h2>';
 	echo '<form method="post">';
 	wp_nonce_field('alumnus_add_course');
 	echo '<input type="hidden" name="alumnus_action" value="add_course" />';
-	echo '<table class="form-table" role="presentation">';
-	echo '  <tr valign="top">';
-	echo '    <th scope="row"><label for="course_id">' . esc_html__('Course ID', 'alumnus') . '</label></th>';
-	echo '    <td><input name="course_id" id="course_id" type="number" class="small-text" required /></td>';
-	echo '  </tr>';
-	echo '  <tr valign="top">';
-	echo '    <th scope="row"><label for="course_name">' . esc_html__('Course Name', 'alumnus') . '</label></th>';
-	echo '    <td><input name="course_name" id="course_name" type="text" class="regular-text" required /></td>';
-	echo '  </tr>';
-	echo '</table>';
-	submit_button(__('Add Course', 'alumnus'));
+	echo '<table class="form-table"><tr><th><label for="course_id">Course ID</label></th>';
+	echo '<td><input name="course_id" id="course_id" type="number" class="small-text" required /></td></tr>';
+	echo '<tr><th><label for="course_name">Course Name</label></th>';
+	echo '<td><input name="course_name" id="course_name" type="text" class="regular-text" required /></td></tr></table>';
+	submit_button('Add Course');
 	echo '</form>';
-
-	// Divider
-	echo '<hr />';
-
-	// Add Alumni Form
-	echo '<h2>' . esc_html__('Add Alumni', 'alumnus') . '</h2>';
+	
+	echo '<h2>Courses List</h2>';
+	if (!empty($courses)) {
+		echo '<table class="wp-list-table widefat fixed striped alumnus-table">';
+		echo '<thead><tr><th>ID</th><th>Course Name</th><th>Actions</th></tr></thead><tbody>';
+		foreach ($courses as $course) {
+			echo '<tr><td>' . esc_html($course->course_id) . '</td>';
+			echo '<td>' . esc_html($course->course) . '</td>';
+			echo '<td><button class="button edit-course-btn" data-id="' . esc_attr($course->course_id) . '" data-name="' . esc_attr($course->course) . '">Edit</button> ';
+			echo '<button class="button delete-course-btn" data-id="' . esc_attr($course->course_id) . '">Delete</button></td></tr>';
+		}
+		echo '</tbody></table>';
+	} else {
+		echo '<p>No courses found.</p>';
+	}
+	echo '</div>';
+	
+	// Alumni Tab
+	echo '<div id="tab-alumni" class="alumnus-tab-content">';
+	echo '<h2>Add Alumni</h2>';
 	echo '<form method="post">';
 	wp_nonce_field('alumnus_add_alumni');
 	echo '<input type="hidden" name="alumnus_action" value="add_alumni" />';
-	echo '<table class="form-table" role="presentation">';
-	echo '  <tr valign="top">';
-	echo '    <th scope="row"><label for="alumni_id">' . esc_html__('User ID', 'alumnus') . '</label></th>';
-	echo '    <td><input name="alumni_id" id="alumni_id" type="number" class="regular-text" required /></td>';
-	echo '  </tr>';
-
-	echo '  <tr valign="top">';
-	echo '    <th scope="row"><label for="course_id">' . esc_html__('Course', 'alumnus') . '</label></th>';
-	echo '    <td>';
+	echo '<table class="form-table">';
+	echo '<tr><th><label for="alumni_id">User ID</label></th><td><input name="alumni_id" id="alumni_id" type="number" class="regular-text" required /></td></tr>';
+	echo '<tr><th><label for="course_id_alumni">Course</label></th><td>';
 	if (!empty($courses)) {
-		echo '<select name="course_id" id="course_id" required>';
-		echo '<option value="">' . esc_html__('Select a course', 'alumnus') . '</option>';
+		echo '<select name="course_id" id="course_id_alumni" required><option value="">Select a course</option>';
 		foreach ($courses as $course) {
-			echo '<option value="' . esc_attr((string)$course->course_id) . '">' . esc_html($course->course) . '</option>';
+			echo '<option value="' . esc_attr($course->course_id) . '">' . esc_html($course->course) . '</option>';
 		}
 		echo '</select>';
 	} else {
-		echo '<em>' . esc_html__('No courses yet. Add a course first.', 'alumnus') . '</em>';
+		echo '<em>No courses yet. Add a course first.</em>';
 	}
-	echo '    </td>';
-	echo '  </tr>';
-
-	echo '  <tr valign="top">';
-	echo '    <th scope="row"><label for="first_name">' . esc_html__('First Name', 'alumnus') . '</label></th>';
-	echo '    <td><input name="first_name" id="first_name" type="text" class="regular-text" required /></td>';
-	echo '  </tr>';
-
-	echo '  <tr valign="top">';
-	echo '    <th scope="row"><label for="last_name">' . esc_html__('Last Name', 'alumnus') . '</label></th>';
-	echo '    <td><input name="last_name" id="last_name" type="text" class="regular-text" required /></td>';
-	echo '  </tr>';
-
-	echo '  <tr valign="top">';
-	echo '    <th scope="row"><label for="batch_year">' . esc_html__('Year', 'alumnus') . '</label></th>';
-	echo '    <td><input name="batch_year" id="batch_year" type="number" min="1900" max="' . esc_attr(date('Y')) . '" class="small-text" required /> <span class="description">' . esc_html__('e.g., 2024', 'alumnus') . '</span></td>';
-	echo '  </tr>';
-
-	// Removed password field; default password is set to 123456 on create
-
+	echo '</td></tr>';
+	echo '<tr><th><label for="first_name">First Name</label></th><td><input name="first_name" id="first_name" type="text" class="regular-text" required /></td></tr>';
+	echo '<tr><th><label for="last_name">Last Name</label></th><td><input name="last_name" id="last_name" type="text" class="regular-text" required /></td></tr>';
+	echo '<tr><th><label for="batch_year">Year</label></th><td><input name="batch_year" id="batch_year" type="number" min="1900" max="' . esc_attr(date('Y')) . '" class="small-text" required /></td></tr>';
 	echo '</table>';
-	if (!empty($courses)) {
-		submit_button(__('Add Alumni', 'alumnus'));
-	}
+	if (!empty($courses)) submit_button('Add Alumni');
 	echo '</form>';
-
+	
+	echo '<h2>Alumni List</h2>';
+	if (!empty($alumni_list)) {
+		echo '<table class="wp-list-table widefat fixed striped alumnus-table">';
+		echo '<thead><tr><th>User ID</th><th>Name</th><th>Course</th><th>Year</th><th>Default Password</th><th>Actions</th></tr></thead><tbody>';
+		foreach ($alumni_list as $alumni) {
+			$password = get_transient('alumnus_new_password_' . $alumni->user_id);
+			echo '<tr><td>' . esc_html($alumni->user_id) . '</td>';
+			echo '<td>' . esc_html($alumni->firstname . ' ' . $alumni->lastname) . '</td>';
+			echo '<td>' . esc_html($alumni->course) . '</td>';
+			echo '<td>' . esc_html($alumni->year) . '</td>';
+			echo '<td>' . ($password ? '<span class="alumnus-password-display">' . esc_html($password) . '</span>' : '<em>Not available</em>') . '</td>';
+			echo '<td><button class="button edit-alumni-btn" data-id="' . esc_attr($alumni->user_id) . '" data-course="' . esc_attr($alumni->course_id) . '" data-firstname="' . esc_attr($alumni->firstname) . '" data-lastname="' . esc_attr($alumni->lastname) . '" data-year="' . esc_attr($alumni->year) . '">Edit</button> ';
+			echo '<button class="button delete-alumni-btn" data-id="' . esc_attr($alumni->user_id) . '">Delete</button></td></tr>';
+		}
+		echo '</tbody></table>';
+	} else {
+		echo '<p>No alumni found.</p>';
+	}
 	echo '</div>';
+	
+	// Import Tab
+	echo '<div id="tab-import" class="alumnus-tab-content">';
+	echo '<h2>Bulk Import JSON</h2>';
+	echo '<p>Import courses and alumni in JSON format. Each record should have a "type" field ("course" or "alumni").</p>';
+	echo '<h3>Example JSON Format:</h3>';
+	echo '<pre>[
+  {
+    "type": "course",
+    "course_id": 1,
+    "course_name": "Computer Science"
+  },
+  {
+    "type": "alumni",
+    "alumni_id": 1001,
+    "course_id": 1,
+    "first_name": "John",
+    "last_name": "Doe",
+    "batch_year": 2020
+  }
+]</pre>';
+	echo '<form method="post">';
+	wp_nonce_field('alumnus_bulk_import');
+	echo '<input type="hidden" name="alumnus_action" value="bulk_import" />';
+	echo '<textarea name="json_data" class="alumnus-json-textarea" required></textarea>';
+	submit_button('Import JSON');
+	echo '</form>';
+	echo '</div>';
+	
+	echo '</div>'; // wrap
+	
+	// Edit Course Modal
+	echo '<div id="editCourseModal" class="alumnus-modal">';
+	echo '<div class="alumnus-modal-content">';
+	echo '<span class="alumnus-close">&times;</span>';
+	echo '<h2>Edit Course</h2>';
+	echo '<form method="post">';
+	wp_nonce_field('alumnus_edit_course');
+	echo '<input type="hidden" name="alumnus_action" value="edit_course" />';
+	echo '<input type="hidden" name="course_id" id="edit_course_id" />';
+	echo '<table class="form-table"><tr><th><label for="edit_course_name">Course Name</label></th>';
+	echo '<td><input name="course_name" id="edit_course_name" type="text" class="regular-text" required /></td></tr></table>';
+	submit_button('Update Course');
+	echo '</form></div></div>';
+	
+	// Delete Course Form
+	echo '<form id="deleteCourseForm" method="post" style="display:none;">';
+	wp_nonce_field('alumnus_delete_course');
+	echo '<input type="hidden" name="alumnus_action" value="delete_course" />';
+	echo '<input type="hidden" name="course_id" id="delete_course_id" />';
+	echo '</form>';
+	
+	// Edit Alumni Modal
+	echo '<div id="editAlumniModal" class="alumnus-modal">';
+	echo '<div class="alumnus-modal-content">';
+	echo '<span class="alumnus-close">&times;</span>';
+	echo '<h2>Edit Alumni</h2>';
+	echo '<form method="post">';
+	wp_nonce_field('alumnus_edit_alumni');
+	echo '<input type="hidden" name="alumnus_action" value="edit_alumni" />';
+	echo '<input type="hidden" name="alumni_id" id="edit_alumni_id" />';
+	echo '<table class="form-table">';
+	echo '<tr><th><label for="edit_alumni_course_id">Course</label></th><td><select name="course_id" id="edit_alumni_course_id" required>';
+	foreach ($courses as $course) {
+		echo '<option value="' . esc_attr($course->course_id) . '">' . esc_html($course->course) . '</option>';
+	}
+	echo '</select></td></tr>';
+	echo '<tr><th><label for="edit_alumni_first_name">First Name</label></th><td><input name="first_name" id="edit_alumni_first_name" type="text" class="regular-text" required /></td></tr>';
+	echo '<tr><th><label for="edit_alumni_last_name">Last Name</label></th><td><input name="last_name" id="edit_alumni_last_name" type="text" class="regular-text" required /></td></tr>';
+	echo '<tr><th><label for="edit_alumni_batch_year">Year</label></th><td><input name="batch_year" id="edit_alumni_batch_year" type="number" min="1900" max="' . esc_attr(date('Y')) . '" class="small-text" required /></td></tr>';
+	echo '</table>';
+	submit_button('Update Alumni');
+	echo '</form></div></div>';
+	
+	// Delete Alumni Form
+	echo '<form id="deleteAlumniForm" method="post" style="display:none;">';
+	wp_nonce_field('alumnus_delete_alumni');
+	echo '<input type="hidden" name="alumnus_action" value="delete_alumni" />';
+	echo '<input type="hidden" name="alumni_id" id="delete_alumni_id" />';
+	echo '</form>';
 }
 
 ?>
