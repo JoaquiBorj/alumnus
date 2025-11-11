@@ -116,11 +116,17 @@ function alumnus_render_profile_shortcode($atts = array()) {
 
 	global $wpdb;
 
-	// Fetch alumni data from database
-	$sql = "SELECT a.user_id, a.year, a.course_id, a.firstname, a.lastname, a.email, a.contact_info, a.career, a.bio_note, a.skills, c.course AS course_name 
+	// Fetch alumni data from database, and aggregate skills from normalized tables
+	$sql = "SELECT 
+				a.user_id, a.year, a.course_id, a.firstname, a.lastname, a.email, a.contact_info, a.career, a.bio_note,
+				GROUP_CONCAT(DISTINCT sk.skill ORDER BY sk.skill SEPARATOR ', ') AS skills,
+				c.course AS course_name 
 			FROM alumni a
 			LEFT JOIN course c ON a.course_id = c.course_id
-			WHERE a.user_id = %s";
+			LEFT JOIN alumni_skills aks ON aks.user_id = a.user_id
+			LEFT JOIN skills sk ON sk.skill_id = aks.skill_id
+			WHERE a.user_id = %s
+			GROUP BY a.user_id";
 	
 	$alumni_data = $wpdb->get_row($wpdb->prepare($sql, $user_id));
 
@@ -472,16 +478,26 @@ function alumnus_update_skills_ajax() {
 	$csv = implode(', ', $clean);
 
 	global $wpdb;
-	$updated = $wpdb->update(
-		'alumni',
-		array( 'skills' => $csv ),
-		array( 'user_id' => $user_id ),
-		array( '%s' ),
-		array( '%s' )
-	);
+	// Replace user's skills with the new set in pivot table
+	// Delete existing links
+	$wpdb->delete('alumni_skills', array('user_id' => $user_id), array('%s'));
 
-	if ( $updated === false ) {
-		wp_send_json_error( array( 'message' => sprintf( __( 'Database error: %s', 'alumnus' ), $wpdb->last_error ) ), 500 );
+	// Insert new links (and upsert skills)
+	foreach ($clean as $s) {
+		// Ensure skill exists
+		$skill_id = $wpdb->get_var($wpdb->prepare("SELECT skill_id FROM skills WHERE skill = %s", $s));
+		if (empty($skill_id)) {
+			$ins = $wpdb->insert('skills', array('skill' => $s), array('%s'));
+			if ($ins !== false) {
+				$skill_id = $wpdb->insert_id;
+			} else {
+				// If insert failed due to race/duplicate, fetch again
+				$skill_id = $wpdb->get_var($wpdb->prepare("SELECT skill_id FROM skills WHERE skill = %s", $s));
+			}
+		}
+		if (!empty($skill_id)) {
+			$wpdb->insert('alumni_skills', array('user_id' => $user_id, 'skill_id' => (int)$skill_id), array('%s','%d'));
+		}
 	}
 
 	// Build refreshed HTML for the skills view
