@@ -71,13 +71,10 @@ function adm_create_alumni_tables() {
     ) ENGINE=InnoDB $charset_collate;";
 
     // === EXPERIENCE TABLE ===
-    // Assumption: user_id references core WP users table ID (int). Using $wpdb->users for FK target.
-    // If you intend to link experiences to the custom alumni table instead, change user_id INT to VARCHAR(100)
-    // and update the FOREIGN KEY to reference alumni(user_id).
-    $wp_users_table = $wpdb->users; // full prefixed WP users table name
+    // Link experiences directly to alumni.user_id (no dependency on wp_users)
     $sql_experience = "CREATE TABLE IF NOT EXISTS experience (
         experience_id INT(11) NOT NULL AUTO_INCREMENT,
-        user_id BIGINT(20) UNSIGNED NOT NULL,
+        user_id VARCHAR(100) NOT NULL,
         company_name VARCHAR(40) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
         title VARCHAR(40) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
         location VARCHAR(40) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
@@ -85,7 +82,7 @@ function adm_create_alumni_tables() {
         end_date DATE NULL,
         PRIMARY KEY (experience_id),
         KEY idx_user_id (user_id),
-        CONSTRAINT fk_experience_user FOREIGN KEY (user_id) REFERENCES `$wp_users_table`(ID) ON DELETE CASCADE ON UPDATE CASCADE
+        CONSTRAINT fk_experience_alumni FOREIGN KEY (user_id) REFERENCES alumni(user_id) ON DELETE CASCADE ON UPDATE CASCADE
     ) ENGINE=InnoDB $charset_collate;";
 
     require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
@@ -95,6 +92,9 @@ function adm_create_alumni_tables() {
     dbDelta($sql_alumni_skills);
     dbDelta($sql_user_account);
     dbDelta($sql_experience);
+
+    // Migrate existing experience table if it was previously linked to wp_users
+    adm_migrate_experience_to_alumni_link();
 
     // Run migration to move legacy alumni.skills CSV data into new tables, then drop the column.
     adm_migrate_skills_to_table();
@@ -260,4 +260,49 @@ function adm_migrate_skills_to_table() {
 
     // Finally, drop legacy column
     $wpdb->query("ALTER TABLE alumni DROP COLUMN skills");
+}
+
+// =====================================================
+// 🔁 MIGRATION: Experience.user_id from wp_users.ID -> alumni.user_id
+// =====================================================
+function adm_migrate_experience_to_alumni_link() {
+    global $wpdb;
+    // Check if experience table exists
+    $table = $wpdb->get_var("SHOW TABLES LIKE 'experience'");
+    if (!$table) return;
+
+    // Inspect user_id column type
+    $col = $wpdb->get_row("SHOW COLUMNS FROM experience LIKE 'user_id'");
+    if (!$col) return;
+
+    $type = strtolower((string)$col->Type);
+    if (strpos($type, 'bigint') === false) {
+        return; // already VARCHAR(100) or similar
+    }
+
+    // Best-effort: drop old FK if named as earlier
+    $wpdb->query("ALTER TABLE experience DROP FOREIGN KEY fk_experience_user");
+
+        // Change column type to VARCHAR(100)
+        $wpdb->query("ALTER TABLE experience MODIFY COLUMN user_id VARCHAR(100) NOT NULL");
+
+        // Best-effort data migration: map numeric wp_user IDs to alumni.user_id via user_login or email
+        $wp_users = $wpdb->users;
+        // 1) Match by user_login
+        $wpdb->query(
+                "UPDATE experience e
+                    JOIN `$wp_users` u ON CAST(e.user_id AS UNSIGNED) = u.ID
+                    JOIN alumni a ON a.user_id = u.user_login
+                SET e.user_id = a.user_id"
+        );
+        // 2) Match by email if still numeric
+        $wpdb->query(
+                "UPDATE experience e
+                    JOIN `$wp_users` u ON CAST(e.user_id AS UNSIGNED) = u.ID
+                    JOIN alumni a ON a.email = u.user_email
+                SET e.user_id = a.user_id"
+        );
+
+        // Add new FK to alumni
+        $wpdb->query("ALTER TABLE experience ADD CONSTRAINT fk_experience_alumni FOREIGN KEY (user_id) REFERENCES alumni(user_id) ON DELETE CASCADE ON UPDATE CASCADE");
 }
