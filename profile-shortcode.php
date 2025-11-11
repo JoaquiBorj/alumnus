@@ -319,17 +319,11 @@ function alumnus_render_profile_shortcode($atts = array()) {
 				<h2 class="apc-section-title">Skills</h2>
 				<div id="alumnus-skills-view">
 					<?php if (!empty($skills_array)): ?>
-						<?php $skill_count = count($skills_array); ?>
-						<div class="apc-skills-wrapper">
-							<ul class="apc-skills-list apc-skills-list--vertical" data-skill-count="<?php echo esc_attr($skill_count); ?>">
-								<?php foreach ($skills_array as $i => $skill): ?>
-									<li class="apc-skill-item <?php echo $i >= 2 ? 'apc-extra-skill' : ''; ?>"><span class="apc-skill-name"><?php echo esc_html($skill); ?></span></li>
-								<?php endforeach; ?>
-							</ul>
-							<?php if ($skill_count > 2): ?>
-								<button type="button" class="apc-skills-toggle" aria-expanded="false">Show all skills (<?php echo esc_html($skill_count); ?>)</button>
-							<?php endif; ?>
-						</div>
+						<ul class="apc-skills-list apc-skills-list--pills">
+							<?php foreach ($skills_array as $skill): ?>
+								<li class="apc-skill-item"><span class="apc-skill-name"><?php echo esc_html($skill); ?></span></li>
+							<?php endforeach; ?>
+						</ul>
 					<?php else: ?>
 						<div class="apc-info-content"><p class="apc-placeholder"><?php echo esc_html__('No skills listed yet.', 'alumnus'); ?></p></div>
 					<?php endif; ?>
@@ -941,19 +935,13 @@ function alumnus_update_skills_ajax() {
 		}
 	}
 
-	// Build refreshed HTML for the skills view (with collapse if >2)
+	// Build refreshed HTML for the skills view (simple pill list, no toggle)
 	if ( ! empty($clean) ) {
-		$skill_count = count($clean);
-		$html = '<div class="apc-skills-wrapper"><ul class="apc-skills-list apc-skills-list--vertical" data-skill-count="' . esc_attr($skill_count) . '">';
-		foreach ($clean as $idx => $s) {
-			$extra_class = $idx >= 2 ? ' apc-extra-skill' : '';
-			$html .= '<li class="apc-skill-item' . $extra_class . '"><span class="apc-skill-name">' . esc_html( $s ) . '</span></li>';
+		$html = '<ul class="apc-skills-list apc-skills-list--pills">';
+		foreach ($clean as $s) {
+			$html .= '<li class="apc-skill-item"><span class="apc-skill-name">' . esc_html( $s ) . '</span></li>';
 		}
 		$html .= '</ul>';
-		if ($skill_count > 2) {
-			$html .= '<button type="button" class="apc-skills-toggle" aria-expanded="false">Show all skills (' . esc_html( $skill_count ) . ')</button>';
-		}
-		$html .= '</div>';
 	} else {
 		$html = '<div class="apc-info-content"><p class="apc-placeholder">' . esc_html__( 'No skills listed yet.', 'alumnus' ) . '</p></div>';
 	}
