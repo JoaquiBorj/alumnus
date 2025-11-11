@@ -319,11 +319,11 @@ function alumnus_render_profile_shortcode($atts = array()) {
 				<h2 class="apc-section-title">Skills</h2>
 				<div id="alumnus-skills-view">
 					<?php if (!empty($skills_array)): ?>
-						<ul class="apc-skills-list apc-skills-list--pills">
+						<div class="apc-skills-list">
 							<?php foreach ($skills_array as $skill): ?>
-								<li class="apc-skill-item"><span class="apc-skill-name"><?php echo esc_html($skill); ?></span></li>
+								<span class="apc-skill-tag"><?php echo esc_html($skill); ?></span>
 							<?php endforeach; ?>
-						</ul>
+						</div>
 					<?php else: ?>
 						<div class="apc-info-content"><p class="apc-placeholder"><?php echo esc_html__('No skills listed yet.', 'alumnus'); ?></p></div>
 					<?php endif; ?>
@@ -935,13 +935,13 @@ function alumnus_update_skills_ajax() {
 		}
 	}
 
-	// Build refreshed HTML for the skills view (simple pill list, no toggle)
+	// Build refreshed HTML for the skills view with skill tags
 	if ( ! empty($clean) ) {
-		$html = '<ul class="apc-skills-list apc-skills-list--pills">';
+		$html = '<div class="apc-skills-list">';
 		foreach ($clean as $s) {
-			$html .= '<li class="apc-skill-item"><span class="apc-skill-name">' . esc_html( $s ) . '</span></li>';
+			$html .= '<span class="apc-skill-tag">' . esc_html( $s ) . '</span>';
 		}
-		$html .= '</ul>';
+		$html .= '</div>';
 	} else {
 		$html = '<div class="apc-info-content"><p class="apc-placeholder">' . esc_html__( 'No skills listed yet.', 'alumnus' ) . '</p></div>';
 	}

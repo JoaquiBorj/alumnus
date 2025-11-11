@@ -379,37 +379,25 @@ button.aph-nav-btn {
 }
 
 .apc-skills-list {
-	/* Pill layout */
-	list-style: none;
-	margin: 0;
-	padding: 0;
 	display: flex;
 	flex-wrap: wrap;
-	gap: 10px;
+	gap: 12px;
 }
 
-/* Optional marker for clarity */
-
-
-.apc-skill-item {
-	display: inline-flex;
-	align-items: center;
-	background: var(--alumnus-bg-white);
-	border: 1px solid var(--alumnus-border-medium);
-	border-radius: 9999px;
-	padding: 6px 12px;
-	box-shadow: 0 2px 6px var(--alumnus-shadow-profile-skill);
-}
-
-.apc-skill-item:hover {
-	box-shadow: 0 4px 10px var(--alumnus-shadow-profile-skill-hover);
-	border-color: var(--alumnus-text-lighter);
-}
-
-.apc-skill-name {
-	color: var(--alumnus-text-heading);
+.apc-skill-tag {
+	background: var(--alumnus-primary);
+	color: white;
+	padding: 8px 16px;
+	border-radius: 20px;
 	font-size: 14px;
-	font-weight: 600;
+	font-weight: 500;
+	display: inline-block;
+	box-shadow: 0 2px 4px var(--alumnus-shadow-profile-skill);
+}
+
+.apc-skill-tag:hover {
+	transform: translateY(-2px);
+	box-shadow: 0 4px 8px var(--alumnus-shadow-profile-skill-hover);
 }
 
 /* Experience list */
