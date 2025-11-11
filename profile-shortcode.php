@@ -275,19 +275,31 @@ function alumnus_render_profile_shortcode($atts = array()) {
 				
 				<div id="alumnus-skills-view">
 					<?php if (!empty($alumni_data->skills)): ?>
-						<div class="apc-skills-list">
-							<?php 
-							// Split skills by comma or newline
-							$skills_array = preg_split('/[,\n]+/', $alumni_data->skills);
-							foreach ($skills_array as $skill): 
-								$skill = trim($skill);
-								if (!empty($skill)):
-							?>
-								<span class="apc-skill-tag"><?php echo esc_html($skill); ?></span>
-							<?php 
-								endif;
-							endforeach; 
-							?>
+						<?php
+							// Split skills by comma or newline and clean
+							$skills_array_raw = preg_split('/[,\n]+/', (string) $alumni_data->skills);
+							$skills_array = array();
+							foreach ($skills_array_raw as $s) {
+								$s = trim($s);
+								if ($s !== '') { $skills_array[] = $s; }
+							}
+							$total_skills = count($skills_array);
+							$threshold = 6; // show first N, rest behind dropdown
+						?>
+						<div class="apc-skills-collapsible" data-total="<?php echo esc_attr((string)$total_skills); ?>">
+							<div class="apc-skills-list">
+								<?php foreach ($skills_array as $idx => $skill): ?>
+									<span class="apc-skill-tag<?php echo ($idx >= $threshold) ? ' is-extra' : ''; ?>"><?php echo esc_html($skill); ?></span>
+								<?php endforeach; ?>
+							</div>
+							<?php if ($total_skills > $threshold): ?>
+								<button type="button" class="apc-skills-toggle" aria-expanded="false">
+									<span class="toggle-label"><?php echo esc_html__('Show all', 'alumnus'); ?></span>
+									<span class="toggle-count"><?php echo esc_html($total_skills); ?></span>
+									<span class="toggle-label-after"> <?php echo esc_html__('skills', 'alumnus'); ?></span>
+									<span class="toggle-caret" aria-hidden="true"></span>
+								</button>
+							<?php endif; ?>
 						</div>
 					<?php else: ?>
 						<div class="apc-info-content">
@@ -502,9 +514,22 @@ function alumnus_update_skills_ajax() {
 
 	// Build refreshed HTML for the skills view
 	if ( ! empty($clean) ) {
-		$html = '<div class="apc-skills-list">';
-		foreach ($clean as $s) {
-			$html .= '<span class="apc-skill-tag">' . esc_html( $s ) . '</span>';
+		$threshold = 6;
+		$total = count($clean);
+		$html  = '<div class="apc-skills-collapsible" data-total="' . esc_attr((string)$total) . '">';
+		$html .= '<div class="apc-skills-list">';
+		foreach ($clean as $idx => $s) {
+			$extra = ($idx >= $threshold) ? ' is-extra' : '';
+			$html .= '<span class="apc-skill-tag' . $extra . '">' . esc_html( $s ) . '</span>';
+		}
+		$html .= '</div>';
+		if ($total > $threshold) {
+			$html .= '<button type="button" class="apc-skills-toggle" aria-expanded="false">'
+				  . '<span class="toggle-label">' . esc_html__('Show all', 'alumnus') . '</span>'
+				  . '<span class="toggle-count">' . esc_html( (string) $total ) . '</span>'
+				  . '<span class="toggle-label-after"> ' . esc_html__('skills', 'alumnus') . '</span>'
+				  . '<span class="toggle-caret" aria-hidden="true"></span>'
+				  . '</button>';
 		}
 		$html .= '</div>';
 	} else {

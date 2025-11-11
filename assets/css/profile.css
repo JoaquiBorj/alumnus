@@ -365,6 +365,60 @@ button.aph-nav-btn {
 	gap: 12px;
 }
 
+/* Collapsible Skills */
+.apc-skills-collapsible {
+	position: relative;
+}
+
+.apc-skill-tag.is-extra {
+	display: none;
+}
+
+.apc-skills-collapsible.expanded .apc-skill-tag.is-extra {
+	display: inline-block;
+}
+
+.apc-skills-toggle {
+	margin-top: 18px;
+	background: var(--alumnus-overlay-white-medium);
+	border: 2px solid var(--alumnus-secondary);
+	color: var(--alumnus-text-heading);
+	padding: 10px 20px;
+	border-radius: 30px;
+	font-size: 14px;
+	font-weight: 600;
+	cursor: pointer;
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	position: relative;
+}
+
+.apc-skills-toggle .toggle-caret {
+	width: 0;
+	height: 0;
+	border-left: 6px solid transparent;
+	border-right: 6px solid transparent;
+	border-top: 8px solid var(--alumnus-secondary);
+	transition: transform .25s ease;
+}
+
+.apc-skills-collapsible.expanded .apc-skills-toggle .toggle-caret {
+	transform: rotate(180deg);
+}
+
+.apc-skills-toggle:hover {
+	background: var(--alumnus-overlay-white-hover);
+	border-color: var(--alumnus-overlay-white-hover-strong);
+}
+
+.apc-skills-toggle:focus-visible {
+	outline: none;
+	box-shadow: 0 0 0 3px var(--alumnus-overlay-white-focus);
+}
+
+.apc-skills-toggle .toggle-label-after { opacity: .7; }
+
 .apc-skill-tag {
 	background: var(--alumnus-primary);
 	color: white;
