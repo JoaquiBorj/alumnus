@@ -148,10 +148,7 @@
 					var view = document.getElementById('alumnus-skills-view');
 					if (view) { 
 						view.innerHTML = json.data.html; 
-						// Re-bind dropdown toggle handlers for new markup
-						if (typeof initializeSkillsToggle === 'function') {
-							initializeSkillsToggle();
-						}
+						alumnus_initSkillsToggle(view);
 					}
 				} else {
 					hasError = true;
@@ -209,46 +206,42 @@
 	if (document.readyState === 'loading') {
 		document.addEventListener('DOMContentLoaded', function(){
 			initializeModal();
-			initializeSkillsToggle();
+			alumnus_initSkillsToggle();
 		});
 	} else {
 		initializeModal();
-		initializeSkillsToggle();
+		alumnus_initSkillsToggle();
 	}
 
 })();
 
 /**
- * Collapsible Skills: show first N skills, toggle to reveal all
+ * Skills list toggle: show only first two by default, expand/collapse on click.
+ * Called on DOM ready and after AJAX updates.
  */
-function initializeSkillsToggle() {
-	var containers = document.querySelectorAll('.apc-skills-collapsible');
-	if (!containers || !containers.length) return;
+function alumnus_initSkillsToggle(rootEl) {
+	var root = rootEl || document;
+	var wrappers = root.querySelectorAll('.apc-skills-wrapper');
+	wrappers.forEach(function(wrapper){
+		var list = wrapper.querySelector('.apc-skills-list');
+		var toggle = wrapper.querySelector('.apc-skills-toggle');
+		if (!list || !toggle) return;
 
-	containers.forEach(function(container){
-		var toggle = container.querySelector('.apc-skills-toggle');
-		if (!toggle) return;
+		var count = parseInt(list.getAttribute('data-skill-count') || '0', 10);
+		if (isNaN(count) || count <= 2) {
+			wrapper.classList.add('expanded');
+			toggle.style.display = 'none';
+			return;
+		}
 
-		// Reset state
-		container.classList.remove('expanded');
+		wrapper.classList.remove('expanded');
 		toggle.setAttribute('aria-expanded', 'false');
-		updateToggleLabel(toggle, container, false);
 
 		toggle.addEventListener('click', function(){
-			var expanded = container.classList.toggle('expanded');
+			var expanded = wrapper.classList.toggle('expanded');
 			toggle.setAttribute('aria-expanded', expanded ? 'true' : 'false');
-			updateToggleLabel(toggle, container, expanded);
+			toggle.textContent = expanded ? 'Show less' : ('Show all skills (' + count + ')');
 		});
 	});
-}
-
-function updateToggleLabel(btn, container, expanded) {
-	var total = container.getAttribute('data-total') || '';
-	var label = btn.querySelector('.toggle-label');
-	var count = btn.querySelector('.toggle-count');
-	var after = btn.querySelector('.toggle-label-after');
-	if (label) { label.textContent = expanded ? 'Show less' : 'Show all'; }
-	if (count) { count.textContent = total; }
-	if (after) { after.textContent = expanded ? '' : ' skills'; }
 }
 
