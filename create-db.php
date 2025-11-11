@@ -70,12 +70,31 @@ function adm_create_alumni_tables() {
         FOREIGN KEY (course_id) REFERENCES course(course_id) ON DELETE CASCADE ON UPDATE CASCADE
     ) ENGINE=InnoDB $charset_collate;";
 
+    // === EXPERIENCE TABLE ===
+    // Assumption: user_id references core WP users table ID (int). Using $wpdb->users for FK target.
+    // If you intend to link experiences to the custom alumni table instead, change user_id INT to VARCHAR(100)
+    // and update the FOREIGN KEY to reference alumni(user_id).
+    $wp_users_table = $wpdb->users; // full prefixed WP users table name
+    $sql_experience = "CREATE TABLE IF NOT EXISTS experience (
+        experience_id INT(11) NOT NULL AUTO_INCREMENT,
+        user_id BIGINT(20) UNSIGNED NOT NULL,
+        company_name VARCHAR(40) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+        title VARCHAR(40) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+        location VARCHAR(40) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+        start_date DATE NOT NULL,
+        end_date DATE NULL,
+        PRIMARY KEY (experience_id),
+        KEY idx_user_id (user_id),
+        CONSTRAINT fk_experience_user FOREIGN KEY (user_id) REFERENCES `$wp_users_table`(ID) ON DELETE CASCADE ON UPDATE CASCADE
+    ) ENGINE=InnoDB $charset_collate;";
+
     require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
     dbDelta($sql_course);
     dbDelta($sql_alumni);
     dbDelta($sql_skills);
     dbDelta($sql_alumni_skills);
     dbDelta($sql_user_account);
+    dbDelta($sql_experience);
 
     // Run migration to move legacy alumni.skills CSV data into new tables, then drop the column.
     adm_migrate_skills_to_table();
@@ -97,6 +116,7 @@ function adm_plugin_deactivate() {
     $wpdb->query("DROP TABLE IF EXISTS alumni_skills");
     $wpdb->query("DROP TABLE IF EXISTS skills");
     $wpdb->query("DROP TABLE IF EXISTS user");
+    $wpdb->query("DROP TABLE IF EXISTS experience");
     $wpdb->query("DROP TABLE IF EXISTS alumni");
     $wpdb->query("DROP TABLE IF EXISTS course");
 }
@@ -148,6 +168,7 @@ function adm_admin_page_content() {
             <li>• <code>skills</code></li>
             <li>• <code>alumni_skills</code></li>
             <li>• <code>user</code></li>
+            <li>• <code>experience</code></li>
         </ul>
     </div>
 
