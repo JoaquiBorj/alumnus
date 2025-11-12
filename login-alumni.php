@@ -97,6 +97,30 @@ function coenect_login_form_shortcode() {
 
     $tables = $detect_tables();
 
+    // Helper: check if username column exists in user table
+    $user_table_has_username = function($table_name) use ($db) {
+        $col = $db->get_var($db->prepare("SHOW COLUMNS FROM `{$table_name}` LIKE %s", 'username'));
+        return !empty($col);
+    };
+
+    // Helper: fetch user row by identifier (username or user_id)
+    $get_user_by_identifier = function($identifier) use ($db, $tables, $user_table_has_username) {
+        $has_username = $user_table_has_username($tables['user']);
+        if ($has_username) {
+            // Try username, then user id in one query
+            return $db->get_row($db->prepare(
+                "SELECT * FROM `{$tables['user']}` WHERE `username` = %s OR `user` = %s LIMIT 1",
+                $identifier,
+                $identifier
+            ));
+        } else {
+            return $db->get_row($db->prepare(
+                "SELECT * FROM `{$tables['user']}` WHERE `user` = %s LIMIT 1",
+                $identifier
+            ));
+        }
+    };
+
     // Ensure wp_check_password is available for verifying WP-style hashes ($P$/portable)
     if (!function_exists('wp_check_password') && defined('ABSPATH')) {
         @require_once ABSPATH . WPINC . '/pluggable.php';
@@ -115,8 +139,8 @@ function coenect_login_form_shortcode() {
             $username_echo = $username;
             $password = isset($_POST['password']) ? (string) wp_unslash($_POST['password']) : '';
 
-            // Query user data from custom table
-            $user = $db->get_row($db->prepare("SELECT * FROM `{$tables['user']}` WHERE `user` = %s", $username));
+            // Query user data from custom table (by username or user id)
+            $user = $get_user_by_identifier($username);
 
             if ($user) {
                 // Check password (supports plain, bcrypt/argon2, and WordPress portable hashes)
@@ -178,26 +202,29 @@ function coenect_login_form_shortcode() {
                 $errors[] = __('Password must be at least 6 characters.', 'alumnus');
             } else {
                 $hashed_password = password_hash($new_password, PASSWORD_DEFAULT);
-                $updated = $db->update(
-                    $tables['user'],
-                    ['password' => $hashed_password],
-                    ['user' => $username],
-                    ['%s'],
-                    ['%s']
-                );
 
-                if ($updated !== false) {
-                    $user = $db->get_row($db->prepare("SELECT * FROM `{$tables['user']}` WHERE `user` = %s", $username));
-                    if ($user) {
+                // Find the account by username or user id first
+                $user_row = $get_user_by_identifier($username);
+                if ($user_row) {
+                    // Update using primary key column `user`
+                    $updated = $db->update(
+                        $tables['user'],
+                        ['password' => $hashed_password],
+                        ['user' => $user_row->user],
+                        ['%s'],
+                        ['%s']
+                    );
+
+                    if ($updated !== false) {
                         $profile_page_url = function_exists('alumnus_resolve_profile_page_url') ? alumnus_resolve_profile_page_url() : home_url('/');
                         // On successful reset, redirect to profile page
                         wp_safe_redirect( $profile_page_url );
                         exit;
                     } else {
-                        $errors[] = __('User not found after reset.', 'alumnus');
+                        $errors[] = __('Failed to reset password.', 'alumnus');
                     }
                 } else {
-                    $errors[] = __('Failed to reset password.', 'alumnus');
+                    $errors[] = __('User not found for password reset.', 'alumnus');
                 }
             }
         }

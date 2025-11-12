@@ -42,3 +42,10 @@
 
 2012.12.13 - version 1.0.0
  * Initial release
+Version 1.4 (Unreleased)
+- Added `username` column to `user` table with unique constraint.
+- Automatic username generation when adding alumni (admin UI & bulk import):
+	* Base pattern: first word of first name + concatenated last name words.
+	* Lowercased, non-alphanumeric characters removed.
+	* If duplicate exists, append numeric suffix starting at 2 (e.g., johndoe, johndoe2, johndoe3...).
+- Backfill migration populates usernames for existing accounts on activation/table refresh.
