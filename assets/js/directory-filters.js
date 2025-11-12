@@ -22,7 +22,7 @@
 		}
 		
 		// Fetch and render from server
-		let currentRequest = null;
+		let currentController = null;
 		function fetchAlumni() {
 			const selectedYear = yearFilter.value;
 			const selectedCourse = courseFilter.value;
@@ -38,14 +38,16 @@
 			formData.append('search', searchTerm);
 			formData.append('profile_url', AlumnusDirectory.profile_url || '');
 			
-			if (currentRequest && typeof currentRequest.abort === 'function') {
-				try { currentRequest.abort(); } catch(e) {}
+			if (currentController) {
+				try { currentController.abort(); } catch(e) {}
 			}
 			
-			currentRequest = fetch(AlumnusDirectory.ajax_url, {
+			currentController = new AbortController();
+			fetch(AlumnusDirectory.ajax_url, {
 				method: 'POST',
 				body: formData,
-				credentials: 'same-origin'
+				credentials: 'same-origin',
+				signal: currentController.signal
 			})
 			.then(function(res) { return res.json(); })
 			.then(function(json) {
