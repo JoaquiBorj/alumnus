@@ -394,12 +394,9 @@ function alumnus_initExperienceUI() {
 				if (!li) return;
 				var id = editBtn.getAttribute('data-exp-id');
 				var titleEl = li.querySelector('.apc-exp-title');
-				var companyEl = li.querySelector('.apc-exp-company');
 				var title = titleEl ? titleEl.textContent.trim() : '';
-				var company = companyEl ? companyEl.textContent.trim() : '';
-				// Location is now in the second .apc-exp-dates element
-				var datesEls = li.querySelectorAll('.apc-exp-dates');
-				var location = datesEls.length > 1 ? datesEls[1].textContent.trim() : '';
+				var company = li.getAttribute('data-company') || '';
+				var location = li.getAttribute('data-location') || '';
 				var startRaw = li.getAttribute('data-start') || '';
 				var endRaw = li.getAttribute('data-end') || '';
 				// Normalize sentinel values sometimes used by MySQL or backends
@@ -432,14 +429,14 @@ function alumnus_initExperienceUI() {
 			}
 
 			if (delBtn) {
-				var id = delBtn.getAttribute('data-exp-id');
-				if (!id) return;
+				var deleteId = delBtn.getAttribute('data-exp-id');
+				if (!deleteId) return;
 				if (!confirm('Delete this experience?')) return;
 				var payload = new FormData();
 				payload.append('action', 'alumnus_delete_experience');
 				payload.append('_ajax_nonce', nonce);
 				payload.append('user_id', userId);
-				payload.append('experience_id', id);
+				payload.append('experience_id', deleteId);
 				fetch(ajaxUrl, { method: 'POST', credentials: 'same-origin', body: payload })
 					.then(function(res){ return res.json(); })
 					.then(function(json){
@@ -462,13 +459,13 @@ function alumnus_initExperienceUI() {
 			var userId = root.getAttribute('data-user-id');
 			var nonce = root.getAttribute('data-nonce-exp');
 
-			var id = editId.value;
-			var title = editTitle.value.trim();
-			var company = editCompany.value.trim();
-			var location = editLocation.value.trim();
-			var start = editStart.value;
-			var end = editEnd.value;
-			if (!id || !title || !company) { alert('Please fill in Title and Company.'); return; }
+		var id = editId.value;
+		var title = editTitle.value.trim();
+		var company = editCompany.value.trim();
+		var location = editLocation.value.trim();
+		var start = editStart.value;
+		var end = editEnd.value;
+		if (!id || !title || !company || !start) { alert('Please fill in Title, Company, and Start Date.'); return; }
 
 			var payload = new FormData();
 			payload.append('action', 'alumnus_update_experience');
