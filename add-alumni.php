@@ -246,16 +246,15 @@ function alumnus_handle_post() {
 		
 		// Prepare data for insertion (only include columns that exist in your table)
 		$alumni_data = [
-			'user_id' => $alumni_id, 
-			'year' => $batch_year, 
-			'course_id' => $course_id,
-			'firstname' => $first_name, 
-			'lastname' => $last_name, 
-			'email' => '',
-			'contact_info' => 0, 
-			'career' => '', 
-			'bio_note' => ''
-		];
+		'user_id' => $alumni_id, 
+		'year' => $batch_year, 
+		'course_id' => $course_id,
+		'firstname' => $first_name, 
+		'lastname' => $last_name, 
+		'email' => '',
+		'contact_info' => 0, 
+		'bio_note' => ''
+	];
 		
 		// Remove fields that don't exist in the table
 		$alumni_data = array_filter($alumni_data, function($key) use ($alumni_column_names) {
@@ -376,11 +375,11 @@ function alumnus_handle_post() {
 				$alumni_columns = $wpdb->get_results("SHOW COLUMNS FROM {$tables['alumni']}");
 				$alumni_column_names = array_column($alumni_columns, 'Field');
 				
-				$alumni_data = [
-					'user_id' => $alumni_id, 'year' => $batch_year, 'course_id' => $course_id,
-					'firstname' => $first_name, 'lastname' => $last_name, 'email' => '',
-					'contact_info' => 0, 'career' => '', 'bio_note' => ''
-				];
+			$alumni_data = [
+				'user_id' => $alumni_id, 'year' => $batch_year, 'course_id' => $course_id,
+				'firstname' => $first_name, 'lastname' => $last_name, 'email' => '',
+				'contact_info' => 0, 'bio_note' => ''
+			];
 				
 				// Remove fields that don't exist
 				$alumni_data = array_filter($alumni_data, function($key) use ($alumni_column_names) {
