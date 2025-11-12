@@ -54,6 +54,55 @@ function alumnus_generate_password() {
 }
 
 /**
+ * Build a base username from first and last names using rules:
+ * - Take only the first word of the first name
+ * - Combine all words of the last name (remove spaces)
+ * - Sanitize to alphanumeric and lowercase
+ */
+function alumnus_build_base_username($first_name, $last_name) {
+	$first = trim((string)$first_name);
+	$last  = trim((string)$last_name);
+	$first_token = preg_split('/\s+/', $first);
+	$first_token = isset($first_token[0]) ? $first_token[0] : '';
+	$last_combined = preg_replace('/\s+/', '', $last);
+	$base = strtolower(preg_replace('/[^A-Za-z0-9]/', '', $first_token . $last_combined));
+	if ($base === '') {
+		$base = strtolower(wp_generate_password(6, false));
+	}
+	return $base;
+}
+
+/**
+ * Generate a unique username for the user table. Appends a numeric suffix starting at 2 if needed.
+ */
+function alumnus_generate_unique_username($first_name, $last_name, $user_table) {
+	global $wpdb;
+	$base = alumnus_build_base_username($first_name, $last_name);
+	$candidate = $base;
+	$suffix = 2;
+	while (true) {
+		$exists = $wpdb->get_var($wpdb->prepare("SELECT 1 FROM {$user_table} WHERE username = %s LIMIT 1", $candidate));
+		if (!$exists) break;
+		$candidate = $base . $suffix;
+		$suffix++;
+		if ($suffix > 1000) { // safety guard
+			$candidate = $base . '-' . uniqid();
+			break;
+		}
+	}
+	return $candidate;
+}
+
+/**
+ * Check if `username` column exists in the given user table
+ */
+function alumnus_user_table_has_username($user_table) {
+	global $wpdb;
+	$col = $wpdb->get_var($wpdb->prepare("SHOW COLUMNS FROM {$user_table} LIKE %s", 'username'));
+	return !empty($col);
+}
+
+/**
  * Add top-level admin menu
  */
 function alumnus_admin_menu() {
@@ -267,16 +316,27 @@ function alumnus_handle_post() {
 			$alumni_formats[] = in_array($key, ['user_id', 'year', 'course_id', 'contact_info']) ? '%d' : '%s';
 		}
 		
-		$insert_alumni = $wpdb->insert($tables['alumni'], $alumni_data, $alumni_formats);
+	$insert_alumni = $wpdb->insert($tables['alumni'], $alumni_data, $alumni_formats);
 		
 		if ($insert_alumni === false) {
 			add_settings_error('alumnus', 'alumni_insert_fail', sprintf(__('Failed to add alumni. Error: %s', 'alumnus'), esc_html($wpdb->last_error)), 'error');
 			return;
 		}
 		
-		$insert_user = $wpdb->insert($tables['user'], [
-			'user' => $alumni_id, 'course_id' => $course_id, 'year' => $batch_year, 'password' => $password_hash
-		], ['%d', '%d', '%d', '%s']);
+		// Compute username after alumni row is added
+		$user_insert_data = [
+			'user' => $alumni_id,
+			'course_id' => $course_id,
+			'year' => $batch_year,
+			'password' => $password_hash,
+		];
+		$user_insert_formats = ['%d', '%d', '%d', '%s'];
+		if (alumnus_user_table_has_username($tables['user'])) {
+			$username = alumnus_generate_unique_username($first_name, $last_name, $tables['user']);
+			$user_insert_data['username'] = $username;
+			$user_insert_formats[] = '%s';
+		}
+		$insert_user = $wpdb->insert($tables['user'], $user_insert_data, $user_insert_formats);
 		
 		if ($insert_user === false) {
 			$wpdb->delete($tables['alumni'], ['user_id' => $alumni_id], ['%d']);
@@ -392,10 +452,21 @@ function alumnus_handle_post() {
 				}
 				
 				$insert_alumni = $wpdb->insert($tables['alumni'], $alumni_data, $alumni_formats);
-				
-				$insert_user = $wpdb->insert($tables['user'], [
-					'user' => $alumni_id, 'course_id' => $course_id, 'year' => $batch_year, 'password' => $password_hash
-				], ['%d', '%d', '%d', '%s']);
+
+				// Prepare user insert with possible username
+				$user_insert_data = [
+					'user' => $alumni_id,
+					'course_id' => $course_id,
+					'year' => $batch_year,
+					'password' => $password_hash,
+				];
+				$user_insert_formats = ['%d', '%d', '%d', '%s'];
+				if (alumnus_user_table_has_username($tables['user'])) {
+					$username = alumnus_generate_unique_username($first_name, $last_name, $tables['user']);
+					$user_insert_data['username'] = $username;
+					$user_insert_formats[] = '%s';
+				}
+				$insert_user = $wpdb->insert($tables['user'], $user_insert_data, $user_insert_formats);
 				
 				if ($insert_alumni && $insert_user) {
 					$success_count++;
@@ -426,12 +497,24 @@ function alumnus_render_admin_page() {
 	$tables = alumnus_get_table_names();
 	global $wpdb;
 	$courses = $wpdb->get_results("SELECT course_id, course FROM {$tables['courses']} ORDER BY course ASC");
-	$alumni_list = $wpdb->get_results("
-		SELECT a.user_id, a.firstname, a.lastname, a.year, a.course_id, c.course 
-		FROM {$tables['alumni']} a
-		LEFT JOIN {$tables['courses']} c ON a.course_id = c.course_id
-		ORDER BY a.user_id ASC
-	");
+	// Detect if username column exists to include it in list
+	$has_username = alumnus_user_table_has_username($tables['user']);
+	if ($has_username) {
+		$alumni_list = $wpdb->get_results("
+			SELECT a.user_id, a.firstname, a.lastname, a.year, a.course_id, c.course, u.username
+			FROM {$tables['alumni']} a
+			LEFT JOIN {$tables['courses']} c ON a.course_id = c.course_id
+			LEFT JOIN {$tables['user']} u ON u.user = a.user_id
+			ORDER BY a.user_id ASC
+		");
+	} else {
+		$alumni_list = $wpdb->get_results("
+			SELECT a.user_id, a.firstname, a.lastname, a.year, a.course_id, c.course 
+			FROM {$tables['alumni']} a
+			LEFT JOIN {$tables['courses']} c ON a.course_id = c.course_id
+			ORDER BY a.user_id ASC
+		");
+	}
 	
 	echo '<div class="wrap">';
 	echo '<h1>' . esc_html__('Alumnus Manager', 'alumnus') . '</h1>';
@@ -502,11 +585,12 @@ function alumnus_render_admin_page() {
 	echo '<h2>Alumni List</h2>';
 	if (!empty($alumni_list)) {
 		echo '<table class="wp-list-table widefat fixed striped alumnus-table">';
-		echo '<thead><tr><th>User ID</th><th>Name</th><th>Course</th><th>Year</th><th>Default Password</th><th>Actions</th></tr></thead><tbody>';
+		echo '<thead><tr><th>User ID</th><th>Name</th>' . ($has_username ? '<th>Username</th>' : '') . '<th>Course</th><th>Year</th><th>Default Password</th><th>Actions</th></tr></thead><tbody>';
 		foreach ($alumni_list as $alumni) {
 			$password = get_transient('alumnus_new_password_' . $alumni->user_id);
 			echo '<tr><td>' . esc_html($alumni->user_id) . '</td>';
 			echo '<td>' . esc_html($alumni->firstname . ' ' . $alumni->lastname) . '</td>';
+			if ($has_username) { echo '<td>' . esc_html($alumni->username) . '</td>'; }
 			echo '<td>' . esc_html($alumni->course) . '</td>';
 			echo '<td>' . esc_html($alumni->year) . '</td>';
 			echo '<td>' . ($password ? '<span class="alumnus-password-display">' . esc_html($password) . '</span>' : '<em>Not available</em>') . '</td>';

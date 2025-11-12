@@ -59,12 +59,15 @@ function adm_create_alumni_tables() {
     ) ENGINE=InnoDB $charset_collate;";
 
     // === USER ACCOUNT TABLE ===
+    // Note: adds `username` column with UNIQUE constraint
     $sql_user_account = "CREATE TABLE IF NOT EXISTS user (
         user VARCHAR(100) NOT NULL,
         course_id INT(11) NOT NULL,
         year INT(11) NOT NULL,
         password VARCHAR(150) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+        username VARCHAR(191) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
         PRIMARY KEY (user),
+        UNIQUE KEY uniq_username (username),
         FOREIGN KEY (user) REFERENCES alumni(user_id) ON DELETE CASCADE ON UPDATE CASCADE,
         FOREIGN KEY (course_id) REFERENCES course(course_id) ON DELETE CASCADE ON UPDATE CASCADE
     ) ENGINE=InnoDB $charset_collate;";
@@ -91,6 +94,9 @@ function adm_create_alumni_tables() {
     dbDelta($sql_alumni_skills);
     dbDelta($sql_user_account);
     dbDelta($sql_experience);
+
+    // Ensure username column exists and backfill if needed
+    adm_migrate_add_username_column();
 
     // Migrate existing experience table if it was previously linked to wp_users
     adm_migrate_experience_to_alumni_link();
@@ -153,10 +159,24 @@ function adm_admin_page_content() {
             </div>
         <?php endif; ?>
 
+        <?php if (isset($_POST['adm_backfill_usernames'])): ?>
+            <?php $updated = adm_backfill_usernames_missing(); ?>
+            <div class="notice notice-success is-dismissible">
+                <p><strong>✅ Username backfill complete.</strong> Updated <?php echo (int) $updated; ?> account(s).</p>
+            </div>
+        <?php endif; ?>
+
         <form method="post" id="adm-create-form">
             <button type="submit" name="adm_create_tables" id="adm-create-btn" class="button button-primary button-large">
                 🧱 Create Alumni Database Tables
             </button>
+        </form>
+
+        <form method="post" id="adm-backfill-form" style="margin-top:12px;">
+            <button type="submit" name="adm_backfill_usernames" id="adm-backfill-btn" class="button">
+                🔁 Backfill Usernames (existing accounts)
+            </button>
+            <p class="description">Generates usernames only for accounts missing one. Safe to run multiple times.</p>
         </form>
 
         <hr class="alumnus-admin-hr">
@@ -178,6 +198,16 @@ function adm_admin_page_content() {
                 event.preventDefault();
             }
         });
+
+        const backfillForm = document.getElementById('adm-backfill-form');
+        if (backfillForm) {
+            backfillForm.addEventListener('submit', function(event) {
+                const confirmed = confirm('Proceed to generate usernames for existing accounts without one?');
+                if (!confirmed) {
+                    event.preventDefault();
+                }
+            });
+        }
     </script>
     <?php
 }
@@ -305,3 +335,157 @@ function adm_migrate_experience_to_alumni_link() {
         // Add new FK to alumni
         $wpdb->query("ALTER TABLE experience ADD CONSTRAINT fk_experience_alumni FOREIGN KEY (user_id) REFERENCES alumni(user_id) ON DELETE CASCADE ON UPDATE CASCADE");
 }
+
+// =====================================================
+// 🔁 MIGRATION: Add `username` column to `user` and backfill
+// =====================================================
+function adm_migrate_add_username_column() {
+    global $wpdb;
+
+    // Check if `user` table exists
+    $table = $wpdb->get_var("SHOW TABLES LIKE 'user'");
+    if (!$table) return;
+
+    // Check if username column exists
+    $has_username = $wpdb->get_var("SHOW COLUMNS FROM user LIKE 'username'");
+    if (empty($has_username)) {
+        // Add column allowing NULL temporarily to avoid errors on existing rows
+        $wpdb->query("ALTER TABLE user ADD COLUMN username VARCHAR(191) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL AFTER password");
+    }
+
+    // Backfill usernames for rows missing it
+    // Build a map of desired base usernames and ensure uniqueness by appending numeric suffixes starting at 2
+    $rows = $wpdb->get_results(
+        "SELECT u.user AS user_id, u.username, a.firstname, a.lastname
+         FROM user u
+         JOIN alumni a ON a.user_id = u.user"
+    );
+
+    if (empty($rows)) return;
+
+    // Helper to build base username from names
+    $build_base = function($first, $last) {
+        $first = trim((string)$first);
+        $last  = trim((string)$last);
+        // first token of first name
+        $first_token = preg_split('/\s+/', $first);
+        $first_token = isset($first_token[0]) ? $first_token[0] : '';
+        // combine all parts of last name (remove spaces)
+        $last_combined = preg_replace('/\s+/', '', $last);
+        // sanitize to alphanumeric only
+        $base = preg_replace('/[^A-Za-z0-9]/', '', strtolower($first_token . $last_combined));
+        return $base !== '' ? $base : wp_generate_password(8, false);
+    };
+
+    foreach ($rows as $r) {
+        // Skip if username already populated
+        if (!empty($r->username)) {
+            continue;
+        }
+
+        $base = $build_base($r->firstname, $r->lastname);
+        $candidate = $base;
+        $suffix = 2;
+        while (true) {
+            $exists = $wpdb->get_var($wpdb->prepare("SELECT 1 FROM user WHERE username = %s LIMIT 1", $candidate));
+            if (!$exists) break;
+            $candidate = $base . $suffix;
+            $suffix++;
+            if ($suffix > 1000) break; // safety
+        }
+
+        $wpdb->update('user', ['username' => $candidate], ['user' => $r->user_id], ['%s'], ['%s']);
+    }
+
+    // Ensure NOT NULL and add unique key after backfill
+    // Set any remaining NULLs to a generated safe value
+    $null_rows = $wpdb->get_var("SELECT COUNT(*) FROM user WHERE username IS NULL OR username = ''");
+    if ((int)$null_rows > 0) {
+        $orows = $wpdb->get_results("SELECT u.user AS user_id, a.firstname, a.lastname FROM user u JOIN alumni a ON a.user_id = u.user WHERE (u.username IS NULL OR u.username = '')");
+        foreach ($orows as $or) {
+            $base = $build_base($or->firstname, $or->lastname);
+            $candidate = $base;
+            $suffix = 2;
+            while (true) {
+                $exists = $wpdb->get_var($wpdb->prepare("SELECT 1 FROM user WHERE username = %s LIMIT 1", $candidate));
+                if (!$exists) break;
+                $candidate = $base . $suffix;
+                $suffix++;
+                if ($suffix > 1000) { $candidate = $base . '-' . uniqid(); break; }
+            }
+            $wpdb->update('user', ['username' => $candidate], ['user' => $or->user_id], ['%s'], ['%s']);
+        }
+    }
+
+    // Add unique index if not present and enforce NOT NULL
+    $has_unique = $wpdb->get_var("SHOW INDEX FROM user WHERE Key_name = 'uniq_username'");
+    if (empty($has_unique)) {
+        $wpdb->query("ALTER TABLE user ADD UNIQUE KEY uniq_username (username)");
+    }
+    $wpdb->query("ALTER TABLE user MODIFY COLUMN username VARCHAR(191) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL");
+}
+
+// =====================================================
+// 🧩 Helper: Build base username from names
+// =====================================================
+if (!function_exists('adm_username_build_base')) {
+function adm_username_build_base($first, $last) {
+    $first = trim((string)$first);
+    $last  = trim((string)$last);
+    $first_token = preg_split('/\s+/', $first);
+    $first_token = isset($first_token[0]) ? $first_token[0] : '';
+    $last_combined = preg_replace('/\s+/', '', $last);
+    $base = preg_replace('/[^A-Za-z0-9]/', '', strtolower($first_token . $last_combined));
+    if ($base === '') {
+        $base = strtolower(wp_generate_password(6, false));
+    }
+    return $base;
+}}
+
+// =====================================================
+// 🛠️ Admin Utility: Backfill usernames for existing accounts only
+// Runs only on rows where `user.username` is NULL or empty
+// Returns the number of usernames updated
+// =====================================================
+function adm_backfill_usernames_missing() {
+    global $wpdb;
+
+    // Ensure `user` table exists
+    $table = $wpdb->get_var("SHOW TABLES LIKE 'user'");
+    if (!$table) return 0;
+
+    // Ensure username column exists; if not, create and migrate
+    $has_username = $wpdb->get_var("SHOW COLUMNS FROM user LIKE 'username'");
+    if (empty($has_username)) {
+        adm_migrate_add_username_column();
+    }
+
+    // Select rows missing username
+    $rows = $wpdb->get_results(
+        "SELECT u.user AS user_id, u.username, a.firstname, a.lastname
+         FROM user u
+         JOIN alumni a ON a.user_id = u.user
+         WHERE u.username IS NULL OR u.username = ''"
+    );
+
+    if (empty($rows)) return 0;
+
+    $updated = 0;
+    foreach ($rows as $r) {
+        $base = adm_username_build_base($r->firstname, $r->lastname);
+        $candidate = $base;
+        $suffix = 2;
+        while (true) {
+            $exists = $wpdb->get_var($wpdb->prepare("SELECT 1 FROM user WHERE username = %s LIMIT 1", $candidate));
+            if (!$exists) break;
+            $candidate = $base . $suffix;
+            $suffix++;
+            if ($suffix > 1000) { $candidate = $base . '-' . uniqid(); break; }
+        }
+        $res = $wpdb->update('user', ['username' => $candidate], ['user' => $r->user_id], ['%s'], ['%s']);
+        if ($res !== false) { $updated++; }
+    }
+
+    return $updated;
+}
+
