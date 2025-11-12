@@ -559,3 +559,151 @@ select#filter-course:focus {
 	}
 }
 
+/* ============================================
+   PAGINATION STYLES
+   ============================================ */
+
+.alumnus-pagination {
+	margin: 40px 0 20px;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+}
+
+.pagination-controls {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	flex-wrap: wrap;
+	justify-content: center;
+}
+
+.pagination-numbers {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	flex-wrap: wrap;
+	justify-content: center;
+}
+
+.pagination-btn {
+	min-width: 40px;
+	height: 40px;
+	padding: 0 12px;
+	border: 2px solid var(--alumnus-border-select);
+	border-radius: 8px;
+	background: var(--alumnus-bg-white);
+	color: var(--alumnus-text-heading);
+	font-size: 15px;
+	font-weight: 500;
+	font-family: "Helvetica Neue", Arial, sans-serif;
+	cursor: pointer;
+	transition: all 0.2s ease;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	white-space: nowrap;
+}
+
+.pagination-btn:hover:not([disabled]) {
+	background: var(--alumnus-primary);
+	color: var(--alumnus-text-on-dark);
+	border-color: var(--alumnus-primary);
+	transform: translateY(-2px);
+	box-shadow: 0 4px 8px rgba(4, 50, 77, 0.2);
+}
+
+.pagination-btn:active:not([disabled]) {
+	transform: translateY(0);
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.pagination-btn.active {
+	background: var(--alumnus-primary);
+	color: var(--alumnus-text-on-dark);
+	border-color: var(--alumnus-primary);
+	font-weight: 600;
+	box-shadow: 0 2px 6px rgba(4, 50, 77, 0.3);
+}
+
+.pagination-btn[disabled] {
+	opacity: 0.4;
+	cursor: not-allowed;
+	background: var(--alumnus-bg-page);
+	color: var(--alumnus-text-lighter);
+	border-color: var(--alumnus-border-medium);
+}
+
+.pagination-prev,
+.pagination-next {
+	padding: 0 16px;
+	font-weight: 600;
+}
+
+.pagination-ellipsis {
+	color: var(--alumnus-text-lighter);
+	font-size: 15px;
+	padding: 0 4px;
+	display: inline-flex;
+	align-items: center;
+	min-width: 20px;
+	justify-content: center;
+}
+
+/* Responsive Pagination */
+@media (max-width: 768px) {
+	.pagination-controls {
+		gap: 6px;
+	}
+	
+	.pagination-numbers {
+		gap: 6px;
+	}
+	
+	.pagination-btn {
+		min-width: 36px;
+		height: 36px;
+		padding: 0 10px;
+		font-size: 14px;
+	}
+	
+	.pagination-prev,
+	.pagination-next {
+		padding: 0 12px;
+	}
+}
+
+@media (max-width: 480px) {
+	.alumnus-pagination {
+		margin: 32px 0 16px;
+	}
+	
+	.pagination-controls {
+		gap: 4px;
+	}
+	
+	.pagination-numbers {
+		gap: 4px;
+	}
+	
+	.pagination-btn {
+		min-width: 32px;
+		height: 32px;
+		padding: 0 8px;
+		font-size: 13px;
+		border-radius: 6px;
+	}
+	
+	.pagination-prev,
+	.pagination-next {
+		padding: 0 10px;
+		font-size: 13px;
+	}
+	
+	.pagination-ellipsis {
+		font-size: 13px;
+		min-width: 16px;
+	}
+}
+
