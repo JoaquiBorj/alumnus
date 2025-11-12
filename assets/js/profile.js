@@ -517,3 +517,210 @@ function alumnus_initExperienceUI() {
 	if (editCancelBtn) editCancelBtn.addEventListener('click', closeEdit);
 }
 
+/**
+ * Initialize skill autocomplete functionality
+ */
+function initSkillAutocomplete() {
+	var skillInput = document.getElementById('alumnus-skills-modal-input');
+	if (!skillInput) return;
+	
+	// Check if dropdown already exists
+	var existingDropdown = document.getElementById('skill-autocomplete-dropdown');
+	if (existingDropdown) {
+		existingDropdown.parentNode.removeChild(existingDropdown);
+	}
+	
+	// Create autocomplete dropdown container
+	var dropdown = document.createElement('div');
+	dropdown.id = 'skill-autocomplete-dropdown';
+	dropdown.className = 'skill-autocomplete-dropdown';
+	dropdown.style.display = 'none';
+	skillInput.parentNode.insertBefore(dropdown, skillInput.nextSibling);
+	
+	var debounceTimer;
+	
+	skillInput.addEventListener('input', function(e) {
+		clearTimeout(debounceTimer);
+		
+		// Get the current word being typed
+		var cursorPos = this.selectionStart;
+		var text = this.value.substring(0, cursorPos);
+		var lastCommaIndex = text.lastIndexOf(',');
+		var currentWord = text.substring(lastCommaIndex + 1).trim();
+		
+		if (currentWord.length < 2) {
+			dropdown.style.display = 'none';
+			return;
+		}
+		
+		// Debounce to avoid too many requests (300ms delay)
+		debounceTimer = setTimeout(function() {
+			fetchSkillSuggestions(currentWord, dropdown, skillInput);
+		}, 300);
+	});
+	
+	// Hide dropdown when clicking outside
+	document.addEventListener('click', function(e) {
+		if (e.target !== skillInput && !dropdown.contains(e.target)) {
+			dropdown.style.display = 'none';
+		}
+	});
+	
+	// Handle keyboard navigation
+	skillInput.addEventListener('keydown', function(e) {
+		if (dropdown.style.display === 'none') return;
+		
+		var items = dropdown.querySelectorAll('.skill-autocomplete-item');
+		if (items.length === 0) return;
+		
+		var activeItem = dropdown.querySelector('.skill-autocomplete-item.active');
+		var activeIndex = -1;
+		
+		if (activeItem) {
+			for (var i = 0; i < items.length; i++) {
+				if (items[i] === activeItem) {
+					activeIndex = i;
+					break;
+				}
+			}
+		}
+		
+		if (e.key === 'ArrowDown') {
+			e.preventDefault();
+			var nextIndex = activeIndex + 1;
+			if (nextIndex >= items.length) nextIndex = 0;
+			
+			if (activeItem) activeItem.classList.remove('active');
+			items[nextIndex].classList.add('active');
+		} else if (e.key === 'ArrowUp') {
+			e.preventDefault();
+			var prevIndex = activeIndex - 1;
+			if (prevIndex < 0) prevIndex = items.length - 1;
+			
+			if (activeItem) activeItem.classList.remove('active');
+			items[prevIndex].classList.add('active');
+		} else if (e.key === 'Enter') {
+			if (activeItem) {
+				e.preventDefault();
+				activeItem.click();
+			}
+		} else if (e.key === 'Escape') {
+			dropdown.style.display = 'none';
+		}
+	});
+}
+
+function fetchSkillSuggestions(searchTerm, dropdown, inputField) {
+	var strings = window.alumnusProfileStrings || {};
+	var ajaxUrl = strings.ajax_url || (window.ajaxurl || '/wp-admin/admin-ajax.php');
+	var nonce = strings.search_skills_nonce || '';
+	
+	if (!nonce) {
+		console.error('Missing search_skills_nonce');
+		return;
+	}
+	
+	// Use jQuery if available, otherwise use fetch
+	if (typeof jQuery !== 'undefined') {
+		jQuery.ajax({
+			url: ajaxUrl,
+			type: 'POST',
+			data: {
+				action: 'alumnus_search_skills',
+				search: searchTerm,
+				nonce: nonce
+			},
+			success: function(response) {
+				if (response.success && response.data.skills.length > 0) {
+					displaySkillSuggestions(response.data.skills, dropdown, inputField);
+				} else {
+					dropdown.style.display = 'none';
+				}
+			},
+			error: function() {
+				dropdown.style.display = 'none';
+			}
+		});
+	} else {
+		// Fallback to fetch API
+		var formData = new FormData();
+		formData.append('action', 'alumnus_search_skills');
+		formData.append('search', searchTerm);
+		formData.append('nonce', nonce);
+		
+		fetch(ajaxUrl, {
+			method: 'POST',
+			credentials: 'same-origin',
+			body: formData
+		})
+		.then(function(res) { return res.json(); })
+		.then(function(response) {
+			if (response.success && response.data.skills.length > 0) {
+				displaySkillSuggestions(response.data.skills, dropdown, inputField);
+			} else {
+				dropdown.style.display = 'none';
+			}
+		})
+		.catch(function() {
+			dropdown.style.display = 'none';
+		});
+	}
+}
+
+function displaySkillSuggestions(skills, dropdown, inputField) {
+	dropdown.innerHTML = '';
+	
+	for (var i = 0; i < skills.length; i++) {
+		var skill = skills[i];
+		var item = document.createElement('div');
+		item.className = 'skill-autocomplete-item';
+		item.textContent = skill;
+		
+		// Store skill value as data attribute
+		item.setAttribute('data-skill', skill);
+		
+		item.addEventListener('click', function() {
+			var selectedSkill = this.getAttribute('data-skill');
+			insertSkill(selectedSkill, inputField);
+			dropdown.style.display = 'none';
+		});
+		
+		dropdown.appendChild(item);
+	}
+	
+	dropdown.style.display = 'block';
+}
+
+function insertSkill(skill, inputField) {
+	var cursorPos = inputField.selectionStart;
+	var text = inputField.value;
+	var beforeCursor = text.substring(0, cursorPos);
+	var afterCursor = text.substring(cursorPos);
+	
+	// Find where the current word starts
+	var lastCommaIndex = beforeCursor.lastIndexOf(',');
+	var beforeWord = beforeCursor.substring(0, lastCommaIndex + 1);
+	
+	// Insert the skill
+	var newValue = beforeWord + (beforeWord && !beforeWord.endsWith(' ') ? ' ' : '') + skill + ', ' + afterCursor;
+	inputField.value = newValue;
+	
+	// Position cursor after the inserted skill
+	var newCursorPos = (beforeWord + ' ' + skill + ', ').length;
+	inputField.setSelectionRange(newCursorPos, newCursorPos);
+	inputField.focus();
+}
+
+// Initialize autocomplete when skills modal opens
+document.addEventListener('DOMContentLoaded', function() {
+	var addSkillsBtn = document.getElementById('alumnus-skills-add-btn');
+	if (addSkillsBtn) {
+		addSkillsBtn.addEventListener('click', function() {
+			// Small delay to ensure modal is fully rendered
+			setTimeout(function() {
+				initSkillAutocomplete();
+			}, 100);
+		});
+	}
+});
+

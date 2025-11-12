@@ -74,6 +74,8 @@ function alumnus_enqueue_profile_styles() {
 			'savingExperience'   => __( 'Saving Experience…', 'alumnus' ),
 			'errorExperience'    => __( 'Failed to add experience.', 'alumnus' ),
 			'networkErrorExperience' => __( 'Network error adding experience.', 'alumnus' ),
+			'search_skills_nonce' => wp_create_nonce('alumnus_search_skills'),
+			'ajax_url'           => admin_url('admin-ajax.php'),
 		)
 	);
 
@@ -907,6 +909,39 @@ function alumnus_update_skills_ajax() {
 }
 add_action( 'wp_ajax_alumnus_update_skills', 'alumnus_update_skills_ajax' );
 add_action( 'wp_ajax_nopriv_alumnus_update_skills', 'alumnus_update_skills_ajax' );
+
+/**
+ * AJAX handler to search/suggest skills as user types
+ * Optimized to prevent server overload with debouncing and limits
+ */
+function alumnus_search_skills_ajax() {
+	check_ajax_referer('alumnus_search_skills', 'nonce');
+	
+	$search_term = isset($_POST['search']) ? sanitize_text_field($_POST['search']) : '';
+	
+	// Require minimum 2 characters to prevent excessive queries
+	if (strlen($search_term) < 2) {
+		wp_send_json_success(array('skills' => array()));
+		return;
+	}
+	
+	global $wpdb;
+	
+	// Search for skills that match the input (case-insensitive)
+	// Limit to 20 results to keep response fast
+	$like = '%' . $wpdb->esc_like($search_term) . '%';
+	$results = $wpdb->get_col($wpdb->prepare(
+		"SELECT DISTINCT skill FROM skills 
+		 WHERE skill LIKE %s 
+		 ORDER BY skill ASC 
+		 LIMIT 20",
+		$like
+	));
+	
+	wp_send_json_success(array('skills' => $results));
+}
+add_action('wp_ajax_alumnus_search_skills', 'alumnus_search_skills_ajax');
+add_action('wp_ajax_nopriv_alumnus_search_skills', 'alumnus_search_skills_ajax');
 
 /**
  * AJAX handler to update bio_note of the logged-in alumni user.
