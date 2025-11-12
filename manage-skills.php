@@ -1,7 +1,7 @@
 <?php
 /**
  * Skills Manager - Admin page to add, edit, and delete skills
- * Version: 1.0.0
+ * Version: 1.0.1
  */
 
 if (!defined('ABSPATH')) {
@@ -35,15 +35,6 @@ function alumnus_skills_admin_scripts($hook) {
         .skills-header h1 { margin: 0; font-size: 23px; font-weight: 400; line-height: 1.3; }
         .skills-actions-group { display: flex; gap: 10px; }
         
-        /* Stats Cards */
-        .skills-stats-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 25px; }
-        .stat-card { background: #fff; padding: 20px; border: 1px solid #c3c4c7; border-radius: 4px; box-shadow: 0 1px 1px rgba(0,0,0,.04); }
-        .stat-card-title { font-size: 13px; color: #646970; text-transform: uppercase; font-weight: 500; margin-bottom: 8px; letter-spacing: 0.5px; }
-        .stat-card-value { font-size: 32px; font-weight: 600; color: #1d2327; line-height: 1.2; }
-        .stat-card.primary { border-left: 4px solid #2271b1; }
-        .stat-card.success { border-left: 4px solid #00a32a; }
-        .stat-card.warning { border-left: 4px solid #dba617; }
-        
         /* Search and Filters */
         .skills-filters { background: #fff; padding: 15px 20px; border: 1px solid #c3c4c7; border-radius: 4px; margin-bottom: 20px; box-shadow: 0 1px 1px rgba(0,0,0,.04); }
         .search-box { display: flex; gap: 10px; align-items: center; }
@@ -60,7 +51,6 @@ function alumnus_skills_admin_scripts($hook) {
         .skills-table tbody tr:last-child td { border-bottom: none; }
         .skill-name-cell { font-weight: 500; color: #2271b1; }
         .skill-id-cell { color: #646970; font-family: monospace; }
-        .skill-usage-cell { color: #646970; }
         .skill-actions { display: flex; gap: 12px; }
         .skill-actions a { text-decoration: none; font-weight: 500; transition: color 0.1s ease; }
         .skill-actions .edit { color: #2271b1; }
@@ -102,9 +92,6 @@ function alumnus_skills_admin_scripts($hook) {
         .notice-success { background: #d7f0db; border-left: 4px solid #00a32a; padding: 12px 16px; margin: 15px 0; border-radius: 0 4px 4px 0; }
         .notice-error { background: #fcf0f1; border-left: 4px solid #d63638; padding: 12px 16px; margin: 15px 0; border-radius: 0 4px 4px 0; }
         
-        /* Button Improvements */
-        .button-icon { display: inline-flex; align-items: center; gap: 6px; }
-        .button-icon .dashicons { font-size: 16px; width: 16px; height: 16px; }
     ');
     
     wp_add_inline_script('jquery', '
@@ -147,12 +134,7 @@ function alumnus_skills_admin_scripts($hook) {
             // Delete Skill Confirmation
             $(".delete-skill-btn").click(function(e) {
                 var skillName = $(this).data("name");
-                var usageCount = $(this).data("usage");
-                var message = "Are you sure you want to delete the skill: " + skillName + "?";
-                if (usageCount > 0) {
-                    message += "\\n\\nWarning: This skill is currently used by " + usageCount + " alumni. It will be removed from their profiles.";
-                }
-                return confirm(message);
+                return confirm("Are you sure you want to delete the skill: " + skillName + "?");
             });
         });
     ');
@@ -413,14 +395,11 @@ function alumnus_render_skills_page() {
         ? $wpdb->get_var($wpdb->prepare($total_sql, $params))
         : $wpdb->get_var($total_sql);
     
-    // Get skills with usage count
-    $sql = "SELECT s.skill_id, s.skill, 
-            COUNT(aks.user_id) as usage_count
-            FROM skills s
-            LEFT JOIN alumni_skills aks ON s.skill_id = aks.skill_id
+    // Get skills
+    $sql = "SELECT skill_id, skill
+            FROM skills
             $where
-            GROUP BY s.skill_id, s.skill
-            ORDER BY s.skill ASC
+            ORDER BY skill_id ASC
             LIMIT %d OFFSET %d";
     
     $params[] = $per_page;
@@ -430,44 +409,21 @@ function alumnus_render_skills_page() {
     
     $total_pages = ceil($total_count / $per_page);
     
-    // Get overall statistics
-    $total_skills = $wpdb->get_var("SELECT COUNT(*) FROM skills");
-    $total_used = $wpdb->get_var("SELECT COUNT(DISTINCT skill_id) FROM alumni_skills");
-    $total_unused = $total_skills - $total_used;
-    
     ?>
     <div class="wrap skills-manager-wrap">
         <div class="skills-header">
             <h1><?php echo esc_html__('Manage Skills', 'alumnus'); ?></h1>
             <div class="skills-actions-group">
-                <button type="button" id="add-skill-btn" class="button button-primary button-icon">
-                    <span class="dashicons dashicons-plus-alt"></span>
+                <button type="button" id="add-skill-btn" class="button button-primary">
                     <?php echo esc_html__('Add Skill', 'alumnus'); ?>
                 </button>
-                <button type="button" id="bulk-add-skill-btn" class="button button-secondary button-icon">
-                    <span class="dashicons dashicons-editor-ul"></span>
+                <button type="button" id="bulk-add-skill-btn" class="button button-secondary">
                     <?php echo esc_html__('Bulk Add', 'alumnus'); ?>
                 </button>
             </div>
         </div>
         
         <?php settings_errors('alumnus_skills'); ?>
-        
-        <!-- Statistics Cards -->
-        <div class="skills-stats-container">
-            <div class="stat-card primary">
-                <div class="stat-card-title"><?php echo esc_html__('Total Skills', 'alumnus'); ?></div>
-                <div class="stat-card-value"><?php echo esc_html($total_skills); ?></div>
-            </div>
-            <div class="stat-card success">
-                <div class="stat-card-title"><?php echo esc_html__('In Use', 'alumnus'); ?></div>
-                <div class="stat-card-value"><?php echo esc_html($total_used); ?></div>
-            </div>
-            <div class="stat-card warning">
-                <div class="stat-card-title"><?php echo esc_html__('Unused', 'alumnus'); ?></div>
-                <div class="stat-card-value"><?php echo esc_html($total_unused); ?></div>
-            </div>
-        </div>
         
         <!-- Search and Filters -->
         <div class="skills-filters">
@@ -499,7 +455,6 @@ function alumnus_render_skills_page() {
                         <tr>
                             <th style="width: 80px;"><?php echo esc_html__('ID', 'alumnus'); ?></th>
                             <th><?php echo esc_html__('Skill Name', 'alumnus'); ?></th>
-                            <th style="width: 140px;"><?php echo esc_html__('Used By', 'alumnus'); ?></th>
                             <th style="width: 150px;"><?php echo esc_html__('Actions', 'alumnus'); ?></th>
                         </tr>
                     </thead>
@@ -508,7 +463,6 @@ function alumnus_render_skills_page() {
                             <tr>
                                 <td class="skill-id-cell">#<?php echo esc_html($skill->skill_id); ?></td>
                                 <td class="skill-name-cell"><?php echo esc_html($skill->skill); ?></td>
-                                <td class="skill-usage-cell"><?php echo esc_html(sprintf(_n('%d alumni', '%d alumni', $skill->usage_count, 'alumnus'), $skill->usage_count)); ?></td>
                                 <td class="skill-actions">
                                     <a href="#" class="edit edit-skill-btn" 
                                        data-id="<?php echo esc_attr($skill->skill_id); ?>"
@@ -521,8 +475,7 @@ function alumnus_render_skills_page() {
                                         'alumnus_delete_skill_nonce'
                                     ); ?>" 
                                        class="delete delete-skill-btn"
-                                       data-name="<?php echo esc_attr($skill->skill); ?>"
-                                       data-usage="<?php echo esc_attr($skill->usage_count); ?>">
+                                       data-name="<?php echo esc_attr($skill->skill); ?>">
                                         <?php echo esc_html__('Delete', 'alumnus'); ?>
                                     </a>
                                 </td>
@@ -628,4 +581,3 @@ function alumnus_render_skills_page() {
     </div>
     <?php
 }
-
