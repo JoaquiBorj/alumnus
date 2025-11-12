@@ -30,43 +30,97 @@ function alumnus_skills_admin_scripts($hook) {
     if ($hook !== 'alumnus_page_alumnus-manage-skills') return;
     
     wp_add_inline_style('wp-admin', '
-        .skills-manager-wrap { margin: 20px; }
-        .skills-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .skills-stats { background: #fff; padding: 15px; border-left: 4px solid #2271b1; margin-bottom: 20px; }
-        .skills-table { background: #fff; border: 1px solid #c3c4c7; }
-        .skills-table th { background: #f6f7f7; padding: 12px; text-align: left; font-weight: 600; }
-        .skills-table td { padding: 12px; border-top: 1px solid #c3c4c7; }
-        .skills-table tr:hover { background: #f6f7f7; }
-        .skill-actions { display: flex; gap: 10px; }
-        .skill-actions a { text-decoration: none; }
-        .skill-actions .delete { color: #b32d2e; }
-        .skill-actions .delete:hover { color: #8a2424; }
-        .alumnus-modal { display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); }
-        .alumnus-modal-content { background-color: #fff; margin: 10% auto; padding: 0; border: 1px solid #c3c4c7; width: 90%; max-width: 500px; border-radius: 4px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
-        .alumnus-modal-header { padding: 15px 20px; border-bottom: 1px solid #c3c4c7; display: flex; justify-content: space-between; align-items: center; }
-        .alumnus-modal-body { padding: 20px; }
-        .alumnus-modal-footer { padding: 15px 20px; border-top: 1px solid #c3c4c7; text-align: right; }
-        .alumnus-close { color: #aaa; font-size: 28px; font-weight: bold; cursor: pointer; line-height: 20px; }
-        .alumnus-close:hover { color: #000; }
-        .form-group { margin-bottom: 15px; }
-        .form-group label { display: block; margin-bottom: 5px; font-weight: 600; }
-        .form-group input { width: 100%; padding: 8px; border: 1px solid #c3c4c7; border-radius: 3px; }
-        .search-box { margin-bottom: 15px; }
-        .search-box input { padding: 8px 12px; width: 300px; border: 1px solid #c3c4c7; border-radius: 3px; }
-        .pagination { margin-top: 20px; text-align: center; }
-        .pagination a, .pagination span { padding: 5px 10px; margin: 0 2px; border: 1px solid #c3c4c7; display: inline-block; text-decoration: none; }
+        .skills-manager-wrap { margin: 20px 20px 40px; }
+        .skills-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
+        .skills-header h1 { margin: 0; font-size: 23px; font-weight: 400; line-height: 1.3; }
+        .skills-actions-group { display: flex; gap: 10px; }
+        
+        /* Stats Cards */
+        .skills-stats-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 25px; }
+        .stat-card { background: #fff; padding: 20px; border: 1px solid #c3c4c7; border-radius: 4px; box-shadow: 0 1px 1px rgba(0,0,0,.04); }
+        .stat-card-title { font-size: 13px; color: #646970; text-transform: uppercase; font-weight: 500; margin-bottom: 8px; letter-spacing: 0.5px; }
+        .stat-card-value { font-size: 32px; font-weight: 600; color: #1d2327; line-height: 1.2; }
+        .stat-card.primary { border-left: 4px solid #2271b1; }
+        .stat-card.success { border-left: 4px solid #00a32a; }
+        .stat-card.warning { border-left: 4px solid #dba617; }
+        
+        /* Search and Filters */
+        .skills-filters { background: #fff; padding: 15px 20px; border: 1px solid #c3c4c7; border-radius: 4px; margin-bottom: 20px; box-shadow: 0 1px 1px rgba(0,0,0,.04); }
+        .search-box { display: flex; gap: 10px; align-items: center; }
+        .search-box input { padding: 8px 12px; width: 350px; border: 1px solid #8c8f94; border-radius: 3px; font-size: 14px; }
+        .search-box input:focus { border-color: #2271b1; outline: none; box-shadow: 0 0 0 1px #2271b1; }
+        
+        /* Table Styling */
+        .skills-table-container { background: #fff; border: 1px solid #c3c4c7; border-radius: 4px; box-shadow: 0 1px 1px rgba(0,0,0,.04); overflow: hidden; }
+        .skills-table { width: 100%; background: #fff; border: none; }
+        .skills-table thead th { background: #f6f7f7; padding: 14px 12px; text-align: left; font-weight: 600; color: #1d2327; border-bottom: 1px solid #c3c4c7; font-size: 14px; }
+        .skills-table tbody tr { transition: background-color 0.1s ease; }
+        .skills-table tbody tr:hover { background: #f6f7f7; }
+        .skills-table tbody td { padding: 14px 12px; border-bottom: 1px solid #dcdcde; color: #1d2327; font-size: 14px; }
+        .skills-table tbody tr:last-child td { border-bottom: none; }
+        .skill-name-cell { font-weight: 500; color: #2271b1; }
+        .skill-id-cell { color: #646970; font-family: monospace; }
+        .skill-usage-cell { color: #646970; }
+        .skill-actions { display: flex; gap: 12px; }
+        .skill-actions a { text-decoration: none; font-weight: 500; transition: color 0.1s ease; }
+        .skill-actions .edit { color: #2271b1; }
+        .skill-actions .edit:hover { color: #135e96; }
+        .skill-actions .delete { color: #d63638; }
+        .skill-actions .delete:hover { color: #b32d2e; }
+        
+        /* Empty State */
+        .skills-empty-state { text-align: center; padding: 60px 20px; color: #646970; }
+        .skills-empty-state .dashicons { font-size: 80px; width: 80px; height: 80px; color: #c3c4c7; margin-bottom: 20px; }
+        .skills-empty-state h3 { font-size: 18px; margin-bottom: 10px; color: #1d2327; }
+        .skills-empty-state p { margin-bottom: 20px; }
+        
+        /* Modal Improvements */
+        .alumnus-modal { display: none; position: fixed; z-index: 100000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); backdrop-filter: blur(2px); }
+        .alumnus-modal-content { background-color: #fff; margin: 5% auto; padding: 0; border: 1px solid #c3c4c7; width: 90%; max-width: 600px; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+        .alumnus-modal-header { padding: 20px 24px; border-bottom: 1px solid #dcdcde; display: flex; justify-content: space-between; align-items: center; background: #f6f7f7; border-radius: 8px 8px 0 0; }
+        .alumnus-modal-header h2 { margin: 0; font-size: 20px; font-weight: 600; color: #1d2327; }
+        .alumnus-modal-body { padding: 24px; }
+        .alumnus-modal-footer { padding: 16px 24px; border-top: 1px solid #dcdcde; text-align: right; background: #f6f7f7; border-radius: 0 0 8px 8px; display: flex; justify-content: flex-end; gap: 10px; }
+        .alumnus-close { color: #646970; font-size: 24px; font-weight: normal; cursor: pointer; line-height: 1; transition: color 0.1s ease; background: none; border: none; padding: 0; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; }
+        .alumnus-close:hover { color: #d63638; }
+        
+        /* Form Styling */
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; margin-bottom: 8px; font-weight: 600; color: #1d2327; font-size: 14px; }
+        .form-group input, .form-group textarea { width: 100%; padding: 10px 12px; border: 1px solid #8c8f94; border-radius: 4px; font-size: 14px; transition: border-color 0.1s ease; }
+        .form-group input:focus, .form-group textarea:focus { border-color: #2271b1; outline: none; box-shadow: 0 0 0 1px #2271b1; }
+        .form-group textarea { resize: vertical; min-height: 120px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif; }
+        .form-hint { font-size: 13px; color: #646970; margin-top: 6px; font-style: italic; }
+        
+        /* Pagination */
+        .pagination { margin-top: 20px; text-align: center; padding: 15px 0; }
+        .pagination a, .pagination span { padding: 8px 14px; margin: 0 3px; border: 1px solid #c3c4c7; display: inline-block; text-decoration: none; border-radius: 3px; transition: all 0.1s ease; color: #2271b1; font-weight: 500; }
+        .pagination a:hover { background: #f6f7f7; border-color: #2271b1; }
         .pagination .current { background: #2271b1; color: #fff; border-color: #2271b1; }
-        .notice-success { background: #d7f0db; border-left: 4px solid #00a32a; padding: 12px; margin: 15px 0; }
-        .notice-error { background: #fcf0f1; border-left: 4px solid #d63638; padding: 12px; margin: 15px 0; }
+        
+        /* Notices */
+        .notice-success { background: #d7f0db; border-left: 4px solid #00a32a; padding: 12px 16px; margin: 15px 0; border-radius: 0 4px 4px 0; }
+        .notice-error { background: #fcf0f1; border-left: 4px solid #d63638; padding: 12px 16px; margin: 15px 0; border-radius: 0 4px 4px 0; }
+        
+        /* Button Improvements */
+        .button-icon { display: inline-flex; align-items: center; gap: 6px; }
+        .button-icon .dashicons { font-size: 16px; width: 16px; height: 16px; }
     ');
     
     wp_add_inline_script('jquery', '
         jQuery(document).ready(function($) {
-            // Open Add Modal
+            // Open Add Single Skill Modal
             $("#add-skill-btn").click(function() {
                 $("#add-skill-modal").show();
                 $("#skill-name-input").val("");
                 $("#skill-name-input").focus();
+            });
+            
+            // Open Bulk Add Modal
+            $("#bulk-add-skill-btn").click(function() {
+                $("#bulk-add-skill-modal").show();
+                $("#bulk-skills-input").val("");
+                $("#bulk-skills-input").focus();
             });
             
             // Open Edit Modal
@@ -140,6 +194,84 @@ function alumnus_handle_add_skill() {
         add_settings_error('alumnus_skills', 'skill_added', __('Skill added successfully!', 'alumnus'), 'success');
     } else {
         add_settings_error('alumnus_skills', 'skill_error', __('Error adding skill. Please try again.', 'alumnus'), 'error');
+    }
+}
+
+/**
+ * Handle Bulk Add Skills Form Submission
+ */
+function alumnus_handle_bulk_add_skills() {
+    if (!isset($_POST['alumnus_bulk_add_skills_nonce']) || !wp_verify_nonce($_POST['alumnus_bulk_add_skills_nonce'], 'alumnus_bulk_add_skills_action')) {
+        return;
+    }
+    
+    if (!current_user_can('manage_options')) {
+        return;
+    }
+    
+    global $wpdb;
+    $skills_raw = isset($_POST['bulk_skills']) ? $_POST['bulk_skills'] : '';
+    
+    if (empty(trim($skills_raw))) {
+        add_settings_error('alumnus_skills', 'empty_bulk_skills', __('Please enter at least one skill.', 'alumnus'), 'error');
+        return;
+    }
+    
+    // Parse skills by comma, semicolon, or newline
+    $skills_array = preg_split('/[,;\n]+/', $skills_raw);
+    $added_count = 0;
+    $skipped_count = 0;
+    $duplicate_skills = array();
+    
+    foreach ($skills_array as $skill) {
+        $skill_name = sanitize_text_field(trim($skill));
+        
+        // Skip empty entries
+        if (empty($skill_name)) {
+            continue;
+        }
+        
+        // Limit skill name length
+        if (strlen($skill_name) > 100) {
+            $skill_name = substr($skill_name, 0, 100);
+        }
+        
+        // Check if skill already exists
+        $exists = $wpdb->get_var($wpdb->prepare("SELECT skill_id FROM skills WHERE skill = %s", $skill_name));
+        
+        if ($exists) {
+            $duplicate_skills[] = $skill_name;
+            $skipped_count++;
+            continue;
+        }
+        
+        // Insert new skill
+        $result = $wpdb->insert('skills', array('skill' => $skill_name), array('%s'));
+        
+        if ($result) {
+            $added_count++;
+        }
+    }
+    
+    // Build success/error message
+    if ($added_count > 0) {
+        $message = sprintf(
+            _n('%d skill added successfully!', '%d skills added successfully!', $added_count, 'alumnus'),
+            $added_count
+        );
+        
+        if ($skipped_count > 0) {
+            $message .= ' ' . sprintf(
+                _n('%d duplicate skill was skipped.', '%d duplicate skills were skipped.', $skipped_count, 'alumnus'),
+                $skipped_count
+            );
+        }
+        
+        add_settings_error('alumnus_skills', 'bulk_skills_added', $message, 'success');
+    } elseif ($skipped_count > 0) {
+        add_settings_error('alumnus_skills', 'all_duplicates', __('All skills already exist. No new skills were added.', 'alumnus'), 'error');
+    } else {
+        add_settings_error('alumnus_skills', 'no_valid_skills', __('No valid skills were found to add.', 'alumnus'), 'error');
     }
 }
 
@@ -235,6 +367,10 @@ function alumnus_skills_process_actions() {
         alumnus_handle_add_skill();
     }
     
+    if (isset($_POST['alumnus_bulk_add_skills'])) {
+        alumnus_handle_bulk_add_skills();
+    }
+    
     if (isset($_POST['alumnus_edit_skill'])) {
         alumnus_handle_edit_skill();
     }
@@ -303,76 +439,98 @@ function alumnus_render_skills_page() {
     <div class="wrap skills-manager-wrap">
         <div class="skills-header">
             <h1><?php echo esc_html__('Manage Skills', 'alumnus'); ?></h1>
-            <button type="button" id="add-skill-btn" class="button button-primary">
-                <?php echo esc_html__('Add New Skill', 'alumnus'); ?>
-            </button>
+            <div class="skills-actions-group">
+                <button type="button" id="add-skill-btn" class="button button-primary button-icon">
+                    <span class="dashicons dashicons-plus-alt"></span>
+                    <?php echo esc_html__('Add Skill', 'alumnus'); ?>
+                </button>
+                <button type="button" id="bulk-add-skill-btn" class="button button-secondary button-icon">
+                    <span class="dashicons dashicons-editor-ul"></span>
+                    <?php echo esc_html__('Bulk Add', 'alumnus'); ?>
+                </button>
+            </div>
         </div>
         
         <?php settings_errors('alumnus_skills'); ?>
         
-        <!-- Statistics -->
-        <div class="skills-stats">
-            <strong><?php echo esc_html__('Statistics:', 'alumnus'); ?></strong>
-            <?php echo sprintf(
-                __('Total Skills: %d | Used: %d | Unused: %d', 'alumnus'),
-                $total_skills,
-                $total_used,
-                $total_unused
-            ); ?>
+        <!-- Statistics Cards -->
+        <div class="skills-stats-container">
+            <div class="stat-card primary">
+                <div class="stat-card-title"><?php echo esc_html__('Total Skills', 'alumnus'); ?></div>
+                <div class="stat-card-value"><?php echo esc_html($total_skills); ?></div>
+            </div>
+            <div class="stat-card success">
+                <div class="stat-card-title"><?php echo esc_html__('In Use', 'alumnus'); ?></div>
+                <div class="stat-card-value"><?php echo esc_html($total_used); ?></div>
+            </div>
+            <div class="stat-card warning">
+                <div class="stat-card-title"><?php echo esc_html__('Unused', 'alumnus'); ?></div>
+                <div class="stat-card-value"><?php echo esc_html($total_unused); ?></div>
+            </div>
         </div>
         
-        <!-- Search Box -->
-        <div class="search-box">
-            <form method="get">
-                <input type="hidden" name="page" value="alumnus-manage-skills">
-                <input type="search" name="s" value="<?php echo esc_attr($search); ?>" placeholder="<?php echo esc_attr__('Search skills...', 'alumnus'); ?>">
-                <button type="submit" class="button"><?php echo esc_html__('Search', 'alumnus'); ?></button>
-                <?php if (!empty($search)): ?>
-                    <a href="<?php echo admin_url('admin.php?page=alumnus-manage-skills'); ?>" class="button"><?php echo esc_html__('Clear', 'alumnus'); ?></a>
-                <?php endif; ?>
-            </form>
+        <!-- Search and Filters -->
+        <div class="skills-filters">
+            <div class="search-box">
+                <form method="get" style="display: flex; gap: 10px; align-items: center; width: 100%;">
+                    <input type="hidden" name="page" value="alumnus-manage-skills">
+                    <input type="search" name="s" value="<?php echo esc_attr($search); ?>" placeholder="<?php echo esc_attr__('Search skills...', 'alumnus'); ?>">
+                    <button type="submit" class="button button-primary"><?php echo esc_html__('Search', 'alumnus'); ?></button>
+                    <?php if (!empty($search)): ?>
+                        <a href="<?php echo admin_url('admin.php?page=alumnus-manage-skills'); ?>" class="button"><?php echo esc_html__('Clear', 'alumnus'); ?></a>
+                    <?php endif; ?>
+                </form>
+            </div>
         </div>
         
         <!-- Skills Table -->
         <?php if (empty($skills)): ?>
-            <p><?php echo esc_html__('No skills found.', 'alumnus'); ?></p>
+            <div class="skills-table-container">
+                <div class="skills-empty-state">
+                    <span class="dashicons dashicons-welcome-learn-more"></span>
+                    <h3><?php echo esc_html__('No Skills Found', 'alumnus'); ?></h3>
+                    <p><?php echo esc_html__('Start by adding your first skill using the buttons above.', 'alumnus'); ?></p>
+                </div>
+            </div>
         <?php else: ?>
-            <table class="wp-list-table widefat fixed striped skills-table">
-                <thead>
-                    <tr>
-                        <th style="width: 60px;"><?php echo esc_html__('ID', 'alumnus'); ?></th>
-                        <th><?php echo esc_html__('Skill Name', 'alumnus'); ?></th>
-                        <th style="width: 120px;"><?php echo esc_html__('Used By', 'alumnus'); ?></th>
-                        <th style="width: 150px;"><?php echo esc_html__('Actions', 'alumnus'); ?></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($skills as $skill): ?>
+            <div class="skills-table-container">
+                <table class="wp-list-table widefat fixed striped skills-table">
+                    <thead>
                         <tr>
-                            <td><?php echo esc_html($skill->skill_id); ?></td>
-                            <td><strong><?php echo esc_html($skill->skill); ?></strong></td>
-                            <td><?php echo esc_html(sprintf(__('%d alumni', 'alumnus'), $skill->usage_count)); ?></td>
-                            <td class="skill-actions">
-                                <a href="#" class="edit-skill-btn" 
-                                   data-id="<?php echo esc_attr($skill->skill_id); ?>"
-                                   data-name="<?php echo esc_attr($skill->skill); ?>">
-                                    <?php echo esc_html__('Edit', 'alumnus'); ?>
-                                </a>
-                                <a href="<?php echo wp_nonce_url(
-                                    admin_url('admin.php?page=alumnus-manage-skills&action=delete&skill_id=' . $skill->skill_id),
-                                    'alumnus_delete_skill_' . $skill->skill_id,
-                                    'alumnus_delete_skill_nonce'
-                                ); ?>" 
-                                   class="delete delete-skill-btn"
-                                   data-name="<?php echo esc_attr($skill->skill); ?>"
-                                   data-usage="<?php echo esc_attr($skill->usage_count); ?>">
-                                    <?php echo esc_html__('Delete', 'alumnus'); ?>
-                                </a>
-                            </td>
+                            <th style="width: 80px;"><?php echo esc_html__('ID', 'alumnus'); ?></th>
+                            <th><?php echo esc_html__('Skill Name', 'alumnus'); ?></th>
+                            <th style="width: 140px;"><?php echo esc_html__('Used By', 'alumnus'); ?></th>
+                            <th style="width: 150px;"><?php echo esc_html__('Actions', 'alumnus'); ?></th>
                         </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($skills as $skill): ?>
+                            <tr>
+                                <td class="skill-id-cell">#<?php echo esc_html($skill->skill_id); ?></td>
+                                <td class="skill-name-cell"><?php echo esc_html($skill->skill); ?></td>
+                                <td class="skill-usage-cell"><?php echo esc_html(sprintf(_n('%d alumni', '%d alumni', $skill->usage_count, 'alumnus'), $skill->usage_count)); ?></td>
+                                <td class="skill-actions">
+                                    <a href="#" class="edit edit-skill-btn" 
+                                       data-id="<?php echo esc_attr($skill->skill_id); ?>"
+                                       data-name="<?php echo esc_attr($skill->skill); ?>">
+                                        <?php echo esc_html__('Edit', 'alumnus'); ?>
+                                    </a>
+                                    <a href="<?php echo wp_nonce_url(
+                                        admin_url('admin.php?page=alumnus-manage-skills&action=delete&skill_id=' . $skill->skill_id),
+                                        'alumnus_delete_skill_' . $skill->skill_id,
+                                        'alumnus_delete_skill_nonce'
+                                    ); ?>" 
+                                       class="delete delete-skill-btn"
+                                       data-name="<?php echo esc_attr($skill->skill); ?>"
+                                       data-usage="<?php echo esc_attr($skill->usage_count); ?>">
+                                        <?php echo esc_html__('Delete', 'alumnus'); ?>
+                                    </a>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
             
             <!-- Pagination -->
             <?php if ($total_pages > 1): ?>
@@ -413,6 +571,32 @@ function alumnus_render_skills_page() {
                     <div class="alumnus-modal-footer">
                         <button type="button" class="button cancel-btn"><?php echo esc_html__('Cancel', 'alumnus'); ?></button>
                         <button type="submit" name="alumnus_add_skill" class="button button-primary"><?php echo esc_html__('Add Skill', 'alumnus'); ?></button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Bulk Add Skills Modal -->
+        <div id="bulk-add-skill-modal" class="alumnus-modal">
+            <div class="alumnus-modal-content">
+                <div class="alumnus-modal-header">
+                    <h2><?php echo esc_html__('Bulk Add Skills', 'alumnus'); ?></h2>
+                    <span class="alumnus-close">&times;</span>
+                </div>
+                <form method="post" action="">
+                    <?php wp_nonce_field('alumnus_bulk_add_skills_action', 'alumnus_bulk_add_skills_nonce'); ?>
+                    <div class="alumnus-modal-body">
+                        <div class="form-group">
+                            <label for="bulk-skills-input"><?php echo esc_html__('Skills', 'alumnus'); ?> <span style="color: red;">*</span></label>
+                            <textarea id="bulk-skills-input" name="bulk_skills" required rows="10" placeholder="<?php echo esc_attr__('Enter skills separated by commas, semicolons, or new lines...', 'alumnus'); ?>"></textarea>
+                            <p class="form-hint">
+                                <?php echo esc_html__('Example: JavaScript, Python, Project Management, Data Analysis, Communication', 'alumnus'); ?>
+                            </p>
+                        </div>
+                    </div>
+                    <div class="alumnus-modal-footer">
+                        <button type="button" class="button cancel-btn"><?php echo esc_html__('Cancel', 'alumnus'); ?></button>
+                        <button type="submit" name="alumnus_bulk_add_skills" class="button button-primary"><?php echo esc_html__('Add Skills', 'alumnus'); ?></button>
                     </div>
                 </form>
             </div>
