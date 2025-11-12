@@ -883,6 +883,11 @@ button.aph-nav-btn {
 	overflow-wrap: break-word !important;
 }
 
+#alumnus-skills-modal-input {
+	height: 120px !important;
+	resize: none !important;
+}
+
 /* Character Counter */
 .alumnus-char-counter {
 	font-size: 13px;
@@ -987,17 +992,25 @@ button.aph-nav-btn {
    Skill Autocomplete Dropdown
    =========================== */
 
+/* Wrap textarea in a container for relative positioning */
+#alumnus-skills-modal-input {
+	position: relative;
+}
+
 .skill-autocomplete-dropdown {
-	position: absolute;
+	position: relative;
+	left: 0;
+	right: 0;
+	width: 100%;
 	background: #ffffff;
-	border: 1px solid #ddd;
-	border-radius: 4px;
-	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+	border: 2px solid var(--alumnus-border-medium);
+	border-top: none;
+	border-radius: 0 0 8px 8px;
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 	max-height: 200px;
 	overflow-y: auto;
-	z-index: 10000;
-	width: calc(100% - 2px);
-	margin-top: 2px;
+	z-index: 10001;
+	margin-top: -8px;
 	display: none;
 }
 
@@ -1017,16 +1030,6 @@ button.aph-nav-btn {
 
 .skill-autocomplete-item:last-child {
 	border-bottom: none;
-}
-
-/* Ensure dropdown appears above modal content but below modal overlay */
-.alumnus-modal-overlay .skill-autocomplete-dropdown {
-	z-index: 10001;
-}
-
-/* Position dropdown relative to textarea */
-.alumnus-modal-form-group {
-	position: relative;
 }
 
 /* Mobile responsiveness */

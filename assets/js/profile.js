@@ -535,6 +535,8 @@ function initSkillAutocomplete() {
 	dropdown.id = 'skill-autocomplete-dropdown';
 	dropdown.className = 'skill-autocomplete-dropdown';
 	dropdown.style.display = 'none';
+	
+	// Insert directly after the textarea (before the hint text)
 	skillInput.parentNode.insertBefore(dropdown, skillInput.nextSibling);
 	
 	var debounceTimer;
