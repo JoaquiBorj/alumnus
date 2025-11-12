@@ -298,6 +298,22 @@ function alumnus_initExperienceUI() {
 	function close() {
 		if (!overlay) return;
 		overlay.classList.remove('active');
+		
+		// Clear form inputs when closing modal
+		var titleInput = document.getElementById('alumnus-exp-title');
+		var companyInput = document.getElementById('alumnus-exp-company');
+		var locationInput = document.getElementById('alumnus-exp-location');
+		var startInput = document.getElementById('alumnus-exp-start');
+		
+		if (titleInput) titleInput.value = '';
+		if (companyInput) companyInput.value = '';
+		if (locationInput) locationInput.value = '';
+		if (startInput) startInput.value = '';
+		if (endInput) {
+			endInput.value = '';
+			endInput.disabled = false;
+		}
+		if (currentChk) currentChk.checked = false;
 	}
 
 	function openEdit() {
@@ -321,10 +337,18 @@ function alumnus_initExperienceUI() {
 		editOverlay.addEventListener('click', function(e){ if (e.target === editOverlay) closeEdit(); });
 	}
 
+	function wireEndDateToggle(currentChk, endInput) {
+		if (!currentChk || !endInput) return;
+		function toggle() {
+			endInput.disabled = currentChk.checked;
+			if (currentChk.checked) endInput.value = '';
+		}
+		currentChk.addEventListener('change', toggle);
+		toggle();
+	}
+
 	if (currentChk && endInput) {
-		function toggleEnd() { endInput.disabled = currentChk.checked; if (currentChk.checked) endInput.value = ''; }
-		currentChk.addEventListener('change', toggleEnd);
-		toggleEnd();
+		wireEndDateToggle(currentChk, endInput);
 	}
 
 	if (saveBtn) {
@@ -417,13 +441,7 @@ function alumnus_initExperienceUI() {
 					editCurrent.checked = false;
 				}
 				if (editCurrent && editEnd) { editEnd.disabled = editCurrent.checked; }
-				// Ensure toggle updates disabled state
-				if (editCurrent && editEnd) {
-					editCurrent.onchange = function(){
-						editEnd.disabled = editCurrent.checked;
-						if (editCurrent.checked) editEnd.value = '';
-					};
-				}
+				wireEndDateToggle(editCurrent, editEnd);
 				openEdit();
 				return;
 			}
@@ -465,7 +483,10 @@ function alumnus_initExperienceUI() {
 		var location = editLocation.value.trim();
 		var start = editStart.value;
 		var end = editEnd.value;
-		if (!id || !title || !company || !start) { alert('Please fill in Title, Company, and Start Date.'); return; }
+		if (!id || !title || !company || !start) { 
+			alert(getLocalizedMessage('errorRequiredFields', 'Please fill in Title, Company, and Start Date.')); 
+			return; 
+		}
 
 			var payload = new FormData();
 			payload.append('action', 'alumnus_update_experience');

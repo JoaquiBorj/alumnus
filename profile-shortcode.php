@@ -405,9 +405,9 @@ function alumnus_render_profile_shortcode($atts = array()) {
 						<div class="alumnus-modal-field">
 							<label class="alumnus-modal-label"><?php echo esc_html__('Dates', 'alumnus'); ?></label>
 							<div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-								<input type="date" id="alumnus-exp-start" class="alumnus-modal-input" style="max-width:220px;">
+								<input type="month" id="alumnus-exp-start" class="alumnus-modal-input" style="max-width:220px;">
 								<span>—</span>
-								<input type="date" id="alumnus-exp-end" class="alumnus-modal-input" style="max-width:220px;">
+								<input type="month" id="alumnus-exp-end" class="alumnus-modal-input" style="max-width:220px;">
 								<label style="display:flex; gap:6px; align-items:center; font-size:14px;">
 									<input type="checkbox" id="alumnus-exp-current"> <?php echo esc_html__('I currently work here', 'alumnus'); ?>
 								</label>
@@ -513,9 +513,9 @@ function alumnus_render_profile_shortcode($atts = array()) {
 						<div class="alumnus-modal-field">
 							<label class="alumnus-modal-label"><?php echo esc_html__('Dates', 'alumnus'); ?></label>
 							<div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-								<input type="date" id="alumnus-exp-edit-start" class="alumnus-modal-input" style="max-width:220px;">
+								<input type="month" id="alumnus-exp-edit-start" class="alumnus-modal-input" style="max-width:220px;">
 								<span>—</span>
-								<input type="date" id="alumnus-exp-edit-end" class="alumnus-modal-input" style="max-width:220px;">
+								<input type="month" id="alumnus-exp-edit-end" class="alumnus-modal-input" style="max-width:220px;">
 								<label style="display:flex; gap:6px; align-items:center; font-size:14px;">
 									<input type="checkbox" id="alumnus-exp-edit-current"> <?php echo esc_html__('I currently work here', 'alumnus'); ?>
 								</label>
