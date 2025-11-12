@@ -331,7 +331,7 @@ function alumnus_render_profile_shortcode($atts = array()) {
 					<?php if ( ! empty( $experiences ) ): ?>
 						<ul class="apc-exp-list">
 							<?php foreach ( $experiences as $exp ): ?>
-								<li class="apc-exp-item" data-exp-id="<?php echo esc_attr( $exp->experience_id ); ?>" data-start="<?php echo esc_attr( $exp->start_date ); ?>" data-end="<?php echo esc_attr( $exp->end_date ); ?>">
+								<li class="apc-exp-item" data-exp-id="<?php echo esc_attr( $exp->experience_id ); ?>" data-start="<?php echo esc_attr( $exp->start_date ); ?>" data-end="<?php echo esc_attr( $exp->end_date ); ?>" data-company="<?php echo esc_attr( $exp->company_name ); ?>" data-location="<?php echo esc_attr( $exp->location ?? '' ); ?>">
 									<div class="apc-exp-header">
 										<div class="apc-exp-title"><?php echo esc_html( $exp->title ); ?></div>
 										<div class="apc-exp-company">
@@ -635,7 +635,7 @@ function alumnus_add_experience_ajax() {
 	if ( ! empty( $experiences ) ) {
 		echo '<ul class="apc-exp-list">';
 		foreach ( $experiences as $exp ) {
-			echo '<li class="apc-exp-item" data-exp-id="'.esc_attr($exp->experience_id).'" data-start="'.esc_attr($exp->start_date).'" data-end="'.esc_attr($exp->end_date).'">';
+			echo '<li class="apc-exp-item" data-exp-id="'.esc_attr($exp->experience_id).'" data-start="'.esc_attr($exp->start_date).'" data-end="'.esc_attr($exp->end_date).'" data-company="'.esc_attr($exp->company_name).'" data-location="'.esc_attr($exp->location ?? '').'">';
 			echo '<div class="apc-exp-header">';
 			echo '<div class="apc-exp-title">' . esc_html($exp->title) . '</div>';
 			echo '<div class="apc-exp-company">' . esc_html($exp->company_name) . '</div>';
@@ -743,7 +743,7 @@ function alumnus_update_experience_ajax() {
 	if ( ! empty( $experiences ) ) {
 		echo '<ul class="apc-exp-list">';
 		foreach ( $experiences as $exp ) {
-			echo '<li class="apc-exp-item" data-exp-id="'.esc_attr($exp->experience_id).'" data-start="'.esc_attr($exp->start_date).'" data-end="'.esc_attr($exp->end_date).'">';
+			echo '<li class="apc-exp-item" data-exp-id="'.esc_attr($exp->experience_id).'" data-start="'.esc_attr($exp->start_date).'" data-end="'.esc_attr($exp->end_date).'" data-company="'.esc_attr($exp->company_name).'" data-location="'.esc_attr($exp->location ?? '').'">';
 			echo '<div class="apc-exp-header">';
 			echo '<div class="apc-exp-title">'.esc_html($exp->title).'</div>';
 			echo '<div class="apc-exp-company">'.esc_html($exp->company_name).'</div>';
@@ -801,7 +801,7 @@ function alumnus_delete_experience_ajax() {
 	if ( ! empty( $experiences ) ) {
 		echo '<ul class="apc-exp-list">';
 		foreach ( $experiences as $exp ) {
-			echo '<li class="apc-exp-item" data-exp-id="'.esc_attr($exp->experience_id).'">';
+			echo '<li class="apc-exp-item" data-exp-id="'.esc_attr($exp->experience_id).'" data-company="'.esc_attr($exp->company_name).'" data-location="'.esc_attr($exp->location ?? '').'">';
 			echo '<div class="apc-exp-header">';
 			echo '<div class="apc-exp-title">'.esc_html($exp->title).'</div>';
 			echo '<div class="apc-exp-company">'.esc_html($exp->company_name).'</div>';
@@ -963,10 +963,13 @@ add_action( 'wp_ajax_nopriv_alumnus_update_bio_note', 'alumnus_update_bio_note_a
  *                                 If not provided, uses current page.
  * @return string The profile URL
  */
-function alumnus_get_profile_url($user_id, $profile_page_url = '') {
-	if (empty($profile_page_url)) {
-		$profile_page_url = get_permalink();
+if ( ! function_exists( 'alumnus_get_profile_url' ) ) {
+	function alumnus_get_profile_url( $user_id, $profile_page_url = '' ) {
+		if ( empty( $profile_page_url ) ) {
+			$profile_page_url = get_permalink();
+		}
+		return add_query_arg( 'alumni_id', rawurlencode( $user_id ), $profile_page_url );
 	}
-	return add_query_arg('alumni_id', urlencode($user_id), $profile_page_url);
 }
 
+?>

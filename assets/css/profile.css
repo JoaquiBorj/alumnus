@@ -427,7 +427,7 @@ button.aph-nav-btn {
 .apc-exp-list {
 	list-style: none;
 	margin: 0px !important;
-	padding-top: 10px !important;
+	padding-top: 0px !important;
 	padding-left: 0px !important;
 }
 
@@ -435,7 +435,7 @@ button.aph-nav-btn {
 	display: flex;
 	flex-direction: column;
 	gap: 0px;
-	padding: 0px 0;
+	padding: 10px 0;
 	border-bottom: 1px solid var(--alumnus-border-medium);
 }
 
