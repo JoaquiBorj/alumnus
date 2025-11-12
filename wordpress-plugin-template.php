@@ -45,7 +45,6 @@
 
 	require_once 'add-alumni.php';
 
-	require_once 'register-alumni.php';
 	require_once 'login-alumni.php';
 	require_once 'create-db.php';
 
