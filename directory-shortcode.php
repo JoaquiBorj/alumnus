@@ -157,6 +157,9 @@ function alumnus_render_directory_shortcode() {
 					<p><?php echo esc_html__('Adjust filters and press Search to see results.', 'alumnus'); ?></p>
 				</div>
 			</div>
+			
+			<!-- Pagination -->
+			<div id="alumnus-pagination" class="alumnus-pagination"></div>
 		</div>
 	</div>
 	<?php
@@ -214,6 +217,10 @@ function alumnus_directory_fetch_alumni() {
 	$course_id = isset($_POST['course_id']) && $_POST['course_id'] !== '' ? intval($_POST['course_id']) : 0;
 	$search    = isset($_POST['search']) ? sanitize_text_field(wp_unslash($_POST['search'])) : '';
 	$profile_url = isset($_POST['profile_url']) ? esc_url_raw(wp_unslash($_POST['profile_url'])) : '';
+	$page      = isset($_POST['page']) ? max(1, intval($_POST['page'])) : 1;
+
+	$per_page = 15;
+	$offset = ($page - 1) * $per_page;
 
 	$where = array();
 	$params = array();
@@ -241,17 +248,33 @@ function alumnus_directory_fetch_alumni() {
 		$where_clause = 'WHERE ' . implode(' AND ', $where);
 	}
 
+	// Get total count first
+	$count_sql = "SELECT COUNT(*) FROM alumni a LEFT JOIN course c ON a.course_id = c.course_id $where_clause";
+	$total_count = !empty($params) ? $wpdb->get_var($wpdb->prepare($count_sql, $params)) : $wpdb->get_var($count_sql);
+	$total_pages = ceil($total_count / $per_page);
+
+	// Get paginated results
 	$sql = "SELECT a.user_id, a.firstname, a.lastname, a.`year`, a.email, a.contact_info, c.course AS course_name
 			FROM alumni a
 			LEFT JOIN course c ON a.course_id = c.course_id
 			$where_clause
-			ORDER BY a.`year` DESC, a.lastname ASC, a.firstname ASC";
+			ORDER BY a.`year` DESC, a.lastname ASC, a.firstname ASC
+			LIMIT %d OFFSET %d";
 
-	// Prepare if we have parameters; otherwise run raw
-	$rows = !empty($params) ? $wpdb->get_results($wpdb->prepare($sql, $params)) : $wpdb->get_results($sql);
+	$params[] = $per_page;
+	$params[] = $offset;
+
+	$rows = $wpdb->get_results($wpdb->prepare($sql, $params));
 
 	if (empty($rows)) {
-		wp_send_json_success('<div class="no-results-message"><p>'. esc_html__('No alumni found matching your filters.', 'alumnus') .'</p></div>');
+		wp_send_json_success(array(
+			'html' => '<div class="no-results-message"><p>'. esc_html__('No alumni found matching your filters.', 'alumnus') .'</p></div>',
+			'pagination' => array(
+				'current_page' => 1,
+				'total_pages' => 0,
+				'total_count' => 0
+			)
+		));
 	}
 
 	$html = '';
@@ -259,7 +282,14 @@ function alumnus_directory_fetch_alumni() {
 		$html .= alumnus_render_alumni_card($row, $profile_url);
 	}
 
-	wp_send_json_success($html);
+	wp_send_json_success(array(
+		'html' => $html,
+		'pagination' => array(
+			'current_page' => $page,
+			'total_pages' => (int)$total_pages,
+			'total_count' => (int)$total_count
+		)
+	));
 }
 add_action('wp_ajax_alumnus_fetch_alumni', 'alumnus_directory_fetch_alumni');
 add_action('wp_ajax_nopriv_alumnus_fetch_alumni', 'alumnus_directory_fetch_alumni');
