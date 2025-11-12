@@ -120,10 +120,10 @@ function alumnus_render_directory_shortcode() {
 				<div class="af-filter-group">
 					<label for="filter-year" class="af-label">
 						<svg class="af-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-							<rect x="3" y="4" width="18" height="18" rx="2" stroke= var(--alumnus-primary) stroke-width="2" fill="none"/>
-							<line x1="3" y1="9" x2="21" y2="9" stroke= var(--alumnus-primary) stroke-width="2"/>
-							<line x1="8" y1="2" x2="8" y2="6" stroke= var(--alumnus-primary) stroke-width="2" stroke-linecap="round"/>
-							<line x1="16" y1="2" x2="16" y2="6" stroke= var(--alumnus-primary) stroke-width="2" stroke-linecap="round"/>
+							<rect x="3" y="4" width="18" height="18" rx="2" stroke="var(--alumnus-primary)" stroke-width="2" fill="none"/>
+							<line x1="3" y1="9" x2="21" y2="9" stroke="var(--alumnus-primary)" stroke-width="2"/>
+							<line x1="8" y1="2" x2="8" y2="6" stroke="var(--alumnus-primary)" stroke-width="2" stroke-linecap="round"/>
+							<line x1="16" y1="2" x2="16" y2="6" stroke="var(--alumnus-primary)" stroke-width="2" stroke-linecap="round"/>
 						</svg>
 						Year
 					</label>
@@ -138,8 +138,8 @@ function alumnus_render_directory_shortcode() {
 				<div class="af-filter-group">
 					<label for="filter-course" class="af-label">
 						<svg class="af-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-							<path d="M12 14l9-5-9-5-9 5 9 5z" stroke= var(--alumnus-primary) stroke-width="2" stroke-linejoin="round" fill="none"/>
-							<path d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" stroke= var(--alumnus-primary) stroke-width="2" stroke-linejoin="round" fill="none"/>
+							<path d="M12 14l9-5-9-5-9 5 9 5z" stroke="var(--alumnus-primary)" stroke-width="2" stroke-linejoin="round" fill="none"/>
+							<path d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" stroke="var(--alumnus-primary)" stroke-width="2" stroke-linejoin="round" fill="none"/>
 						</svg>
 						Course
 					</label>
@@ -157,6 +157,9 @@ function alumnus_render_directory_shortcode() {
 					<p><?php echo esc_html__('Adjust filters and press Search to see results.', 'alumnus'); ?></p>
 				</div>
 			</div>
+			
+			<!-- Pagination -->
+			<div id="alumnus-pagination" class="alumnus-pagination"></div>
 		</div>
 	</div>
 	<?php
@@ -214,6 +217,10 @@ function alumnus_directory_fetch_alumni() {
 	$course_id = isset($_POST['course_id']) && $_POST['course_id'] !== '' ? intval($_POST['course_id']) : 0;
 	$search    = isset($_POST['search']) ? sanitize_text_field(wp_unslash($_POST['search'])) : '';
 	$profile_url = isset($_POST['profile_url']) ? esc_url_raw(wp_unslash($_POST['profile_url'])) : '';
+	$page      = isset($_POST['page']) ? max(1, intval($_POST['page'])) : 1;
+
+	$per_page = 15;
+	$offset = ($page - 1) * $per_page;
 
 	$where = array();
 	$params = array();
@@ -241,17 +248,33 @@ function alumnus_directory_fetch_alumni() {
 		$where_clause = 'WHERE ' . implode(' AND ', $where);
 	}
 
+	// Get total count first
+	$count_sql = "SELECT COUNT(*) FROM alumni a LEFT JOIN course c ON a.course_id = c.course_id $where_clause";
+	$total_count = !empty($params) ? $wpdb->get_var($wpdb->prepare($count_sql, $params)) : $wpdb->get_var($count_sql);
+	$total_pages = ceil($total_count / $per_page);
+
+	// Get paginated results
 	$sql = "SELECT a.user_id, a.firstname, a.lastname, a.`year`, a.email, a.contact_info, c.course AS course_name
 			FROM alumni a
 			LEFT JOIN course c ON a.course_id = c.course_id
 			$where_clause
-			ORDER BY a.`year` DESC, a.lastname ASC, a.firstname ASC";
+			ORDER BY a.`year` DESC, a.lastname ASC, a.firstname ASC
+			LIMIT %d OFFSET %d";
 
-	// Prepare if we have parameters; otherwise run raw
-	$rows = !empty($params) ? $wpdb->get_results($wpdb->prepare($sql, $params)) : $wpdb->get_results($sql);
+	$params[] = $per_page;
+	$params[] = $offset;
+
+	$rows = $wpdb->get_results($wpdb->prepare($sql, $params));
 
 	if (empty($rows)) {
-		wp_send_json_success('<div class="no-results-message"><p>'. esc_html__('No alumni found matching your filters.', 'alumnus') .'</p></div>');
+		wp_send_json_success(array(
+			'html' => '<div class="no-results-message"><p>'. esc_html__('No alumni found matching your filters.', 'alumnus') .'</p></div>',
+			'pagination' => array(
+				'current_page' => 1,
+				'total_pages' => 0,
+				'total_count' => 0
+			)
+		));
 	}
 
 	$html = '';
@@ -259,7 +282,14 @@ function alumnus_directory_fetch_alumni() {
 		$html .= alumnus_render_alumni_card($row, $profile_url);
 	}
 
-	wp_send_json_success($html);
+	wp_send_json_success(array(
+		'html' => $html,
+		'pagination' => array(
+			'current_page' => $page,
+			'total_pages' => (int)$total_pages,
+			'total_count' => (int)$total_count
+		)
+	));
 }
 add_action('wp_ajax_alumnus_fetch_alumni', 'alumnus_directory_fetch_alumni');
 add_action('wp_ajax_nopriv_alumnus_fetch_alumni', 'alumnus_directory_fetch_alumni');

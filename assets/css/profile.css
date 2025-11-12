@@ -162,6 +162,29 @@ button.aph-nav-btn {
 	box-sizing: border-box;
 }
 
+/* Edit button positioned in top-right corner of profile card */
+.apc-edit-btn {
+	position: absolute;
+	top: 20px;
+	right: 20px;
+	background: transparent;
+	border: 2px solid var(--alumnus-border-medium);
+	color: var(--alumnus-text-body);
+	padding: 8px 12px;
+	border-radius: 8px;
+	cursor: pointer;
+	font-weight: 600;
+	font-size: 14px;
+	transition: all 0.2s ease;
+	z-index: 10;
+}
+
+.apc-edit-btn:hover {
+	background: var(--alumnus-primary) !important;
+    border: 2px solid var(--alumnus-secondary) !important;
+	color: var(--alumnus-bg-white) !important;
+}
+
 /* removed button variants and icon styles for unified buttons */
 
 /* Profile Header */
@@ -223,61 +246,6 @@ button.aph-nav-btn {
 	min-width: 0;
 }
 
-.apc-career-section {
-	margin-top: 0 !important;
-}
-
-.apc-career-text {
-	font-size: 20px;
-	line-height: 1.2;
-	color: var(--alumnus-text-body);
-	margin-bottom: 5px !important;
-}
-
-.apc-career-label {
-	font-weight: 600;
-	color: var(--alumnus-text-heading);
-}
-
-.apc-career-separator {
-	margin: 0 5px;
-	color: var(--alumnus-text-heading);
-}
-
-.apc-career-value {
-	color: var(--alumnus-text-heading);
-}
-
-.apc-career-input {
-	width: 100%;
-	padding: 12px 16px;
-	border: 2px solid var(--alumnus-border-medium);
-	border-radius: 8px;
-	font-size: 15px;
-	color: var(--alumnus-text-body);
-	background: var(--alumnus-bg-white);
-	font-family: inherit;
-	margin-top: 8px;
-	margin-bottom: 16px;
-	word-wrap: break-word;
-	word-break: break-word;
-	overflow-wrap: break-word;
-}
-
-.apc-career-input:focus {
-	outline: none;
-	border-color: var(--alumnus-primary);
-	box-shadow: 0 0 0 3px var(--alumnus-overlay-white-focus);
-}
-
-.apc-edit-form .apc-career-label {
-	display: block;
-	font-size: 14px;
-	font-weight: 600;
-	color: var(--alumnus-text-heading);
-	margin-bottom: 4px;
-}
-
 .apc-bio-section {
 	margin-top: 0 !important;
 	min-width: 0;
@@ -337,7 +305,7 @@ button.aph-nav-btn {
 	font-size: 14px;
 }
 
-/* Info Sections (Career, Skills, etc.) */
+/* Info Sections (Bio, Skills, etc.) */
 .apc-info-section {
 	margin-top: 40px;
 }
@@ -403,15 +371,16 @@ button.aph-nav-btn {
 /* Experience list */
 .apc-exp-list {
 	list-style: none;
-	margin: 0;
-	padding: 0;
+	margin: 0px !important;
+	padding-top: 0px !important;
+	padding-left: 0px !important;
 }
 
 .apc-exp-item {
 	display: flex;
 	flex-direction: column;
-	gap: 6px;
-	padding: 14px 0;
+	gap: 0px;
+	padding: 10px 0;
 	border-bottom: 1px solid var(--alumnus-border-medium);
 }
 
@@ -425,13 +394,19 @@ button.aph-nav-btn {
 
 .apc-exp-company {
 	font-weight: 500;
-	color: var(--alumnus-text-secondary);
+	font-size: 14px;
+	color: var(--alumnus-text-heading);
 }
 
 .apc-exp-meta {
 	display: flex;
-	flex-wrap: wrap;
-	gap: 10px;
+	flex-direction: column;
+	gap: 0px;
+	color: var(--alumnus-text-lighter);
+	font-size: 14px;
+}
+
+.apc-exp-dates {
 	color: var(--alumnus-text-lighter);
 	font-size: 14px;
 }
@@ -463,10 +438,13 @@ button.aph-nav-btn {
 	border-radius: 8px;
 	cursor: pointer;
 	font-weight: 700;
+	font-size: 14px;
 }
 
 .apc-add-btn:hover {
-	border-color: var(--alumnus-text-lighter);
+	background: var(--alumnus-primary) !important;
+    border: 2px solid var(--alumnus-secondary) !important;
+	color: var(--alumnus-bg-white) !important;
 }
 
 /* Experience row action buttons */
@@ -487,9 +465,20 @@ button.aph-nav-btn {
 	font-size: 13px;
 }
 
-.apc-exp-action-btn:hover { border-color: var(--alumnus-text-lighter); }
-.apc-exp-action-btn.apc-exp-delete { border-color: var(--alumnus-error-text, #c62828); color: var(--alumnus-error-text, #c62828); }
-.apc-exp-action-btn.apc-exp-delete:hover { background: rgba(198,40,40,0.06); }
+.apc-exp-action-btn:hover { 
+	background: var(--alumnus-primary) !important;
+    border: 2px solid var(--alumnus-secondary) !important;
+	color: var(--alumnus-bg-white) !important;
+}
+
+.apc-exp-action-btn.apc-exp-delete { 
+	border-color: var(--alumnus-error-text, #c62828) !important; 
+	color: var(--alumnus-error-text, #c62828) !important; 
+}
+
+.apc-exp-action-btn.apc-exp-delete:hover { 
+	background: rgba(198,40,40,0.06) !important; 
+}
 
 /* Posts Section */
 .apc-posts-section {
@@ -668,19 +657,11 @@ button.aph-nav-btn {
 		width: 100%;
 	}
 
-	/* Career & Bio Sections */
-	.apc-career-section,
+	/* Bio Section */
 	.apc-bio-section {
 		display: flex;
 		flex-direction: column;
 		align-items: center;
-	}
-
-	.apc-career-text {
-		text-align: center;
-		width: 100%;
-		font-size: 20px;
-		margin-bottom: 0px !important;
 	}
 
 	.apc-bio-section .apc-section-title {
@@ -861,6 +842,13 @@ button.aph-nav-btn {
 	color: var(--alumnus-text-heading);
 }
 
+.alumnus-modal-hint {
+	font-size: 13px;
+	color: var(--alumnus-text-light);
+	margin-top: 8px;
+	line-height: 1.4;
+}
+
 .alumnus-modal-input,
 .alumnus-modal-textarea {
 	width: 100% !important;
@@ -893,6 +881,11 @@ button.aph-nav-btn {
 	white-space: pre-wrap !important;
 	word-wrap: break-word !important;
 	overflow-wrap: break-word !important;
+}
+
+#alumnus-skills-modal-input {
+	height: 120px !important;
+	resize: none !important;
 }
 
 /* Character Counter */
@@ -992,6 +985,69 @@ button.aph-nav-btn {
 		font-size: 28px;
 		top: 12px;
 		right: 16px;
+	}
+}
+
+/* ===========================
+   Skill Autocomplete Dropdown
+   =========================== */
+
+/* Wrap textarea in a container for relative positioning */
+#alumnus-skills-modal-input {
+	position: relative;
+}
+
+.skill-autocomplete-dropdown {
+	position: relative;
+	left: 0;
+	right: 0;
+	width: 100%;
+	background: #ffffff;
+	border: 2px solid var(--alumnus-border-medium);
+	border-top: none;
+	border-radius: 0 0 8px 8px;
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+	max-height: 200px;
+	overflow-y: auto;
+	z-index: 10001;
+	margin-top: -8px;
+	display: none;
+}
+
+.skill-autocomplete-item {
+	padding: 10px 15px;
+	cursor: pointer;
+	border-bottom: 1px solid #f0f0f0;
+	transition: background-color 0.2s ease;
+	color: var(--alumnus-text-body, #333);
+	font-size: 14px;
+}
+
+.skill-autocomplete-item:hover,
+.skill-autocomplete-item.active {
+	background-color: #f5f5f5;
+}
+
+.skill-autocomplete-item:last-child {
+	border-bottom: none;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+	.skill-autocomplete-dropdown {
+		max-height: 150px;
+		font-size: 16px; /* Prevent zoom on iOS */
+	}
+	
+	.skill-autocomplete-item {
+		padding: 12px 15px;
+		font-size: 16px;
+	}
+}
+
+@media (max-width: 480px) {
+	.skill-autocomplete-dropdown {
+		max-height: 120px;
 	}
 }
 

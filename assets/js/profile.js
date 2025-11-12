@@ -44,7 +44,7 @@
 	};
 
 	/**
-	 * Submit all profile fields via AJAX
+	 * Submit bio field via AJAX
 	 */
 	window.alumnus_submitAllFields = function() {
 		var root = document.getElementById('alumnus-profile-root');
@@ -53,12 +53,10 @@
 		var ajaxUrl = root.getAttribute('data-ajax-url');
 		var userId  = root.getAttribute('data-user-id');
 		
-		var careerInput = document.getElementById('alumnus-modal-career-input');
 		var bioInput = document.getElementById('alumnus-modal-bio-input');
-		var skillsInput = document.getElementById('alumnus-modal-skills-input');
 		var saveBtn = document.getElementById('alumnus-modal-save');
 
-		if (!ajaxUrl || !userId || !careerInput || !bioInput || !skillsInput) return;
+		if (!ajaxUrl || !userId || !bioInput) return;
 
 		// Get localized strings
 		var strings = window.alumnusProfileStrings || {};
@@ -68,47 +66,6 @@
 			saveBtn.disabled = true; 
 			saveBtn.textContent = strings.saving || 'Saving…'; 
 		}
-
-		var completedRequests = 0;
-		var totalRequests = 3;
-		var hasError = false;
-
-		function checkCompletion() {
-			completedRequests++;
-			if (completedRequests === totalRequests) {
-				if (saveBtn) { 
-					saveBtn.disabled = false; 
-					saveBtn.textContent = strings.saveChanges || 'Save Changes'; 
-				}
-				if (!hasError) {
-					window.alumnus_closeModal();
-				}
-			}
-		}
-
-		// Update Career
-		var careerPayload = new FormData();
-		careerPayload.append('action', 'alumnus_update_career');
-		careerPayload.append('_ajax_nonce', root.getAttribute('data-nonce'));
-		careerPayload.append('user_id', userId);
-		careerPayload.append('career', careerInput.value);
-
-		fetch(ajaxUrl, { method: 'POST', credentials: 'same-origin', body: careerPayload })
-			.then(function(res){ return res.json(); })
-			.then(function(json){
-				if (json && json.success) {
-					var view = document.getElementById('alumnus-career-view');
-					if (view) { view.innerHTML = json.data.html; }
-				} else {
-					hasError = true;
-					alert((json && json.data && json.data.message) ? json.data.message : (strings.errorCareer || 'Failed to update career.'));
-				}
-			})
-			.catch(function(){ 
-				hasError = true;
-				alert(strings.networkErrorCareer || 'Network error updating career.'); 
-			})
-			.finally(checkCompletion);
 
 		// Update Bio
 		var bioPayload = new FormData();
@@ -123,43 +80,20 @@
 				if (json && json.success) {
 					var view = document.getElementById('alumnus-bio-view');
 					if (view) { view.innerHTML = json.data.html; }
+					window.alumnus_closeModal();
 				} else {
-					hasError = true;
 					alert((json && json.data && json.data.message) ? json.data.message : (strings.errorBio || 'Failed to update bio.'));
 				}
 			})
 			.catch(function(){ 
-				hasError = true;
 				alert(strings.networkErrorBio || 'Network error updating bio.'); 
 			})
-			.finally(checkCompletion);
-
-		// Update Skills
-		var skillsPayload = new FormData();
-		skillsPayload.append('action', 'alumnus_update_skills');
-		skillsPayload.append('_ajax_nonce', root.getAttribute('data-nonce-skills'));
-		skillsPayload.append('user_id', userId);
-		skillsPayload.append('skills', skillsInput.value);
-
-		fetch(ajaxUrl, { method: 'POST', credentials: 'same-origin', body: skillsPayload })
-			.then(function(res){ return res.json(); })
-			.then(function(json){
-				if (json && json.success) {
-					var view = document.getElementById('alumnus-skills-view');
-					if (view) { 
-						view.innerHTML = json.data.html; 
-						alumnus_initSkillsToggle(view);
-					}
-				} else {
-					hasError = true;
-					alert((json && json.data && json.data.message) ? json.data.message : (strings.errorSkills || 'Failed to update skills.'));
+			.finally(function(){
+				if (saveBtn) { 
+					saveBtn.disabled = false; 
+					saveBtn.textContent = strings.saveChanges || 'Save Changes'; 
 				}
-			})
-			.catch(function(){ 
-				hasError = true;
-				alert(strings.networkErrorSkills || 'Network error updating skills.'); 
-			})
-			.finally(checkCompletion);
+			});
 	};
 
 	/**
@@ -196,6 +130,10 @@
 
 		// Update bio character counter
 		if (bioInput && bioCharCount) {
+			// Initialize the count from the textarea value
+			bioCharCount.textContent = bioInput.value.length;
+			
+			// Update on input
 			bioInput.addEventListener('input', function() {
 				bioCharCount.textContent = bioInput.value.length;
 			});
@@ -207,11 +145,13 @@
 		document.addEventListener('DOMContentLoaded', function(){
 			initializeModal();
 			alumnus_initSkillsToggle();
+			alumnus_initSkillsUI();
 			alumnus_initExperienceUI();
 		});
 	} else {
 		initializeModal();
 		alumnus_initSkillsToggle();
+		alumnus_initSkillsUI();
 		alumnus_initExperienceUI();
 	}
 
@@ -245,6 +185,81 @@ function alumnus_initSkillsToggle(rootEl) {
 			toggle.textContent = expanded ? 'Show less' : ('Show all skills (' + count + ')');
 		});
 	});
+}
+
+/**
+ * Skills: open/close modal and submit skills via AJAX
+ */
+function alumnus_initSkillsUI() {
+	var root = document.getElementById('alumnus-profile-root');
+	if (!root) return;
+
+	var addBtn = document.getElementById('alumnus-skills-add-btn');
+	var overlay = document.getElementById('alumnus-skills-modal-overlay');
+	var closeBtn = document.getElementById('alumnus-skills-modal-close');
+	var cancelBtn = document.getElementById('alumnus-skills-cancel');
+	var saveBtn = document.getElementById('alumnus-skills-save');
+	var skillsInput = document.getElementById('alumnus-skills-modal-input');
+
+	function open() {
+		if (!overlay) return;
+		overlay.classList.add('alumnus-modal-ready');
+		setTimeout(function(){ overlay.classList.add('active'); }, 10);
+	}
+
+	function close() {
+		if (!overlay) return;
+		overlay.classList.remove('active');
+	}
+
+	if (addBtn) addBtn.addEventListener('click', open);
+	if (closeBtn) closeBtn.addEventListener('click', close);
+	if (cancelBtn) cancelBtn.addEventListener('click', close);
+	if (overlay) {
+		overlay.addEventListener('click', function(e){ if (e.target === overlay) close(); });
+	}
+
+	if (saveBtn && skillsInput) {
+		saveBtn.addEventListener('click', function(){
+			var ajaxUrl = root.getAttribute('data-ajax-url');
+			var userId = root.getAttribute('data-user-id');
+			var nonce = root.getAttribute('data-nonce-skills');
+
+			var skills = skillsInput.value.trim();
+
+			var strings = window.alumnusProfileStrings || {};
+			saveBtn.disabled = true;
+			saveBtn.textContent = strings.savingSkills || 'Saving…';
+
+			var payload = new FormData();
+			payload.append('action', 'alumnus_update_skills');
+			payload.append('_ajax_nonce', nonce);
+			payload.append('user_id', userId);
+			payload.append('skills', skills);
+
+			fetch(ajaxUrl, { method: 'POST', credentials: 'same-origin', body: payload })
+				.then(function(res){ return res.json(); })
+				.then(function(json){
+					if (json && json.success) {
+						var view = document.getElementById('alumnus-skills-view');
+						if (view) {
+							view.innerHTML = json.data.html;
+							alumnus_initSkillsToggle(view);
+						}
+						close();
+					} else {
+						alert((json && json.data && json.data.message) ? json.data.message : (strings.errorSkills || 'Failed to update skills.'));
+					}
+				})
+				.catch(function(){
+					alert(strings.networkErrorSkills || 'Network error updating skills.');
+				})
+				.finally(function(){
+					saveBtn.disabled = false;
+					saveBtn.textContent = strings.saveChanges || 'Save';
+				});
+		});
+	}
 }
 
 /**
@@ -283,6 +298,22 @@ function alumnus_initExperienceUI() {
 	function close() {
 		if (!overlay) return;
 		overlay.classList.remove('active');
+		
+		// Clear form inputs when closing modal
+		var titleInput = document.getElementById('alumnus-exp-title');
+		var companyInput = document.getElementById('alumnus-exp-company');
+		var locationInput = document.getElementById('alumnus-exp-location');
+		var startInput = document.getElementById('alumnus-exp-start');
+		
+		if (titleInput) titleInput.value = '';
+		if (companyInput) companyInput.value = '';
+		if (locationInput) locationInput.value = '';
+		if (startInput) startInput.value = '';
+		if (endInput) {
+			endInput.value = '';
+			endInput.disabled = false;
+		}
+		if (currentChk) currentChk.checked = false;
 	}
 
 	function openEdit() {
@@ -306,10 +337,18 @@ function alumnus_initExperienceUI() {
 		editOverlay.addEventListener('click', function(e){ if (e.target === editOverlay) closeEdit(); });
 	}
 
+	function wireEndDateToggle(currentChk, endInput) {
+		if (!currentChk || !endInput) return;
+		function toggle() {
+			endInput.disabled = currentChk.checked;
+			if (currentChk.checked) endInput.value = '';
+		}
+		currentChk.addEventListener('change', toggle);
+		toggle();
+	}
+
 	if (currentChk && endInput) {
-		function toggleEnd() { endInput.disabled = currentChk.checked; if (currentChk.checked) endInput.value = ''; }
-		currentChk.addEventListener('change', toggleEnd);
-		toggleEnd();
+		wireEndDateToggle(currentChk, endInput);
 	}
 
 	if (saveBtn) {
@@ -379,12 +418,9 @@ function alumnus_initExperienceUI() {
 				if (!li) return;
 				var id = editBtn.getAttribute('data-exp-id');
 				var titleEl = li.querySelector('.apc-exp-title');
-				var companyEl = li.querySelector('.apc-exp-company');
 				var title = titleEl ? titleEl.textContent.trim() : '';
-				var compText = companyEl ? companyEl.textContent.trim() : '';
-				var parts = compText.split(' · ');
-				var company = parts[0] || '';
-				var location = parts.length > 1 ? parts.slice(1).join(' · ') : '';
+				var company = li.getAttribute('data-company') || '';
+				var location = li.getAttribute('data-location') || '';
 				var startRaw = li.getAttribute('data-start') || '';
 				var endRaw = li.getAttribute('data-end') || '';
 				// Normalize sentinel values sometimes used by MySQL or backends
@@ -405,26 +441,20 @@ function alumnus_initExperienceUI() {
 					editCurrent.checked = false;
 				}
 				if (editCurrent && editEnd) { editEnd.disabled = editCurrent.checked; }
-				// Ensure toggle updates disabled state
-				if (editCurrent && editEnd) {
-					editCurrent.onchange = function(){
-						editEnd.disabled = editCurrent.checked;
-						if (editCurrent.checked) editEnd.value = '';
-					};
-				}
+				wireEndDateToggle(editCurrent, editEnd);
 				openEdit();
 				return;
 			}
 
 			if (delBtn) {
-				var id = delBtn.getAttribute('data-exp-id');
-				if (!id) return;
+				var deleteId = delBtn.getAttribute('data-exp-id');
+				if (!deleteId) return;
 				if (!confirm('Delete this experience?')) return;
 				var payload = new FormData();
 				payload.append('action', 'alumnus_delete_experience');
 				payload.append('_ajax_nonce', nonce);
 				payload.append('user_id', userId);
-				payload.append('experience_id', id);
+				payload.append('experience_id', deleteId);
 				fetch(ajaxUrl, { method: 'POST', credentials: 'same-origin', body: payload })
 					.then(function(res){ return res.json(); })
 					.then(function(json){
@@ -447,13 +477,16 @@ function alumnus_initExperienceUI() {
 			var userId = root.getAttribute('data-user-id');
 			var nonce = root.getAttribute('data-nonce-exp');
 
-			var id = editId.value;
-			var title = editTitle.value.trim();
-			var company = editCompany.value.trim();
-			var location = editLocation.value.trim();
-			var start = editStart.value;
-			var end = editEnd.value;
-			if (!id || !title || !company) { alert('Please fill in Title and Company.'); return; }
+		var id = editId.value;
+		var title = editTitle.value.trim();
+		var company = editCompany.value.trim();
+		var location = editLocation.value.trim();
+		var start = editStart.value;
+		var end = editEnd.value;
+		if (!id || !title || !company || !start) { 
+			alert(getLocalizedMessage('errorRequiredFields', 'Please fill in Title, Company, and Start Date.')); 
+			return; 
+		}
 
 			var payload = new FormData();
 			payload.append('action', 'alumnus_update_experience');
@@ -483,4 +516,213 @@ function alumnus_initExperienceUI() {
 	if (editCloseBtn) editCloseBtn.addEventListener('click', closeEdit);
 	if (editCancelBtn) editCancelBtn.addEventListener('click', closeEdit);
 }
+
+/**
+ * Initialize skill autocomplete functionality
+ */
+function initSkillAutocomplete() {
+	var skillInput = document.getElementById('alumnus-skills-modal-input');
+	if (!skillInput) return;
+	
+	// Check if dropdown already exists
+	var existingDropdown = document.getElementById('skill-autocomplete-dropdown');
+	if (existingDropdown) {
+		existingDropdown.parentNode.removeChild(existingDropdown);
+	}
+	
+	// Create autocomplete dropdown container
+	var dropdown = document.createElement('div');
+	dropdown.id = 'skill-autocomplete-dropdown';
+	dropdown.className = 'skill-autocomplete-dropdown';
+	dropdown.style.display = 'none';
+	
+	// Insert directly after the textarea (before the hint text)
+	skillInput.parentNode.insertBefore(dropdown, skillInput.nextSibling);
+	
+	var debounceTimer;
+	
+	skillInput.addEventListener('input', function(e) {
+		clearTimeout(debounceTimer);
+		
+		// Get the current word being typed
+		var cursorPos = this.selectionStart;
+		var text = this.value.substring(0, cursorPos);
+		var lastCommaIndex = text.lastIndexOf(',');
+		var currentWord = text.substring(lastCommaIndex + 1).trim();
+		
+		if (currentWord.length < 2) {
+			dropdown.style.display = 'none';
+			return;
+		}
+		
+		// Debounce to avoid too many requests (300ms delay)
+		debounceTimer = setTimeout(function() {
+			fetchSkillSuggestions(currentWord, dropdown, skillInput);
+		}, 300);
+	});
+	
+	// Hide dropdown when clicking outside
+	document.addEventListener('click', function(e) {
+		if (e.target !== skillInput && !dropdown.contains(e.target)) {
+			dropdown.style.display = 'none';
+		}
+	});
+	
+	// Handle keyboard navigation
+	skillInput.addEventListener('keydown', function(e) {
+		if (dropdown.style.display === 'none') return;
+		
+		var items = dropdown.querySelectorAll('.skill-autocomplete-item');
+		if (items.length === 0) return;
+		
+		var activeItem = dropdown.querySelector('.skill-autocomplete-item.active');
+		var activeIndex = -1;
+		
+		if (activeItem) {
+			for (var i = 0; i < items.length; i++) {
+				if (items[i] === activeItem) {
+					activeIndex = i;
+					break;
+				}
+			}
+		}
+		
+		if (e.key === 'ArrowDown') {
+			e.preventDefault();
+			var nextIndex = activeIndex + 1;
+			if (nextIndex >= items.length) nextIndex = 0;
+			
+			if (activeItem) activeItem.classList.remove('active');
+			items[nextIndex].classList.add('active');
+		} else if (e.key === 'ArrowUp') {
+			e.preventDefault();
+			var prevIndex = activeIndex - 1;
+			if (prevIndex < 0) prevIndex = items.length - 1;
+			
+			if (activeItem) activeItem.classList.remove('active');
+			items[prevIndex].classList.add('active');
+		} else if (e.key === 'Enter') {
+			if (activeItem) {
+				e.preventDefault();
+				activeItem.click();
+			}
+		} else if (e.key === 'Escape') {
+			dropdown.style.display = 'none';
+		}
+	});
+}
+
+function fetchSkillSuggestions(searchTerm, dropdown, inputField) {
+	var strings = window.alumnusProfileStrings || {};
+	var ajaxUrl = strings.ajax_url || (window.ajaxurl || '/wp-admin/admin-ajax.php');
+	var nonce = strings.search_skills_nonce || '';
+	
+	if (!nonce) {
+		console.error('Missing search_skills_nonce');
+		return;
+	}
+	
+	// Use jQuery if available, otherwise use fetch
+	if (typeof jQuery !== 'undefined') {
+		jQuery.ajax({
+			url: ajaxUrl,
+			type: 'POST',
+			data: {
+				action: 'alumnus_search_skills',
+				search: searchTerm,
+				nonce: nonce
+			},
+			success: function(response) {
+				if (response.success && response.data.skills.length > 0) {
+					displaySkillSuggestions(response.data.skills, dropdown, inputField);
+				} else {
+					dropdown.style.display = 'none';
+				}
+			},
+			error: function() {
+				dropdown.style.display = 'none';
+			}
+		});
+	} else {
+		// Fallback to fetch API
+		var formData = new FormData();
+		formData.append('action', 'alumnus_search_skills');
+		formData.append('search', searchTerm);
+		formData.append('nonce', nonce);
+		
+		fetch(ajaxUrl, {
+			method: 'POST',
+			credentials: 'same-origin',
+			body: formData
+		})
+		.then(function(res) { return res.json(); })
+		.then(function(response) {
+			if (response.success && response.data.skills.length > 0) {
+				displaySkillSuggestions(response.data.skills, dropdown, inputField);
+			} else {
+				dropdown.style.display = 'none';
+			}
+		})
+		.catch(function() {
+			dropdown.style.display = 'none';
+		});
+	}
+}
+
+function displaySkillSuggestions(skills, dropdown, inputField) {
+	dropdown.innerHTML = '';
+	
+	for (var i = 0; i < skills.length; i++) {
+		var skill = skills[i];
+		var item = document.createElement('div');
+		item.className = 'skill-autocomplete-item';
+		item.textContent = skill;
+		
+		// Store skill value as data attribute
+		item.setAttribute('data-skill', skill);
+		
+		item.addEventListener('click', function() {
+			var selectedSkill = this.getAttribute('data-skill');
+			insertSkill(selectedSkill, inputField);
+			dropdown.style.display = 'none';
+		});
+		
+		dropdown.appendChild(item);
+	}
+	
+	dropdown.style.display = 'block';
+}
+
+function insertSkill(skill, inputField) {
+	var cursorPos = inputField.selectionStart;
+	var text = inputField.value;
+	var beforeCursor = text.substring(0, cursorPos);
+	var afterCursor = text.substring(cursorPos);
+	
+	// Find where the current word starts
+	var lastCommaIndex = beforeCursor.lastIndexOf(',');
+	var beforeWord = beforeCursor.substring(0, lastCommaIndex + 1);
+	
+	// Insert the skill
+	var newValue = beforeWord + (beforeWord && !beforeWord.endsWith(' ') ? ' ' : '') + skill + ', ' + afterCursor;
+	inputField.value = newValue;
+	
+	// Position cursor after the inserted skill
+	var newCursorPos = (beforeWord + ' ' + skill + ', ').length;
+	inputField.setSelectionRange(newCursorPos, newCursorPos);
+	inputField.focus();
+}
+
+// Initialize autocomplete when skills modal opens
+document.addEventListener('DOMContentLoaded', function() {
+	var addSkillsBtn = document.getElementById('alumnus-skills-add-btn');
+	if (addSkillsBtn) {
+		addSkillsBtn.addEventListener('click', function() {
+			// Small delay to ensure modal is fully rendered
+			setTimeout(function() {
+				initSkillAutocomplete();
+			}, 100);
+		});
+	}
+});
 

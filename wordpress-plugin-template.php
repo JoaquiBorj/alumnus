@@ -44,8 +44,8 @@
 	require_once 'event-list-shortcode.php';
 
 	require_once 'add-alumni.php';
+	require_once 'manage-skills.php';
 
-	require_once 'register-alumni.php';
 	require_once 'login-alumni.php';
 	require_once 'create-db.php';
 
