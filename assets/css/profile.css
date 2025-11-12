@@ -162,6 +162,29 @@ button.aph-nav-btn {
 	box-sizing: border-box;
 }
 
+/* Edit button positioned in top-right corner of profile card */
+.apc-edit-btn {
+	position: absolute;
+	top: 20px;
+	right: 20px;
+	background: transparent;
+	border: 2px solid var(--alumnus-border-medium);
+	color: var(--alumnus-text-body);
+	padding: 8px 12px;
+	border-radius: 8px;
+	cursor: pointer;
+	font-weight: 600;
+	font-size: 14px;
+	transition: all 0.2s ease;
+	z-index: 10;
+}
+
+.apc-edit-btn:hover {
+	background: var(--alumnus-primary) !important;
+    border: 2px solid var(--alumnus-secondary) !important;
+	color: var(--alumnus-bg-white) !important;
+}
+
 /* removed button variants and icon styles for unified buttons */
 
 /* Profile Header */
@@ -403,15 +426,16 @@ button.aph-nav-btn {
 /* Experience list */
 .apc-exp-list {
 	list-style: none;
-	margin: 0;
-	padding: 0;
+	margin: 0px !important;
+	padding-top: 10px !important;
+	padding-left: 0px !important;
 }
 
 .apc-exp-item {
 	display: flex;
 	flex-direction: column;
-	gap: 6px;
-	padding: 14px 0;
+	gap: 0px;
+	padding: 0px 0;
 	border-bottom: 1px solid var(--alumnus-border-medium);
 }
 
@@ -425,13 +449,19 @@ button.aph-nav-btn {
 
 .apc-exp-company {
 	font-weight: 500;
-	color: var(--alumnus-text-secondary);
+	font-size: 14px;
+	color: var(--alumnus-text-heading);
 }
 
 .apc-exp-meta {
 	display: flex;
-	flex-wrap: wrap;
-	gap: 10px;
+	flex-direction: column;
+	gap: 0px;
+	color: var(--alumnus-text-lighter);
+	font-size: 14px;
+}
+
+.apc-exp-dates {
 	color: var(--alumnus-text-lighter);
 	font-size: 14px;
 }
@@ -463,10 +493,13 @@ button.aph-nav-btn {
 	border-radius: 8px;
 	cursor: pointer;
 	font-weight: 700;
+	font-size: 14px;
 }
 
 .apc-add-btn:hover {
-	border-color: var(--alumnus-text-lighter);
+	background: var(--alumnus-primary) !important;
+    border: 2px solid var(--alumnus-secondary) !important;
+	color: var(--alumnus-bg-white) !important;
 }
 
 /* Experience row action buttons */
@@ -487,9 +520,20 @@ button.aph-nav-btn {
 	font-size: 13px;
 }
 
-.apc-exp-action-btn:hover { border-color: var(--alumnus-text-lighter); }
-.apc-exp-action-btn.apc-exp-delete { border-color: var(--alumnus-error-text, #c62828); color: var(--alumnus-error-text, #c62828); }
-.apc-exp-action-btn.apc-exp-delete:hover { background: rgba(198,40,40,0.06); }
+.apc-exp-action-btn:hover { 
+	background: var(--alumnus-primary) !important;
+    border: 2px solid var(--alumnus-secondary) !important;
+	color: var(--alumnus-bg-white) !important;
+}
+
+.apc-exp-action-btn.apc-exp-delete { 
+	border-color: var(--alumnus-error-text, #c62828) !important; 
+	color: var(--alumnus-error-text, #c62828) !important; 
+}
+
+.apc-exp-action-btn.apc-exp-delete:hover { 
+	background: rgba(198,40,40,0.06) !important; 
+}
 
 /* Posts Section */
 .apc-posts-section {
@@ -859,6 +903,13 @@ button.aph-nav-btn {
 	font-size: 15px;
 	font-weight: 600;
 	color: var(--alumnus-text-heading);
+}
+
+.alumnus-modal-hint {
+	font-size: 13px;
+	color: var(--alumnus-text-light);
+	margin-top: 8px;
+	line-height: 1.4;
 }
 
 .alumnus-modal-input,

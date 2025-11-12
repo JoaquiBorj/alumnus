@@ -66,12 +66,11 @@ function alumnus_enqueue_profile_styles() {
 		array(
 			'saving'             => __( 'Saving…', 'alumnus' ),
 			'saveChanges'        => __( 'Save Changes', 'alumnus' ),
-			'errorCareer'        => __( 'Failed to update career.', 'alumnus' ),
 			'errorBio'           => __( 'Failed to update bio.', 'alumnus' ),
 			'errorSkills'        => __( 'Failed to update skills.', 'alumnus' ),
-			'networkErrorCareer' => __( 'Network error updating career.', 'alumnus' ),
 			'networkErrorBio'    => __( 'Network error updating bio.', 'alumnus' ),
 			'networkErrorSkills' => __( 'Network error updating skills.', 'alumnus' ),
+			'savingSkills'       => __( 'Saving…', 'alumnus' ),
 			'savingExperience'   => __( 'Saving Experience…', 'alumnus' ),
 			'errorExperience'    => __( 'Failed to add experience.', 'alumnus' ),
 			'networkErrorExperience' => __( 'Network error adding experience.', 'alumnus' ),
@@ -121,7 +120,7 @@ function alumnus_render_profile_shortcode($atts = array()) {
 
 	// Fetch alumni data from database, and aggregate skills from normalized tables
 	$sql = "SELECT 
-				a.user_id, a.year, a.course_id, a.firstname, a.lastname, a.email, a.contact_info, a.career, a.bio_note,
+				a.user_id, a.year, a.course_id, a.firstname, a.lastname, a.email, a.contact_info, a.bio_note,
 				GROUP_CONCAT(DISTINCT sk.skill ORDER BY sk.skill SEPARATOR ', ') AS skills,
 				c.course AS course_name 
 			FROM alumni a
@@ -233,19 +232,17 @@ function alumnus_render_profile_shortcode($atts = array()) {
 
 	ob_start();
 	?>
-		<div class="alumnus-profile-wrapper" id="alumnus-profile-root" data-ajax-url="<?php echo esc_url( admin_url('admin-ajax.php') ); ?>" data-nonce="<?php echo esc_attr( wp_create_nonce('alumnus_update_career') ); ?>" data-nonce-bio="<?php echo esc_attr( wp_create_nonce('alumnus_update_bio_note') ); ?>" data-nonce-skills="<?php echo esc_attr( wp_create_nonce('alumnus_update_skills') ); ?>" data-nonce-exp="<?php echo esc_attr( wp_create_nonce('alumnus_add_experience') ); ?>" data-user-id="<?php echo esc_attr( (string) $user_id ); ?>">
+		<div class="alumnus-profile-wrapper" id="alumnus-profile-root" data-ajax-url="<?php echo esc_url( admin_url('admin-ajax.php') ); ?>" data-nonce-bio="<?php echo esc_attr( wp_create_nonce('alumnus_update_bio_note') ); ?>" data-nonce-skills="<?php echo esc_attr( wp_create_nonce('alumnus_update_skills') ); ?>" data-nonce-exp="<?php echo esc_attr( wp_create_nonce('alumnus_add_experience') ); ?>" data-user-id="<?php echo esc_attr( (string) $user_id ); ?>">
 		<div class="alumnus-profile-header">
 			<div class="aph-gradient-bg"></div>
-			<?php if ($is_own_profile): ?>
-				<div class="aph-nav">
-					<button id="alumnus-nav-edit" class="aph-nav-btn" type="button" onclick="alumnus_openModal()"><?php echo esc_html__('Edit', 'alumnus'); ?></button>
-				</div>
-			<?php endif; ?>
 		</div>
 
 
 		<div class="alumnus-profile-container">
 			<div class="alumnus-profile-card">
+				<?php if ($is_own_profile): ?>
+					<button type="button" class="apc-edit-btn" onclick="alumnus_openModal()"><?php echo esc_html__('Edit', 'alumnus'); ?></button>
+				<?php endif; ?>
 				<div class="apc-header">
 					<div class="apc-avatar-wrapper">
 						<div class="apc-avatar">
@@ -260,21 +257,6 @@ function alumnus_render_profile_shortcode($atts = array()) {
 							<?php if (!empty($alumni_data->email)): ?>
 								<p class="apc-email"><?php echo esc_html($alumni_data->email); ?></p>
 							<?php endif; ?>
-						</div>
-
-						<!-- Career Section -->
-						<div class="apc-career-section">
-							<div class="apc-career-text" id="alumnus-career-view">
-								<span class="apc-career-label">Current Career</span>
-								<span class="apc-career-separator">-</span>
-								<span class="apc-career-value">
-									<?php if (!empty($alumni_data->career)): ?>
-										<?php echo esc_html($alumni_data->career); ?>
-									<?php else: ?>
-										<span class="apc-placeholder"><?php echo esc_html__('Not specified', 'alumnus'); ?></span>
-									<?php endif; ?>
-								</span>
-							</div>
 						</div>
 
 						<div class="apc-info">
@@ -316,7 +298,12 @@ function alumnus_render_profile_shortcode($atts = array()) {
 		<!-- Skills Card (Separate) -->
 		<div class="alumnus-skills-container">
 			<div class="alumnus-skills-card">
-				<h2 class="apc-section-title">Skills</h2>
+				<div class="apc-section-header-row">
+					<h2 class="apc-section-title">Skills</h2>
+					<?php if ( $is_own_profile ): ?>
+						<button type="button" class="apc-add-btn" id="alumnus-skills-add-btn" aria-haspopup="dialog" aria-controls="alumnus-skills-modal-overlay">Add Skills</button>
+					<?php endif; ?>
+				</div>
 				<div id="alumnus-skills-view">
 					<?php if (!empty($skills_array)): ?>
 						<div class="apc-skills-list">
@@ -337,7 +324,7 @@ function alumnus_render_profile_shortcode($atts = array()) {
 				<div class="apc-section-header-row">
 					<h2 class="apc-section-title">Experience</h2>
 					<?php if ( $is_own_profile ): ?>
-						<button type="button" class="apc-add-btn" id="alumnus-exp-add-btn" aria-haspopup="dialog" aria-controls="alumnus-exp-modal-overlay">+ Add</button>
+						<button type="button" class="apc-add-btn" id="alumnus-exp-add-btn" aria-haspopup="dialog" aria-controls="alumnus-exp-modal-overlay">Add Experience</button>
 					<?php endif; ?>
 				</div>
 				<div id="alumnus-experience-view">
@@ -348,11 +335,14 @@ function alumnus_render_profile_shortcode($atts = array()) {
 									<div class="apc-exp-header">
 										<div class="apc-exp-title"><?php echo esc_html( $exp->title ); ?></div>
 										<div class="apc-exp-company">
-											<?php echo esc_html( $exp->company_name ); ?><?php echo $exp->location ? ' · ' . esc_html( $exp->location ) : ''; ?>
+											<?php echo esc_html( $exp->company_name ); ?>
 										</div>
 									</div>
 									<div class="apc-exp-meta">
 										<div class="apc-exp-dates"><?php echo esc_html( $format_range( $exp->start_date, $exp->end_date ) ); ?></div>
+										<?php if ( ! empty( $exp->location ) ): ?>
+											<div class="apc-exp-dates"><?php echo esc_html( $exp->location ); ?></div>
+										<?php endif; ?>
 									</div>
 									<?php if ( ! empty( $skills_array ) ): ?>
 										<div class="apc-exp-skills"><span class="apc-exp-skills-label">Skills:</span>
@@ -379,6 +369,25 @@ function alumnus_render_profile_shortcode($atts = array()) {
 		</div>
 
 		<?php if ( $is_own_profile ): ?>
+			<!-- Add Skills Modal -->
+			<div id="alumnus-skills-modal-overlay" class="alumnus-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="alumnus-skills-modal-title">
+				<div class="alumnus-modal-card">
+					<button id="alumnus-skills-modal-close" class="alumnus-modal-close-btn" type="button" aria-label="Close">&times;</button>
+					<h2 class="alumnus-modal-header" id="alumnus-skills-modal-title"><?php echo esc_html__('Edit Skills', 'alumnus'); ?></h2>
+					<div class="alumnus-modal-body">
+						<div class="alumnus-modal-field">
+							<label for="alumnus-skills-modal-input" class="alumnus-modal-label"><?php echo esc_html__('Skills (comma-separated)', 'alumnus'); ?></label>
+							<textarea id="alumnus-skills-modal-input" name="skills" rows="5" class="alumnus-modal-textarea" placeholder="<?php echo esc_attr__('e.g., Project Management, Problem Solving, Data Analysis', 'alumnus'); ?>"><?php echo esc_textarea( (string) $alumni_data->skills ); ?></textarea>
+							<p class="alumnus-modal-hint"><?php echo esc_html__('Enter skills separated by commas. Each skill will appear as a tag.', 'alumnus'); ?></p>
+						</div>
+					</div>
+					<div class="alumnus-modal-footer">
+						<button type="button" class="aph-nav-btn alumnus-modal-btn-save" id="alumnus-skills-save"><?php echo esc_html__('Save', 'alumnus'); ?></button>
+						<button type="button" class="aph-nav-btn alumnus-modal-btn-cancel" id="alumnus-skills-cancel"><?php echo esc_html__('Cancel', 'alumnus'); ?></button>
+					</div>
+				</div>
+			</div>
+
 			<!-- Add Experience Modal -->
 			<div id="alumnus-exp-modal-overlay" class="alumnus-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="alumnus-exp-modal-title">
 				<div class="alumnus-modal-card">
@@ -394,10 +403,6 @@ function alumnus_render_profile_shortcode($atts = array()) {
 							<input type="text" id="alumnus-exp-company" class="alumnus-modal-input" maxlength="40">
 						</div>
 						<div class="alumnus-modal-field">
-							<label for="alumnus-exp-location" class="alumnus-modal-label"><?php echo esc_html__('Location', 'alumnus'); ?></label>
-							<input type="text" id="alumnus-exp-location" class="alumnus-modal-input" maxlength="40">
-						</div>
-						<div class="alumnus-modal-field">
 							<label class="alumnus-modal-label"><?php echo esc_html__('Dates', 'alumnus'); ?></label>
 							<div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
 								<input type="date" id="alumnus-exp-start" class="alumnus-modal-input" style="max-width:220px;">
@@ -407,6 +412,10 @@ function alumnus_render_profile_shortcode($atts = array()) {
 									<input type="checkbox" id="alumnus-exp-current"> <?php echo esc_html__('I currently work here', 'alumnus'); ?>
 								</label>
 							</div>
+						</div>
+						<div class="alumnus-modal-field">
+							<label for="alumnus-exp-location" class="alumnus-modal-label"><?php echo esc_html__('Location', 'alumnus'); ?></label>
+							<input type="text" id="alumnus-exp-location" class="alumnus-modal-input" maxlength="40">
 						</div>
 					</div>
 					<div class="alumnus-modal-footer">
@@ -466,25 +475,15 @@ function alumnus_render_profile_shortcode($atts = array()) {
 			<div id="alumnus-modal-overlay" class="alumnus-modal-overlay">
 				<div class="alumnus-modal-card">
 					<button id="alumnus-modal-close" class="alumnus-modal-close-btn" type="button">&times;</button>
-					<h2 class="alumnus-modal-header"><?php echo esc_html__('Edit Profile', 'alumnus'); ?></h2>
+					<h2 class="alumnus-modal-header"><?php echo esc_html__('Edit Bio', 'alumnus'); ?></h2>
 			
 					<div class="alumnus-modal-body">
-						<div class="alumnus-modal-field">
-							<label for="alumnus-modal-career-input" class="alumnus-modal-label"><?php echo esc_html__('Current Career', 'alumnus'); ?></label>
-							<input type="text" id="alumnus-modal-career-input" name="career" class="alumnus-modal-input" placeholder="<?php echo esc_attr__('e.g., Research and Development Engineer at Company XYZ', 'alumnus'); ?>" value="<?php echo esc_attr( (string) $alumni_data->career ); ?>" />
-						</div>
-
 						<div class="alumnus-modal-field">
 							<label for="alumnus-modal-bio-input" class="alumnus-modal-label"><?php echo esc_html__('Bio', 'alumnus'); ?></label>
 							<textarea id="alumnus-modal-bio-input" name="bio_note" rows="8" maxlength="250" class="alumnus-modal-textarea" placeholder="<?php echo esc_attr__('Tell us about yourself…', 'alumnus'); ?>"><?php echo esc_textarea( (string) $alumni_data->bio_note ); ?></textarea>
 							<div class="alumnus-char-counter">
-								<span id="alumnus-bio-char-count"><?php echo esc_html( strlen( (string) $alumni_data->bio_note ) ); ?></span> / 250 <?php echo esc_html__('characters', 'alumnus'); ?>
+								<span id="alumnus-bio-char-count">0</span> / 250 <?php echo esc_html__('characters', 'alumnus'); ?>
 							</div>
-						</div>
-
-						<div class="alumnus-modal-field">
-							<label for="alumnus-modal-skills-input" class="alumnus-modal-label"><?php echo esc_html__('Skills (comma-separated)', 'alumnus'); ?></label>
-							<textarea id="alumnus-modal-skills-input" name="skills" rows="3" class="alumnus-modal-textarea" placeholder="<?php echo esc_attr__('e.g., Project Management, Problem Solving, Data Analysis', 'alumnus'); ?>"><?php echo esc_textarea( (string) $alumni_data->skills ); ?></textarea>
 						</div>
 					</div>
 
@@ -512,10 +511,6 @@ function alumnus_render_profile_shortcode($atts = array()) {
 							<input type="text" id="alumnus-exp-edit-company" class="alumnus-modal-input" maxlength="40">
 						</div>
 						<div class="alumnus-modal-field">
-							<label for="alumnus-exp-edit-location" class="alumnus-modal-label"><?php echo esc_html__('Location', 'alumnus'); ?></label>
-							<input type="text" id="alumnus-exp-edit-location" class="alumnus-modal-input" maxlength="40">
-						</div>
-						<div class="alumnus-modal-field">
 							<label class="alumnus-modal-label"><?php echo esc_html__('Dates', 'alumnus'); ?></label>
 							<div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
 								<input type="date" id="alumnus-exp-edit-start" class="alumnus-modal-input" style="max-width:220px;">
@@ -525,6 +520,10 @@ function alumnus_render_profile_shortcode($atts = array()) {
 									<input type="checkbox" id="alumnus-exp-edit-current"> <?php echo esc_html__('I currently work here', 'alumnus'); ?>
 								</label>
 							</div>
+						</div>
+						<div class="alumnus-modal-field">
+							<label for="alumnus-exp-edit-location" class="alumnus-modal-label"><?php echo esc_html__('Location', 'alumnus'); ?></label>
+							<input type="text" id="alumnus-exp-edit-location" class="alumnus-modal-input" maxlength="40">
 						</div>
 					</div>
 					<div class="alumnus-modal-footer">
@@ -639,10 +638,13 @@ function alumnus_add_experience_ajax() {
 			echo '<li class="apc-exp-item" data-exp-id="'.esc_attr($exp->experience_id).'" data-start="'.esc_attr($exp->start_date).'" data-end="'.esc_attr($exp->end_date).'">';
 			echo '<div class="apc-exp-header">';
 			echo '<div class="apc-exp-title">' . esc_html($exp->title) . '</div>';
-			echo '<div class="apc-exp-company">' . esc_html($exp->company_name) . ( $exp->location ? ' · ' . esc_html($exp->location) : '' ) . '</div>';
+			echo '<div class="apc-exp-company">' . esc_html($exp->company_name) . '</div>';
 			echo '</div>';
 			echo '<div class="apc-exp-meta">';
 			echo '<div class="apc-exp-dates">' . esc_html( $format_range($exp->start_date, $exp->end_date) ) . '</div>';
+			if ( ! empty( $exp->location ) ) {
+				echo '<div class="apc-exp-dates">' . esc_html( $exp->location ) . '</div>';
+			}
 			echo '</div>';
 			if ( ! empty( $skills_arr ) ) {
 				$show = array_slice( $skills_arr, 0, 3 );
@@ -744,10 +746,13 @@ function alumnus_update_experience_ajax() {
 			echo '<li class="apc-exp-item" data-exp-id="'.esc_attr($exp->experience_id).'" data-start="'.esc_attr($exp->start_date).'" data-end="'.esc_attr($exp->end_date).'">';
 			echo '<div class="apc-exp-header">';
 			echo '<div class="apc-exp-title">'.esc_html($exp->title).'</div>';
-			echo '<div class="apc-exp-company">'.esc_html($exp->company_name).($exp->location?' · '.esc_html($exp->location):'').'</div>';
+			echo '<div class="apc-exp-company">'.esc_html($exp->company_name).'</div>';
 			echo '</div>';
 			echo '<div class="apc-exp-meta">';
 			echo '<div class="apc-exp-dates">'.esc_html($format_range($exp->start_date,$exp->end_date)).'</div>';
+			if (!empty($exp->location)) {
+				echo '<div class="apc-exp-dates">'.esc_html($exp->location).'</div>';
+			}
 			echo '</div>';
 			if (!empty($skills_arr)) { $show=array_slice($skills_arr,0,3); echo '<div class="apc-exp-skills"><span class="apc-exp-skills-label">'.esc_html__('Skills:','alumnus').'</span> '.esc_html(implode(' · ',$show)).'</div>'; }
 			echo '<div class="apc-exp-actions">';
@@ -799,10 +804,13 @@ function alumnus_delete_experience_ajax() {
 			echo '<li class="apc-exp-item" data-exp-id="'.esc_attr($exp->experience_id).'">';
 			echo '<div class="apc-exp-header">';
 			echo '<div class="apc-exp-title">'.esc_html($exp->title).'</div>';
-			echo '<div class="apc-exp-company">'.esc_html($exp->company_name).($exp->location?' · '.esc_html($exp->location):'').'</div>';
+			echo '<div class="apc-exp-company">'.esc_html($exp->company_name).'</div>';
 			echo '</div>';
 			echo '<div class="apc-exp-meta">';
 			echo '<div class="apc-exp-dates">'.esc_html($exp->start_date).' - '.esc_html($exp->end_date ?: 'Present').'</div>';
+			if (!empty($exp->location)) {
+				echo '<div class="apc-exp-dates">'.esc_html($exp->location).'</div>';
+			}
 			echo '</div>';
 			echo '<div class="apc-exp-actions">';
 			echo '<button type="button" class="apc-exp-action-btn apc-exp-edit" data-exp-id="'.esc_attr($exp->experience_id).'">'.esc_html__('Edit','alumnus').'</button>';
@@ -819,57 +827,6 @@ function alumnus_delete_experience_ajax() {
 }
 add_action( 'wp_ajax_alumnus_delete_experience', 'alumnus_delete_experience_ajax' );
 add_action( 'wp_ajax_nopriv_alumnus_delete_experience', 'alumnus_delete_experience_ajax' );
-
-/**
- * AJAX handler to update current career of the logged-in alumni user.
- * Accepts POST: user_id, career, _ajax_nonce
- */
-function alumnus_update_career_ajax() {
-	// Nonce check
-	if ( ! isset($_POST['_ajax_nonce']) || ! wp_verify_nonce( (string) $_POST['_ajax_nonce'], 'alumnus_update_career' ) ) {
-		wp_send_json_error( array( 'message' => __( 'Security check failed.', 'alumnus' ) ), 403 );
-	}
-
-	// Must have our custom alumni session and match user_id
-	if ( ! function_exists('alumnus_is_logged_in') || ! alumnus_is_logged_in() ) {
-		wp_send_json_error( array( 'message' => __( 'You must be logged in.', 'alumnus' ) ), 401 );
-	}
-
-	$session_user = function_exists('alumnus_current_username') ? alumnus_current_username() : '';
-	$user_id = isset($_POST['user_id']) ? sanitize_text_field( wp_unslash($_POST['user_id']) ) : '';
-	if ( $user_id === '' || (string) $user_id !== (string) $session_user ) {
-		wp_send_json_error( array( 'message' => __( 'Permission denied for this user.', 'alumnus' ) ), 403 );
-	}
-
-	// Sanitize and normalize input
-	$career_raw = isset($_POST['career']) ? (string) wp_unslash($_POST['career']) : '';
-	// Allow basic HTML similar to wp_kses_post; store cleaned HTML
-	$career_clean = wp_kses_post( $career_raw );
-
-	global $wpdb;
-	$updated = $wpdb->update(
-		'alumni',
-		array( 'career' => $career_clean ),
-		array( 'user_id' => $user_id ),
-		array( '%s' ),
-		array( '%s' )
-	);
-
-	if ( $updated === false ) {
-		wp_send_json_error( array( 'message' => sprintf( __( 'Database error: %s', 'alumnus' ), $wpdb->last_error ) ), 500 );
-	}
-
-	// Prepare HTML for the view block
-	if ( $career_clean !== '' ) {
-		$html = '<span class="apc-career-label">Current Career</span><span class="apc-career-separator">-</span><span class="apc-career-value">' . esc_html( $career_clean ) . '</span>';
-	} else {
-		$html = '<span class="apc-career-label">Current Career</span><span class="apc-career-separator">-</span><span class="apc-career-value"><span class="apc-placeholder">' . esc_html__( 'Not specified', 'alumnus' ) . '</span></span>';
-	}
-
-	wp_send_json_success( array( 'html' => $html ) );
-}
-add_action( 'wp_ajax_alumnus_update_career', 'alumnus_update_career_ajax' );
-add_action( 'wp_ajax_nopriv_alumnus_update_career', 'alumnus_update_career_ajax' );
 
 /**
  * AJAX handler to update skills (CSV string) of the logged-in alumni user.
