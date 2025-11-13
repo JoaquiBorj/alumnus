@@ -578,6 +578,10 @@ function alumnus_add_experience_ajax() {
 		wp_send_json_error( array( 'message' => __( 'Invalid date format. Use YYYY-MM (e.g., 2025-10).', 'alumnus' ) ), 400 );
 	}
 
+	// Convert YYYY-MM to YYYY-MM-01 for MySQL DATE column
+	$start_db = $start . '-01';
+	$end_db = $end ? $end . '-01' : null;
+
 	// Insert row
 	$ins = $wpdb->insert(
 		'experience',
@@ -586,8 +590,8 @@ function alumnus_add_experience_ajax() {
 			'company_name' => $company,
 			'title'        => $title,
 			'location'     => $location,
-			'start_date'   => $start,
-			'end_date'     => ( $end === '' ? null : $end ),
+			'start_date'   => $start_db,
+			'end_date'     => $end_db,
 		),
 		array( '%s','%s','%s','%s','%s','%s' )
 	);
@@ -698,6 +702,10 @@ function alumnus_update_experience_ajax() {
 		wp_send_json_error( array( 'message' => __( 'Invalid date format. Use YYYY-MM (e.g., 2025-10).', 'alumnus' ) ), 400 );
 	}
 
+	// Convert YYYY-MM to YYYY-MM-01 for MySQL DATE column
+	$start_db = $start ? $start . '-01' : null;
+	$end_db = $end ? $end . '-01' : null;
+
 	global $wpdb;
 	// Ensure the row belongs to this user
 	$owner = $wpdb->get_var( $wpdb->prepare("SELECT COUNT(*) FROM experience WHERE experience_id = %d AND user_id = %s", $exp_id, $user_id) );
@@ -711,8 +719,8 @@ function alumnus_update_experience_ajax() {
 			'title' => $title,
 			'company_name' => $company,
 			'location' => $location,
-			'start_date' => ($start === '' ? null : $start),
-			'end_date' => ($end === '' ? null : $end),
+			'start_date' => $start_db,
+			'end_date' => $end_db,
 		),
 		array('experience_id' => $exp_id, 'user_id' => $user_id),
 		array('%s','%s','%s','%s','%s'),
