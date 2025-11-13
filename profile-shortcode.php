@@ -576,11 +576,11 @@ function alumnus_add_experience_ajax() {
 
     global $wpdb; // direct alumni linkage; no WP user mapping required
 
-	// Validate date strings (YYYY-MM-DD)
-	$start_ok = preg_match('/^\d{4}-\d{2}-\d{2}$/', $start);
-	$end_ok = ($end === '' || preg_match('/^\d{4}-\d{2}-\d{2}$/', $end));
+	// Validate date strings (YYYY-MM format from month input)
+	$start_ok = preg_match('/^\d{4}-\d{2}$/', $start);
+	$end_ok = ($end === '' || preg_match('/^\d{4}-\d{2}$/', $end));
 	if ( ! $start_ok || ! $end_ok ) {
-		wp_send_json_error( array( 'message' => __( 'Invalid date format. Use YYYY-MM-DD.', 'alumnus' ) ), 400 );
+		wp_send_json_error( array( 'message' => __( 'Invalid date format. Use YYYY-MM (e.g., 2025-10).', 'alumnus' ) ), 400 );
 	}
 
 	// Insert row
@@ -695,10 +695,10 @@ function alumnus_update_experience_ajax() {
 	if (!$exp_id || $title === '' || $company === '') {
 		wp_send_json_error( array( 'message' => __( 'Missing fields.', 'alumnus' ) ), 400 );
 	}
-	$start_ok = ($start === '' || preg_match('/^\d{4}-\d{2}-\d{2}$/', $start));
-	$end_ok = ($end === '' || preg_match('/^\d{4}-\d{2}-\d{2}$/', $end));
+	$start_ok = ($start === '' || preg_match('/^\d{4}-\d{2}$/', $start));
+	$end_ok = ($end === '' || preg_match('/^\d{4}-\d{2}$/', $end));
 	if (!$start_ok || !$end_ok) {
-		wp_send_json_error( array( 'message' => __( 'Invalid date format. Use YYYY-MM-DD.', 'alumnus' ) ), 400 );
+		wp_send_json_error( array( 'message' => __( 'Invalid date format. Use YYYY-MM (e.g., 2025-10).', 'alumnus' ) ), 400 );
 	}
 
 	global $wpdb;
