@@ -421,25 +421,29 @@ function alumnus_initExperienceUI() {
 				var title = titleEl ? titleEl.textContent.trim() : '';
 				var company = li.getAttribute('data-company') || '';
 				var location = li.getAttribute('data-location') || '';
-				var startRaw = li.getAttribute('data-start') || '';
-				var endRaw = li.getAttribute('data-end') || '';
-				// Normalize sentinel values sometimes used by MySQL or backends
-				if (endRaw === '0000-00-00' || endRaw === 'null' || endRaw === 'undefined') {
-					endRaw = '';
-				}
+			var startRaw = li.getAttribute('data-start') || '';
+			var endRaw = li.getAttribute('data-end') || '';
+			// Normalize sentinel values sometimes used by MySQL or backends
+			if (endRaw === '0000-00-00' || endRaw === 'null' || endRaw === 'undefined') {
+				endRaw = '';
+			}
 
-				editId.value = id;
-				editTitle.value = title;
-				editCompany.value = company;
-				editLocation.value = location;
-				editStart.value = startRaw;
-				if (!endRaw) {
-					editEnd.value = '';
-					editCurrent.checked = true;
-				} else {
-					editEnd.value = endRaw;
-					editCurrent.checked = false;
-				}
+			// Convert YYYY-MM-DD to YYYY-MM for month input
+			var startMonth = startRaw ? startRaw.substring(0, 7) : '';
+			var endMonth = endRaw ? endRaw.substring(0, 7) : '';
+
+			editId.value = id;
+			editTitle.value = title;
+			editCompany.value = company;
+			editLocation.value = location;
+			editStart.value = startMonth;
+			if (!endMonth) {
+				editEnd.value = '';
+				editCurrent.checked = true;
+			} else {
+				editEnd.value = endMonth;
+				editCurrent.checked = false;
+			}
 				if (editCurrent && editEnd) { editEnd.disabled = editCurrent.checked; }
 				wireEndDateToggle(editCurrent, editEnd);
 				openEdit();
