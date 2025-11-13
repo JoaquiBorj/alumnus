@@ -87,6 +87,42 @@ function adm_create_alumni_tables() {
         CONSTRAINT fk_experience_alumni FOREIGN KEY (user_id) REFERENCES alumni(user_id) ON DELETE CASCADE ON UPDATE CASCADE
     ) ENGINE=InnoDB $charset_collate;";
 
+    // === POSTS TABLE ===
+    $sql_posts = "CREATE TABLE IF NOT EXISTS posts (
+        post_id INT(11) NOT NULL AUTO_INCREMENT,
+        user_id VARCHAR(100) NOT NULL,
+        content VARCHAR(40) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+        post_date DATE NOT NULL,
+        PRIMARY KEY (post_id),
+        KEY idx_posts_user_id (user_id),
+        CONSTRAINT fk_posts_alumni FOREIGN KEY (user_id) REFERENCES alumni(user_id) ON DELETE CASCADE ON UPDATE CASCADE
+    ) ENGINE=InnoDB $charset_collate;";
+
+    // === SHARES TABLE ===
+    $sql_shares = "CREATE TABLE IF NOT EXISTS shares (
+        share_id INT(11) NOT NULL AUTO_INCREMENT,
+        post_id INT(11) NOT NULL,
+        user_id VARCHAR(100) NOT NULL,
+        PRIMARY KEY (share_id),
+        KEY idx_shares_post_id (post_id),
+        KEY idx_shares_user_id (user_id),
+        CONSTRAINT fk_shares_post FOREIGN KEY (post_id) REFERENCES posts(post_id) ON DELETE CASCADE ON UPDATE CASCADE,
+        CONSTRAINT fk_shares_alumni FOREIGN KEY (user_id) REFERENCES alumni(user_id) ON DELETE CASCADE ON UPDATE CASCADE
+    ) ENGINE=InnoDB $charset_collate;";
+
+    // === LIKES TABLE ===
+    $sql_likes = "CREATE TABLE IF NOT EXISTS likes (
+        like_id INT(11) NOT NULL AUTO_INCREMENT,
+        post_id INT(11) NOT NULL,
+        user_id VARCHAR(100) NOT NULL,
+        PRIMARY KEY (like_id),
+        UNIQUE KEY uniq_like_post_user (post_id, user_id),
+        KEY idx_likes_post_id (post_id),
+        KEY idx_likes_user_id (user_id),
+        CONSTRAINT fk_likes_post FOREIGN KEY (post_id) REFERENCES posts(post_id) ON DELETE CASCADE ON UPDATE CASCADE,
+        CONSTRAINT fk_likes_alumni FOREIGN KEY (user_id) REFERENCES alumni(user_id) ON DELETE CASCADE ON UPDATE CASCADE
+    ) ENGINE=InnoDB $charset_collate;";
+
     require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
     dbDelta($sql_course);
     dbDelta($sql_alumni);
@@ -94,6 +130,9 @@ function adm_create_alumni_tables() {
     dbDelta($sql_alumni_skills);
     dbDelta($sql_user_account);
     dbDelta($sql_experience);
+    dbDelta($sql_posts);
+    dbDelta($sql_shares);
+    dbDelta($sql_likes);
 
     // Ensure username column exists and backfill if needed
     adm_migrate_add_username_column();
@@ -124,6 +163,9 @@ function adm_plugin_deactivate() {
     $wpdb->query("DROP TABLE IF EXISTS experience");
     $wpdb->query("DROP TABLE IF EXISTS alumni");
     $wpdb->query("DROP TABLE IF EXISTS course");
+    $wpdb->query("DROP TABLE IF EXISTS likes");
+    $wpdb->query("DROP TABLE IF EXISTS shares");
+    $wpdb->query("DROP TABLE IF EXISTS posts");
 }
 register_deactivation_hook(__FILE__, 'adm_plugin_deactivate');
 
@@ -188,6 +230,9 @@ function adm_admin_page_content() {
             <li>• <code>alumni_skills</code></li>
             <li>• <code>user</code></li>
             <li>• <code>experience</code></li>
+            <li>• <code>posts</code></li>
+            <li>• <code>shares</code></li>
+            <li>• <code>likes</code></li>
         </ul>
     </div>
 
