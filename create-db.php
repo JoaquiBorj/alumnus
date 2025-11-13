@@ -104,6 +104,7 @@ function adm_create_alumni_tables() {
         post_id INT(11) NOT NULL,
         user_id VARCHAR(100) NOT NULL,
         PRIMARY KEY (share_id),
+        UNIQUE KEY uniq_share_post_user (post_id, user_id),
         KEY idx_shares_post_id (post_id),
         KEY idx_shares_user_id (user_id),
         CONSTRAINT fk_shares_post FOREIGN KEY (post_id) REFERENCES posts(post_id) ON DELETE CASCADE ON UPDATE CASCADE,
@@ -123,6 +124,20 @@ function adm_create_alumni_tables() {
         CONSTRAINT fk_likes_alumni FOREIGN KEY (user_id) REFERENCES alumni(user_id) ON DELETE CASCADE ON UPDATE CASCADE
     ) ENGINE=InnoDB $charset_collate;";
 
+    // === COMMENTS TABLE ===
+    $sql_comments = "CREATE TABLE IF NOT EXISTS comments (
+        comment_id INT(11) NOT NULL AUTO_INCREMENT,
+        post_id INT(11) NOT NULL,
+        user_id VARCHAR(100) NOT NULL,
+        content VARCHAR(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+        comment_date DATE NOT NULL,
+        PRIMARY KEY (comment_id),
+        KEY idx_comments_post_id (post_id),
+        KEY idx_comments_user_id (user_id),
+        CONSTRAINT fk_comments_post FOREIGN KEY (post_id) REFERENCES posts(post_id) ON DELETE CASCADE ON UPDATE CASCADE,
+        CONSTRAINT fk_comments_alumni FOREIGN KEY (user_id) REFERENCES alumni(user_id) ON DELETE CASCADE ON UPDATE CASCADE
+    ) ENGINE=InnoDB $charset_collate;";
+
     require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
     dbDelta($sql_course);
     dbDelta($sql_alumni);
@@ -133,6 +148,7 @@ function adm_create_alumni_tables() {
     dbDelta($sql_posts);
     dbDelta($sql_shares);
     dbDelta($sql_likes);
+    dbDelta($sql_comments);
 
     // Ensure username column exists and backfill if needed
     adm_migrate_add_username_column();
@@ -166,6 +182,7 @@ function adm_plugin_deactivate() {
     $wpdb->query("DROP TABLE IF EXISTS likes");
     $wpdb->query("DROP TABLE IF EXISTS shares");
     $wpdb->query("DROP TABLE IF EXISTS posts");
+    $wpdb->query("DROP TABLE IF EXISTS comments");
 }
 register_deactivation_hook(__FILE__, 'adm_plugin_deactivate');
 
@@ -233,6 +250,7 @@ function adm_admin_page_content() {
             <li>• <code>posts</code></li>
             <li>• <code>shares</code></li>
             <li>• <code>likes</code></li>
+            <li>• <code>comments</code></li>
         </ul>
     </div>
 

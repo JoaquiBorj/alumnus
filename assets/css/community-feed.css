@@ -43,6 +43,7 @@
 .btn-primary {background:#003a57; color:var(--alumnus-text-on-dark);}
 .btn-secondary {background:#e6e9ed; color:var(--alumnus-text-heading);}
 .btn-light {background:var(--alumnus-bg-page); color:var(--alumnus-text-medium);}
+.btn-light.is-active {background: var(--alumnus-primary); color: var(--alumnus-text-on-dark);} 
 .btn-primary:disabled, .btn-secondary:disabled, .btn-light:disabled {opacity:.75;}
 .alumnus-feed-sidebar-right {position:sticky; top:84px; align-self:start;}
 .alumnus-members-card {background:var(--alumnus-bg-white); border:1px solid var(--alumnus-border-pale); border-radius:8px; padding:16px 18px; box-shadow:0 1px 2px rgba(0,0,0,.05);}
@@ -54,3 +55,49 @@
 .amc-list::-webkit-scrollbar-track {background:transparent;}
 .amc-list::-webkit-scrollbar-thumb {background:var(--alumnus-scrollbar-thumb); border-radius:3px;}
 .pe-icon {display:inline-flex; align-items:center; gap:4px;}
+
+/* Comments */
+.comments-list {list-style:none; margin:8px 16px; padding:0; display:flex; flex-direction:column; gap:6px;}
+.comment-item {font-size:13px; color: var(--alumnus-text-body);} 
+.comment-form {display:flex; gap:8px; padding:8px 16px 16px;}
+.comment-form input[type="text"] {flex:1; border:1px solid var(--alumnus-border-gray); border-radius:16px; padding:8px 12px;}
+/* Shared post indicator */
+.post-shared .ph-shared-origin {font-size:11px; color: var(--alumnus-text-medium); margin-top:4px; font-style:italic;}
+.post-shared {border-left:4px solid var(--alumnus-secondary);}
+
+/* Modals */
+.alumnus-modal-overlay {position:fixed; inset:0; background:rgba(0,0,0,.45); display:flex; align-items:flex-start; justify-content:center; padding:60px 16px 40px; z-index:1000; opacity:0; pointer-events:none; transition:opacity .18s ease-in-out;}
+.alumnus-modal-overlay.is-visible {opacity:1; pointer-events:auto;}
+.alumnus-modal {background:var(--alumnus-bg-white); width:100%; max-width:480px; border-radius:12px; box-shadow:0 4px 24px rgba(0,0,0,.18); position:relative; display:flex; flex-direction:column; gap:14px; padding:20px 22px;}
+.alumnus-modal-title {margin:0 0 4px; font-size:18px; font-weight:600; color:#0b3d60;}
+.alumnus-modal textarea {width:100%; min-height:110px; border:1px solid var(--alumnus-border-gray); border-radius:12px; padding:12px 14px; resize:vertical; font-size:14px; background:var(--alumnus-bg-page);} 
+.alumnus-modal-actions {display:flex; justify-content:flex-end; gap:8px; margin-top:4px;}
+.alumnus-modal-close {position:absolute; top:10px; right:12px; background:transparent; color:var(--alumnus-text-medium); border:none; font-size:22px; line-height:1; cursor:pointer;}
+body.alumnus-modal-open {overflow:hidden;}
+/* Comment modal extended styling */
+/* Light theme variant for comment modal */
+.alumnus-modal--comment {max-width:760px; background:var(--alumnus-bg-white); color:var(--alumnus-text-body); padding:0; border:1px solid var(--alumnus-border-light);}
+.alumnus-modal--comment .alumnus-modal-header {display:flex; align-items:center; justify-content:space-between; padding:16px 20px; border-bottom:1px solid var(--alumnus-border-divider); background:var(--alumnus-bg-page);} 
+.alumnus-modal--comment .alumnus-modal-title {color:var(--alumnus-text-heading); font-size:16px; font-weight:600; margin:0;}
+.alumnus-modal--comment .alumnus-modal-close {color:var(--alumnus-text-medium); font-size:26px; top:10px; right:14px;}
+.alumnus-modal--comment .alumnus-modal-content {max-height:60vh; overflow-y:auto; padding:20px 24px 12px; display:flex; flex-direction:column; gap:20px; background:var(--alumnus-bg-white);} 
+.alumnus-modal--comment .alumnus-post-card {background:var(--alumnus-bg-page); border-color:var(--alumnus-border-light); box-shadow:none;}
+.alumnus-modal--comment .post-engagement-bar {background:var(--alumnus-bg-white);}
+.alumnus-modal--comment .post-actions {background:var(--alumnus-bg-white);} 
+.alumnus-modal-comments-empty {text-align:center; padding:40px 20px 10px; display:flex; flex-direction:column; gap:8px; color:var(--alumnus-text-medium);} 
+.alumnus-modal-comments-empty-icon {font-size:46px; opacity:.35;}
+.alumnus-modal-comments-empty-text {margin:0; font-size:18px; font-weight:600; color:var(--alumnus-text-heading);} 
+.alumnus-modal-comments-empty-sub {margin:0; font-size:13px; opacity:.6;}
+.alumnus-modal-composer {border-top:1px solid var(--alumnus-border-divider); padding:14px 20px 18px; background:var(--alumnus-bg-page); display:flex; flex-direction:column; gap:10px;}
+.alumnus-modal-composer-inner {display:flex; gap:12px; align-items:center;}
+.alumnus-modal-composer-inner .amc-avatar-wrap {flex:0 0 auto;}
+.alumnus-modal-composer-inner .amc-input-wrap {flex:1 1 auto;}
+.alumnus-modal-composer-inner input[type="text"] {width:100%; background:var(--alumnus-bg-white); color:var(--alumnus-text-body); border:1px solid var(--alumnus-border-light); border-radius:20px; padding:10px 16px; font-size:14px; box-shadow:0 1px 2px rgba(0,0,0,.05);} 
+.alumnus-modal-composer-inner input[type="text"]::placeholder {color:var(--alumnus-text-medium);}
+.alumnus-modal-composer-inner .amc-actions-wrap {flex:0 0 auto;}
+.alumnus-modal-composer .amc-submit {background:var(--alumnus-primary); color:var(--alumnus-text-on-dark); padding:10px 16px; border-radius:50%; width:44px; height:44px; font-size:18px; font-weight:600; box-shadow:0 2px 6px rgba(0,0,0,.15);} 
+.amc-helper-icons {display:flex; gap:14px; font-size:18px; padding-left:60px; color:var(--alumnus-text-medium);} 
+.amc-helper-icons span {cursor:default;}
+.alumnus-modal--comment .comments-list {margin:0; padding:0; list-style:none; display:flex; flex-direction:column; gap:10px;}
+.alumnus-modal--comment .comment-item {background:var(--alumnus-bg-white); padding:10px 14px; border-radius:16px; font-size:13px; border:1px solid var(--alumnus-border-light);} 
+.alumnus-modal--comment .apc-placeholder {font-size:13px; opacity:.65;}
