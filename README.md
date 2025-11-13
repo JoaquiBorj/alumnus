@@ -16,6 +16,18 @@ In this implementation a `username` column has been added to the custom `user` t
 
 Existing rows without a username are backfilled during activation/table refresh. The column has a UNIQUE index to guarantee uniqueness.
 
+## Alumni User ID Generation (Customization)
+
+Alumni IDs (`alumni.user_id` and `user.user` columns) are now generated automatically when creating an alumni record in the admin UI. The format is:
+
+- {year}{count3}, where `count3` is a per-year sequential count, zero-padded to three digits.
+- Example: graduating in 2024 and being the first alumni => `2024001`.
+
+Notes:
+
+- The counter is per graduation year. The generator uses the maximum existing suffix for that year to avoid collisions when records are deleted.
+- In Bulk JSON import, the `alumni_id` field is optional. If omitted, the ID will be generated using the same rule.
+
 
 ## Why this template?
 

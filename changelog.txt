@@ -49,3 +49,9 @@ Version 1.4 (Unreleased)
 	* Lowercased, non-alphanumeric characters removed.
 	* If duplicate exists, append numeric suffix starting at 2 (e.g., johndoe, johndoe2, johndoe3...).
 - Backfill migration populates usernames for existing accounts on activation/table refresh.
+
+2025.11.13 - version 2.1.0
+ - Change: Alumni User ID is now auto-generated after creation; admins no longer input a school ID.
+   * Format: {year}{count3} (per-year sequential count, zero-padded to 3 digits). Example: 2024 + 1 => 2024001.
+   * Applies to Admin "Add Alumni" UI. Bulk import also supports omitting "alumni_id"; the ID will be generated when missing.
+   * Generation is per graduation year and avoids collisions by using the current max suffix for that year.
