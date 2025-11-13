@@ -91,7 +91,7 @@ function adm_create_alumni_tables() {
     $sql_posts = "CREATE TABLE IF NOT EXISTS posts (
         post_id INT(11) NOT NULL AUTO_INCREMENT,
         user_id VARCHAR(100) NOT NULL,
-        content VARCHAR(40) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+        content VARCHAR(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
         post_date DATE NOT NULL,
         PRIMARY KEY (post_id),
         KEY idx_posts_user_id (user_id),

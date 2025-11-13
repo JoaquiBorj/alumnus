@@ -40,6 +40,7 @@ if ( ! function_exists( 'alumnus_resolve_login_page_url' ) ) {
 
 function alumnus_render_header_shortcode() {
     // Compute dynamic URLs
+    $community_feed_url = apply_filters( 'alumnus_community_feed_page_url', home_url( '/community-feed/' ) );
     $directory_url = apply_filters( 'alumnus_directory_page_url', home_url( '/directory/' ) );
     $profile_page  = function_exists('alumnus_resolve_profile_page_url') ? alumnus_resolve_profile_page_url() : home_url('/');
     $login_page    = function_exists('alumnus_resolve_login_page_url') ? alumnus_resolve_login_page_url() : home_url('/');
@@ -58,6 +59,7 @@ function alumnus_render_header_shortcode() {
     <div class="alumnus-header-bar">
         <div class="alumnus-header-inner">
             <div class="ahb-right">
+                <a href="<?php echo esc_url( $community_feed_url ); ?>" class="ahb-community-feed-btn">Community Feed</a>
                 <a href="<?php echo esc_url( $directory_url ); ?>" class="ahb-directory-btn">Directory</a>
                 <a href="<?php echo esc_url( $profile_link ); ?>" class="ahb-profile-btn">Profile</a>
                 <?php if ( $is_alumni_logged_in && $logout_url ) : ?>

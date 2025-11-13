@@ -15,6 +15,9 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
 function alumnus_render_community_feed_shortcode() {
 	global $wpdb;
 
+	// Enqueue Font Awesome icons
+	wp_enqueue_style('font-awesome', 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css', array(), '6.5.1');
+
 	// Enqueue interactive JS for likes/shares/comments
 	$js_rel = 'assets/js/community-feed.js';
 	$js_abs = plugin_dir_path(__FILE__) . $js_rel;
@@ -113,79 +116,7 @@ function alumnus_render_community_feed_shortcode() {
 							<h3 class="apc-name">
 										<?php echo esc_html( $sidebar_name !== '' ? $sidebar_name : __( 'Guest', 'alumnus' ) ); ?>
 							</h3>
-							<span class="apc-role">Community Member</span>
-							<p class="apc-since"><?php echo esc_html__( 'Welcome to the community feed', 'alumnus' ); ?></p>
 						</div>
-					</div>
-
-						<!-- Post Modal -->
-						<div class="alumnus-modal-overlay" id="alumnus-post-modal" aria-hidden="true">
-							<div class="alumnus-modal" role="dialog" aria-modal="true" aria-labelledby="alumnus-post-modal-title">
-								<button type="button" class="alumnus-modal-close" data-close-modal>&times;</button>
-								<h3 id="alumnus-post-modal-title" class="alumnus-modal-title"><?php esc_html_e('Create Post','alumnus'); ?></h3>
-								<?php if ( $current_alumni_id !== '' && $has_posts ): ?>
-								<form id="alumnus-post-modal-form">
-									<textarea name="content" maxlength="40" placeholder="<?php esc_attr_e('What do you want to say? (max 40 chars)','alumnus'); ?>" required></textarea>
-									<div class="alumnus-modal-actions">
-										<button type="submit" class="btn-primary"><?php esc_html_e('Post','alumnus'); ?></button>
-									</div>
-								</form>
-								<?php else: ?>
-									<p><?php esc_html_e('Sign in to create a post.','alumnus'); ?></p>
-								<?php endif; ?>
-							</div>
-						</div>
-
-						<!-- Comment Modal -->
-						<div class="alumnus-modal-overlay" id="alumnus-comment-modal" aria-hidden="true">
-							<div class="alumnus-modal alumnus-modal--comment" role="dialog" aria-modal="true" aria-labelledby="alumnus-comment-modal-title">
-								<header class="alumnus-modal-header">
-									<h3 id="alumnus-comment-modal-title" class="alumnus-modal-title"><?php esc_html_e("Anonymous participant's Post",'alumnus'); ?></h3>
-									<button type="button" class="alumnus-modal-close" data-close-modal aria-label="<?php esc_attr_e('Close','alumnus'); ?>">&times;</button>
-								</header>
-								<div class="alumnus-modal-content">
-									<div class="alumnus-comment-modal-post" id="alumnus-comment-modal-post"><!-- cloned post card inserted here --></div>
-									<div class="alumnus-modal-comments" id="alumnus-comment-list-wrapper">
-										<div class="alumnus-modal-comments-empty">
-											<div class="alumnus-modal-comments-empty-icon">📄</div>
-											<p class="alumnus-modal-comments-empty-text"><?php esc_html_e('No comments yet','alumnus'); ?></p>
-											<p class="alumnus-modal-comments-empty-sub"><?php esc_html_e('Be the first to comment.','alumnus'); ?></p>
-										</div>
-									</div>
-								</div>
-								<?php if ( $current_alumni_id !== '' && $has_comments ): ?>
-								<form id="alumnus-comment-modal-form" class="alumnus-modal-composer">
-									<input type="hidden" name="postId" value="" />
-									<div class="alumnus-modal-composer-inner">
-										<div class="amc-avatar-wrap"><div class="apc-avatar apc-avatar--sm"><span class="apc-initials"><?php echo esc_html( $sidebar_initials !== '' ? $sidebar_initials : 'A' ); ?></span></div></div>
-										<div class="amc-input-wrap"><input type="text" name="comment" maxlength="200" placeholder="<?php echo esc_attr( sprintf( __('Comment as %s','alumnus'), $sidebar_name !== '' ? $sidebar_name : __('Anonymous participant','alumnus') ) ); ?>" required /></div>
-										<div class="amc-actions-wrap">
-											<button type="submit" class="btn-primary amc-submit" aria-label="<?php esc_attr_e('Submit comment','alumnus'); ?>">➤</button>
-										</div>
-									</div>
-									<div class="amc-helper-icons" aria-hidden="true">
-										<span title="<?php esc_attr_e('Emoji','alumnus'); ?>">😊</span>
-										<span title="<?php esc_attr_e('Image','alumnus'); ?>">🖼️</span>
-										<span title="<?php esc_attr_e('GIF','alumnus'); ?>">🎞️</span>
-									</div>
-								</form>
-								<?php else: ?>
-									<p style="margin:12px 18px 24px; font-size:14px; opacity:.8; text-align:center; "><?php esc_html_e('Sign in to comment.','alumnus'); ?></p>
-								<?php endif; ?>
-							</div>
-						</div>
-					<ul class="apc-stats">
-						<li><strong><?php esc_html_e( 'Posts Loaded:', 'alumnus' ); ?></strong> <?php echo (int) count( $posts ); ?></li>
-						<li><strong><?php esc_html_e( 'Likes Table:', 'alumnus' ); ?></strong> <?php echo $has_likes ? '✓' : '–'; ?></li>
-						<li><strong><?php esc_html_e( 'Comments Table:', 'alumnus' ); ?></strong> <?php echo $has_comments ? '✓' : '–'; ?></li>
-					</ul>
-					<div class="apc-section">
-						<h4><?php esc_html_e( 'Events', 'alumnus' ); ?></h4>
-						<p class="apc-placeholder"><?php esc_html_e( 'No events to show.', 'alumnus' ); ?></p>
-					</div>
-					<div class="apc-section">
-						<h4><?php esc_html_e( 'Recent Activity', 'alumnus' ); ?></h4>
-						<p class="apc-placeholder"><?php esc_html_e( 'Activity tracking coming soon.', 'alumnus' ); ?></p>
 					</div>
 				</div>
 			</aside>
@@ -195,28 +126,17 @@ function alumnus_render_community_feed_shortcode() {
 				<?php if ( ! empty( $notice_msg ) ) : ?>
 					<div class="<?php echo esc_attr( $notice_class ); ?>"><?php echo esc_html( $notice_msg ); ?></div>
 				<?php endif; ?>
-				<div class="alumnus-post-composer">
-					<div class="composer-avatar">
-						<div class="apc-avatar apc-avatar--sm"><span class="apc-initials"><?php echo esc_html( $sidebar_initials !== '' ? $sidebar_initials : 'Y' ); ?></span></div>
-					</div>
-					<div class="composer-input">
-						<?php if ( $current_alumni_id !== '' && $has_posts ) : ?>
-							<button type="button" class="btn-secondary btn-open-post-modal" aria-haspopup="dialog" aria-controls="alumnus-post-modal"><?php esc_html_e( 'Start a post…', 'alumnus' ); ?></button>
-						<?php else : ?>
-							<button type="button" class="btn-secondary" disabled><?php esc_html_e( 'Sign in to post', 'alumnus' ); ?></button>
-						<?php endif; ?>
-					</div>
+				<div class="alumnus-welcome-message">
+					<h2><?php esc_html_e( 'Welcome to the Community Feed', 'alumnus' ); ?></h2>
 				</div>
 
 				<?php if ( empty( $posts ) ) : ?>
 					<article class="alumnus-post-card">
-						<div class="post-media placeholder">
-							<div class="post-placeholder-block"><?php esc_html_e( 'No posts yet. Be the first to share!', 'alumnus' ); ?></div>
-						</div>
+						<div class="post-text"><?php esc_html_e( 'No posts yet. Be the first to share!', 'alumnus' ); ?></div>
 						<div class="post-actions compact">
-							<button class="btn-light" disabled><?php esc_html_e( 'Like', 'alumnus' ); ?></button>
-							<button class="btn-light" disabled><?php esc_html_e( 'Comment', 'alumnus' ); ?></button>
-							<button class="btn-light" disabled><?php esc_html_e( 'Share', 'alumnus' ); ?></button>
+							<button class="btn-light" disabled><i class="fa-solid fa-thumbs-up"></i> <?php esc_html_e( 'Like', 'alumnus' ); ?></button>
+							<button class="btn-light" disabled><i class="fa-solid fa-comment"></i> <?php esc_html_e( 'Comment', 'alumnus' ); ?></button>
+							<button class="btn-light" disabled><i class="fa-solid fa-share"></i> <?php esc_html_e( 'Share', 'alumnus' ); ?></button>
 						</div>
 					</article>
 				<?php else : ?>
@@ -244,24 +164,22 @@ function alumnus_render_community_feed_shortcode() {
 								<div class="ph-meta">
 									<h5 class="ph-name"><?php echo esc_html( $display_name ); ?></h5>
 									<div class="ph-date">
-										<?php echo esc_html( date_i18n( 'M j, Y', strtotime( $post_row->post_date ) ) ); ?> • <span class="ph-visibility" title="<?php esc_attr_e( 'Public', 'alumnus' ); ?>">🌐</span>
+										<?php echo esc_html( date_i18n( 'M j, Y', strtotime( $post_row->post_date ) ) ); ?>
 									</div>
 								</div>
 							</header>
-							<div class="post-media placeholder">
-								<div class="post-placeholder-block"><?php echo esc_html( $post_row->content ); ?></div>
-							</div>
+							<div class="post-text"><?php echo esc_html( $post_row->content ); ?></div>
 							<div class="post-engagement-bar">
 								<div class="pe-stats">
-									<span class="pe-icon pe-like-count" data-post-id="<?php echo (int) $post_row->post_id; ?>" title="<?php esc_attr_e( 'Likes', 'alumnus' ); ?>">⭐ <?php echo (int) $post_row->like_count; ?></span>
-									<span class="pe-icon pe-share-count" data-post-id="<?php echo (int) $post_row->post_id; ?>" title="<?php esc_attr_e( 'Shares', 'alumnus' ); ?>">🔁 <?php echo (int) $post_row->share_count; ?></span>
-									<span class="pe-icon pe-comment-count" data-post-id="<?php echo (int) $post_row->post_id; ?>" title="<?php esc_attr_e( 'Comments', 'alumnus' ); ?>">💬 <?php echo (int) $post_row->comment_count; ?></span>
+									<span class="pe-icon pe-like-count" data-post-id="<?php echo (int) $post_row->post_id; ?>" title="<?php esc_attr_e( 'Likes', 'alumnus' ); ?>"><i class="fa-solid fa-thumbs-up"></i> <?php echo (int) $post_row->like_count; ?></span>
+									<span class="pe-icon pe-comment-count" data-post-id="<?php echo (int) $post_row->post_id; ?>" title="<?php esc_attr_e( 'Comments', 'alumnus' ); ?>"><i class="fa-solid fa-comment"></i> <?php echo (int) $post_row->comment_count; ?></span>
+									<span class="pe-icon pe-share-count" data-post-id="<?php echo (int) $post_row->post_id; ?>" title="<?php esc_attr_e( 'Shares', 'alumnus' ); ?>"><i class="fa-solid fa-share"></i> <?php echo (int) $post_row->share_count; ?></span>
 								</div>
 							</div>
 							<div class="post-actions compact">
-								<button class="btn-light btn-like <?php echo (!empty($post_row->liked_by_me) ? 'is-active' : ''); ?>" data-post-id="<?php echo (int) $post_row->post_id; ?>"><?php echo !empty($post_row->liked_by_me) ? esc_html__('Liked','alumnus') : esc_html__('Like','alumnus'); ?></button>
-								<button class="btn-light btn-comment" data-post-id="<?php echo (int) $post_row->post_id; ?>"><?php esc_html_e( 'Comment', 'alumnus' ); ?></button>
-								<button class="btn-light btn-share <?php echo (!empty($post_row->shared_by_me) ? 'is-active' : ''); ?>" data-post-id="<?php echo (int) $post_row->post_id; ?>"><?php echo !empty($post_row->shared_by_me) ? esc_html__('Shared','alumnus') : esc_html__('Share','alumnus'); ?></button>
+								<button class="btn-light btn-like <?php echo (!empty($post_row->liked_by_me) ? 'is-active' : ''); ?>" data-post-id="<?php echo (int) $post_row->post_id; ?>"><i class="fa-solid fa-thumbs-up"></i> <?php echo !empty($post_row->liked_by_me) ? esc_html__('Liked','alumnus') : esc_html__('Like','alumnus'); ?></button>
+								<button class="btn-light btn-comment" data-post-id="<?php echo (int) $post_row->post_id; ?>"><i class="fa-solid fa-comment"></i> <?php esc_html_e( 'Comment', 'alumnus' ); ?></button>
+								<button class="btn-light btn-share <?php echo (!empty($post_row->shared_by_me) ? 'is-active' : ''); ?>" data-post-id="<?php echo (int) $post_row->post_id; ?>"><i class="fa-solid fa-share"></i> <?php echo !empty($post_row->shared_by_me) ? esc_html__('Shared','alumnus') : esc_html__('Share','alumnus'); ?></button>
 							</div>
 
 							<?php if ( $has_comments ): ?>
@@ -296,29 +214,68 @@ function alumnus_render_community_feed_shortcode() {
 
 			<!-- Right Sidebar -->
 			<aside class="alumnus-feed-sidebar-right">
-				<div class="alumnus-members-card">
-					<h4 class="amc-title"><?php esc_html_e( 'Community Members', 'alumnus' ); ?></h4>
-					<ul class="amc-list">
-						<?php
-						// Lightweight member listing from alumni table if available
-						if ( $has_alumni ) {
-							$members = $wpdb->get_results( "SELECT firstname, lastname FROM alumni ORDER BY lastname ASC LIMIT 25" );
-							if ( ! empty( $members ) ) {
-								foreach ( $members as $m ) {
-									$mn = trim( $m->firstname . ' ' . $m->lastname );
-									echo '<li>' . esc_html( $mn ) . '</li>';
-								}
-							} else {
-								echo '<li>' . esc_html__( 'No members found.', 'alumnus' ) . '</li>';
-							}
-						} else {
-							// Fallback placeholders
-							echo '<li>' . esc_html__( 'Members unavailable (alumni table missing).', 'alumnus' ) . '</li>';
-						}
-						?>
-					</ul>
+				<div class="alumnus-post-composer">
+					<div class="composer-input">
+						<?php if ( $current_alumni_id !== '' && $has_posts ) : ?>
+							<button type="button" class="btn-secondary btn-open-post-modal" aria-haspopup="dialog" aria-controls="alumnus-post-modal"><?php esc_html_e( 'Make a post', 'alumnus' ); ?></button>
+						<?php else : ?>
+							<button type="button" class="btn-secondary" disabled><?php esc_html_e( 'Sign in to post', 'alumnus' ); ?></button>
+						<?php endif; ?>
+					</div>
 				</div>
 			</aside>
+		</div>
+
+		<!-- Post Modal -->
+		<div class="alumnus-modal-overlay" id="alumnus-post-modal" aria-hidden="true">
+			<div class="alumnus-modal" role="dialog" aria-modal="true" aria-labelledby="alumnus-post-modal-title">
+				<button type="button" class="alumnus-modal-close" data-close-modal>&times;</button>
+				<h3 id="alumnus-post-modal-title" class="alumnus-modal-title"><?php esc_html_e('Create Post','alumnus'); ?></h3>
+				<?php if ( $current_alumni_id !== '' && $has_posts ): ?>
+				<form id="alumnus-post-modal-form">
+					<textarea name="content" maxlength="500" placeholder="<?php esc_attr_e('What do you want to say? (max 500 chars)','alumnus'); ?>" required></textarea>
+					<div class="alumnus-modal-actions">
+						<button type="submit" class="btn-primary"><?php esc_html_e('Post','alumnus'); ?></button>
+					</div>
+				</form>
+				<?php else: ?>
+					<p><?php esc_html_e('Sign in to create a post.','alumnus'); ?></p>
+				<?php endif; ?>
+			</div>
+		</div>
+
+		<!-- Comment Modal -->
+		<div class="alumnus-modal-overlay" id="alumnus-comment-modal" aria-hidden="true">
+			<div class="alumnus-modal alumnus-modal--comment" role="dialog" aria-modal="true" aria-labelledby="alumnus-comment-modal-title">
+				<header class="alumnus-modal-header">
+					<h3 id="alumnus-comment-modal-title" class="alumnus-modal-title"><?php esc_html_e("Anonymous participant's Post",'alumnus'); ?></h3>
+					<button type="button" class="alumnus-modal-close" data-close-modal aria-label="<?php esc_attr_e('Close','alumnus'); ?>">&times;</button>
+				</header>
+				<div class="alumnus-modal-content">
+					<div class="alumnus-comment-modal-post" id="alumnus-comment-modal-post"><!-- cloned post card inserted here --></div>
+					<div class="alumnus-modal-comments" id="alumnus-comment-list-wrapper">
+						<div class="alumnus-modal-comments-empty">
+							<div class="alumnus-modal-comments-empty-icon"><i class="fa-solid fa-comments"></i></div>
+							<p class="alumnus-modal-comments-empty-text"><?php esc_html_e('No comments yet','alumnus'); ?></p>
+							<p class="alumnus-modal-comments-empty-sub"><?php esc_html_e('Be the first to comment.','alumnus'); ?></p>
+						</div>
+					</div>
+				</div>
+				<?php if ( $current_alumni_id !== '' && $has_comments ): ?>
+				<form id="alumnus-comment-modal-form" class="alumnus-modal-composer">
+					<input type="hidden" name="postId" value="" />
+					<div class="alumnus-modal-composer-inner">
+						<div class="amc-avatar-wrap"><div class="apc-avatar apc-avatar--sm"><span class="apc-initials"><?php echo esc_html( $sidebar_initials !== '' ? $sidebar_initials : 'A' ); ?></span></div></div>
+						<div class="amc-input-wrap"><input type="text" name="comment" maxlength="200" placeholder="<?php echo esc_attr( sprintf( __('Comment as %s','alumnus'), $sidebar_name !== '' ? $sidebar_name : __('Anonymous participant','alumnus') ) ); ?>" required /></div>
+						<div class="amc-actions-wrap">
+							<button type="submit" class="btn-primary amc-submit" aria-label="<?php esc_attr_e('Submit comment','alumnus'); ?>">➤</button>
+						</div>
+					</div>
+				</form>
+				<?php else: ?>
+					<p style="margin:12px 18px 24px; font-size:14px; opacity:.8; text-align:center; "><?php esc_html_e('Sign in to comment.','alumnus'); ?></p>
+				<?php endif; ?>
+			</div>
 		</div>
 	</div>
 	<?php
@@ -403,11 +360,27 @@ function alumnus_ajax_share_post() {
 	if ( $exists === 0 ) {
 		$wpdb->insert('shares', array('post_id'=>$post_id, 'user_id'=>$uid), array('%d','%s'));
 		// Repost logic: duplicate original post content as a new post credited to sharing user.
-		$orig = $wpdb->get_row( $wpdb->prepare("SELECT content FROM posts WHERE post_id=%d", $post_id) );
+		$orig = $wpdb->get_row( $wpdb->prepare(
+			"SELECT p.content, p.user_id, a.firstname, a.lastname 
+			 FROM posts p 
+			 LEFT JOIN alumni a ON a.user_id = p.user_id 
+			 WHERE p.post_id=%d", 
+			$post_id
+		) );
 		if ( $orig && isset($orig->content) ) {
-			$new_content = 'Shared: ' . (string) $orig->content;
-			// Enforce 40-char limit of posts.content
-			if ( function_exists('mb_substr') ) { $new_content = mb_substr($new_content, 0, 40, 'UTF-8'); } else { $new_content = substr($new_content, 0, 40); }
+			// Get original poster's name
+			$poster_name = '';
+			if ( isset($orig->firstname) || isset($orig->lastname) ) {
+				$poster_name = trim( (string) $orig->firstname . ' ' . (string) $orig->lastname );
+			}
+			if ( $poster_name === '' ) {
+				$poster_name = (string) $orig->user_id;
+			}
+			
+			// Format: Shared Poster Name:\nPost text
+			$new_content = 'Shared ' . $poster_name . '\'s post: ' . "\n" . (string) $orig->content;
+			// Enforce 500-char limit of posts.content
+			if ( function_exists('mb_substr') ) { $new_content = mb_substr($new_content, 0, 500, 'UTF-8'); } else { $new_content = substr($new_content, 0, 500); }
 			$wpdb->insert( 'posts', array(
 				'user_id'   => $uid,
 				'content'   => $new_content,
@@ -466,7 +439,7 @@ function alumnus_ajax_add_post() {
 	$raw = isset($_POST['content']) ? wp_unslash($_POST['content']) : '';
 	$content = trim( wp_strip_all_tags( (string) $raw ) );
 	if ( $content === '' ) { wp_send_json_error(array('message'=>'empty'), 400); }
-	if ( function_exists('mb_substr') ) { $content = mb_substr($content, 0, 40, 'UTF-8'); } else { $content = substr($content, 0, 40); }
+	if ( function_exists('mb_substr') ) { $content = mb_substr($content, 0, 500, 'UTF-8'); } else { $content = substr($content, 0, 500); }
 
 	// Insert post
 	$res = $wpdb->insert( 'posts', array(
@@ -506,20 +479,18 @@ function alumnus_ajax_add_post() {
 				<div class="ph-date"><?php echo $date_display; ?> • <span class="ph-visibility" title="<?php esc_attr_e( 'Public', 'alumnus' ); ?>">🌐</span></div>
 			</div>
 		</header>
-		<div class="post-media placeholder">
-			<div class="post-placeholder-block"><?php echo esc_html( $content ); ?></div>
-		</div>
+		<div class="post-text"><?php echo esc_html( $content ); ?></div>
 		<div class="post-engagement-bar">
 			<div class="pe-stats">
-				<span class="pe-icon pe-like-count" data-post-id="<?php echo (int) $post_id; ?>" title="<?php esc_attr_e( 'Likes', 'alumnus' ); ?>">⭐ 0</span>
-				<span class="pe-icon pe-share-count" data-post-id="<?php echo (int) $post_id; ?>" title="<?php esc_attr_e( 'Shares', 'alumnus' ); ?>">🔁 0</span>
-				<span class="pe-icon pe-comment-count" data-post-id="<?php echo (int) $post_id; ?>" title="<?php esc_attr_e( 'Comments', 'alumnus' ); ?>">💬 0</span>
+				<span class="pe-icon pe-like-count" data-post-id="<?php echo (int) $post_id; ?>" title="<?php esc_attr_e( 'Likes', 'alumnus' ); ?>"><i class="fa-solid fa-thumbs-up"></i> 0</span>
+				<span class="pe-icon pe-comment-count" data-post-id="<?php echo (int) $post_id; ?>" title="<?php esc_attr_e( 'Comments', 'alumnus' ); ?>"><i class="fa-solid fa-comment"></i> 0</span>
+				<span class="pe-icon pe-share-count" data-post-id="<?php echo (int) $post_id; ?>" title="<?php esc_attr_e( 'Shares', 'alumnus' ); ?>"><i class="fa-solid fa-share"></i> 0</span>
 			</div>
 		</div>
 		<div class="post-actions compact">
-			<button class="btn-light btn-like" data-post-id="<?php echo (int) $post_id; ?>"><?php esc_html_e( 'Like', 'alumnus' ); ?></button>
-			<button class="btn-light btn-comment" data-post-id="<?php echo (int) $post_id; ?>"><?php esc_html_e( 'Comment', 'alumnus' ); ?></button>
-			<button class="btn-light btn-share" data-post-id="<?php echo (int) $post_id; ?>"><?php esc_html_e( 'Share', 'alumnus' ); ?></button>
+			<button class="btn-light btn-like" data-post-id="<?php echo (int) $post_id; ?>"><i class="fa-solid fa-thumbs-up"></i> <?php esc_html_e( 'Like', 'alumnus' ); ?></button>
+			<button class="btn-light btn-comment" data-post-id="<?php echo (int) $post_id; ?>"><i class="fa-solid fa-comment"></i> <?php esc_html_e( 'Comment', 'alumnus' ); ?></button>
+			<button class="btn-light btn-share" data-post-id="<?php echo (int) $post_id; ?>"><i class="fa-solid fa-share"></i> <?php esc_html_e( 'Share', 'alumnus' ); ?></button>
 		</div>
 		<div class="post-comments" id="comments-<?php echo (int) $post_id; ?>">
 			<div class="apc-placeholder"><?php esc_html_e( 'No comments yet.', 'alumnus' ); ?></div>
