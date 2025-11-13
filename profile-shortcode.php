@@ -212,12 +212,15 @@ function alumnus_render_profile_shortcode($atts = array()) {
 	$format_range = function( $start, $end ) {
 		if ( empty( $start ) ) { return ''; }
 		try {
-			$startDt = new DateTime( $start );
+			// Append -01 to YYYY-MM format dates for DateTime parsing
+			$start_date = ( preg_match('/^\d{4}-\d{2}$/', $start) ) ? $start . '-01' : $start;
+			$startDt = new DateTime( $start_date );
 			$startStr = $startDt->format( 'M Y' );
 			$endStr = 'Present';
 			$endDt = null;
 			if ( ! empty( $end ) ) {
-				$endDt = new DateTime( $end );
+				$end_date = ( preg_match('/^\d{4}-\d{2}$/', $end) ) ? $end . '-01' : $end;
+				$endDt = new DateTime( $end_date );
 				$endStr = $endDt->format( 'M Y' );
 			} else {
 				$endDt = new DateTime();
@@ -346,14 +349,6 @@ function alumnus_render_profile_shortcode($atts = array()) {
 											<div class="apc-exp-dates"><?php echo esc_html( $exp->location ); ?></div>
 										<?php endif; ?>
 									</div>
-									<?php if ( ! empty( $skills_array ) ): ?>
-										<div class="apc-exp-skills"><span class="apc-exp-skills-label">Skills:</span>
-											<?php 
-												$show_skills = array_slice( $skills_array, 0, 3 );
-												echo esc_html( implode( ' · ', $show_skills ) );
-											?>
-										</div>
-									<?php endif; ?>
 									<?php if ( $is_own_profile ): ?>
 										<div class="apc-exp-actions">
 											<button type="button" class="apc-exp-action-btn apc-exp-edit" data-exp-id="<?php echo esc_attr( $exp->experience_id ); ?>">Edit</button>
@@ -623,13 +618,19 @@ function alumnus_add_experience_ajax() {
 	$format_range = function( $start, $end ) {
 		if ( empty( $start ) ) return '';
 		try {
-			$s = new DateTime($start);
-			$e = $end ? new DateTime($end) : new DateTime();
+			// Append -01 to YYYY-MM format dates for DateTime parsing
+			$start_date = ( preg_match('/^\d{4}-\d{2}$/', $start) ) ? $start . '-01' : $start;
+			$s = new DateTime($start_date);
+			$end_date = '';
+			if ( $end ) {
+				$end_date = ( preg_match('/^\d{4}-\d{2}$/', $end) ) ? $end . '-01' : $end;
+			}
+			$e = $end_date ? new DateTime($end_date) : new DateTime();
 			$months = $s->diff($e);
 			$m = ($months->y * 12) + $months->m;
 			if ($m <= 0) { $m = 1; }
 			$dur = sprintf( _n('%d mo','%d mos',$m,'alumnus'), $m );
-			return $s->format('M Y') . ' - ' . ($end ? (new DateTime($end))->format('M Y') : 'Present') . ' · ' . $dur;
+			return $s->format('M Y') . ' - ' . ($end ? (new DateTime($end_date))->format('M Y') : 'Present') . ' · ' . $dur;
 		} catch (Exception $ex) { return ''; }
 	};
 
@@ -642,16 +643,12 @@ function alumnus_add_experience_ajax() {
 			echo '<div class="apc-exp-title">' . esc_html($exp->title) . '</div>';
 			echo '<div class="apc-exp-company">' . esc_html($exp->company_name) . '</div>';
 			echo '</div>';
-			echo '<div class="apc-exp-meta">';
-			echo '<div class="apc-exp-dates">' . esc_html( $format_range($exp->start_date, $exp->end_date) ) . '</div>';
-			if ( ! empty( $exp->location ) ) {
-				echo '<div class="apc-exp-dates">' . esc_html( $exp->location ) . '</div>';
-			}
-			echo '</div>';
-			if ( ! empty( $skills_arr ) ) {
-				$show = array_slice( $skills_arr, 0, 3 );
-				echo '<div class="apc-exp-skills"><span class="apc-exp-skills-label">' . esc_html__('Skills:', 'alumnus') . '</span> ' . esc_html( implode(' · ', $show) ) . '</div>';
-			}
+		echo '<div class="apc-exp-meta">';
+		echo '<div class="apc-exp-dates">' . esc_html( $format_range($exp->start_date, $exp->end_date) ) . '</div>';
+		if ( ! empty( $exp->location ) ) {
+			echo '<div class="apc-exp-dates">' . esc_html( $exp->location ) . '</div>';
+		}
+		echo '</div>';
 			// Since only the owner can add, show actions
 			echo '<div class="apc-exp-actions">';
 			echo '<button type="button" class="apc-exp-action-btn apc-exp-edit" data-exp-id="'.esc_attr($exp->experience_id).'">'.esc_html__('Edit','alumnus').'</button>';
@@ -738,7 +735,15 @@ function alumnus_update_experience_ajax() {
 
 	$format_range = function( $start, $end ) {
 		if ( empty( $start ) ) return '';
-		try { $s=new DateTime($start); $e=$end?new DateTime($end):new DateTime(); $m=$s->diff($e); $mm=($m->y*12)+$m->m; if($mm<=0){$mm=1;} $dur=sprintf(_n('%d mo','%d mos',$mm,'alumnus'),$mm); return $s->format('M Y').' - '.($end?(new DateTime($end))->format('M Y'):'Present').' · '.$dur; } catch(Exception $x){ return ''; }
+		try { 
+			// Append -01 to YYYY-MM format dates for DateTime parsing
+			$start_date = ( preg_match('/^\d{4}-\d{2}$/', $start) ) ? $start . '-01' : $start;
+			$end_date = '';
+			if ( $end ) {
+				$end_date = ( preg_match('/^\d{4}-\d{2}$/', $end) ) ? $end . '-01' : $end;
+			}
+			$s=new DateTime($start_date); $e=$end_date?new DateTime($end_date):new DateTime(); $m=$s->diff($e); $mm=($m->y*12)+$m->m; if($mm<=0){$mm=1;} $dur=sprintf(_n('%d mo','%d mos',$mm,'alumnus'),$mm); return $s->format('M Y').' - '.($end?(new DateTime($end_date))->format('M Y'):'Present').' · '.$dur; 
+		} catch(Exception $x){ return ''; }
 	};
 
 	ob_start();
@@ -750,13 +755,12 @@ function alumnus_update_experience_ajax() {
 			echo '<div class="apc-exp-title">'.esc_html($exp->title).'</div>';
 			echo '<div class="apc-exp-company">'.esc_html($exp->company_name).'</div>';
 			echo '</div>';
-			echo '<div class="apc-exp-meta">';
-			echo '<div class="apc-exp-dates">'.esc_html($format_range($exp->start_date,$exp->end_date)).'</div>';
-			if (!empty($exp->location)) {
-				echo '<div class="apc-exp-dates">'.esc_html($exp->location).'</div>';
-			}
-			echo '</div>';
-			if (!empty($skills_arr)) { $show=array_slice($skills_arr,0,3); echo '<div class="apc-exp-skills"><span class="apc-exp-skills-label">'.esc_html__('Skills:','alumnus').'</span> '.esc_html(implode(' · ',$show)).'</div>'; }
+		echo '<div class="apc-exp-meta">';
+		echo '<div class="apc-exp-dates">'.esc_html($format_range($exp->start_date,$exp->end_date)).'</div>';
+		if (!empty($exp->location)) {
+			echo '<div class="apc-exp-dates">'.esc_html($exp->location).'</div>';
+		}
+		echo '</div>';
 			echo '<div class="apc-exp-actions">';
 			echo '<button type="button" class="apc-exp-action-btn apc-exp-edit" data-exp-id="'.esc_attr($exp->experience_id).'">'.esc_html__('Edit','alumnus').'</button>';
 			echo '<button type="button" class="apc-exp-action-btn apc-exp-delete" data-exp-id="'.esc_attr($exp->experience_id).'">'.esc_html__('Delete','alumnus').'</button>';
