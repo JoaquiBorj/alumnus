@@ -101,6 +101,18 @@
       var card = document.querySelector('.alumnus-post-card[data-post-id="'+postId+'"]');
       var modalPost = document.getElementById('alumnus-comment-modal-post');
       var listWrapper = document.getElementById('alumnus-comment-list-wrapper');
+      
+      // Update modal title with poster's name
+      var posterName = '';
+      if(card){
+        var nameEl = card.querySelector('.ph-name');
+        if(nameEl){ posterName = nameEl.textContent.trim(); }
+      }
+      var modalTitle = document.querySelector('#alumnus-comment-modal .alumnus-modal-title');
+      if(modalTitle && posterName){
+        modalTitle.textContent = posterName + "'s Post";
+      }
+      
       if(modalPost){
         modalPost.innerHTML = '';
         if(card){
@@ -121,7 +133,7 @@
         } else {
           var empty = document.createElement('div');
           empty.className='alumnus-modal-comments-empty';
-          empty.innerHTML='<div class="alumnus-modal-comments-empty-icon">📄</div><p class="alumnus-modal-comments-empty-text">No comments yet</p><p class="alumnus-modal-comments-empty-sub">Be the first to comment.</p>';
+          empty.innerHTML='<div class="alumnus-modal-comments-empty-icon"><i class="fa-solid fa-comments"></i></div><p class="alumnus-modal-comments-empty-text">No comments yet</p><p class="alumnus-modal-comments-empty-sub">Be the first to comment.</p>';
           listWrapper.appendChild(empty);
         }
       }
