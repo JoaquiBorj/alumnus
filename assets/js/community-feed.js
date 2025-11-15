@@ -220,4 +220,97 @@
   // Global listeners for like/share remain
   document.addEventListener('click', onLikeClick);
   document.addEventListener('click', onShareClick);
+
+  // RESPONSIVE LAYOUT HANDLER
+  var layoutState = null; // 'desktop', 'tablet', 'mobile'
+  var originalParents = {};
+  
+  function initResponsiveLayout(){
+    var profileCard = document.querySelector('.alumnus-profile-card');
+    var postComposer = document.querySelector('.alumnus-post-composer');
+    var sidebarLeft = document.querySelector('.alumnus-feed-sidebar-left');
+    var sidebarRight = document.querySelector('.alumnus-feed-sidebar-right');
+    
+    if(!profileCard || !postComposer || !sidebarLeft || !sidebarRight) return;
+    
+    // Store original parents
+    originalParents.profileCard = sidebarLeft;
+    originalParents.postComposer = sidebarRight;
+    
+    handleLayoutChange();
+  }
+  
+  function handleLayoutChange(){
+    var width = window.innerWidth;
+    var profileCard = document.querySelector('.alumnus-profile-card');
+    var postComposer = document.querySelector('.alumnus-post-composer');
+    var sidebarLeft = document.querySelector('.alumnus-feed-sidebar-left');
+    var sidebarRight = document.querySelector('.alumnus-feed-sidebar-right');
+    var feedMain = document.querySelector('.alumnus-feed-main');
+    var welcomeMessage = document.querySelector('.alumnus-welcome-message');
+    
+    if(!profileCard || !postComposer || !sidebarLeft || !sidebarRight || !feedMain) return;
+    
+    var newState = width > 1299 ? 'desktop' : (width > 768 ? 'tablet' : 'mobile');
+    
+    if(layoutState === newState) return; // No change needed
+    
+    layoutState = newState;
+    
+    if(newState === 'desktop'){
+      // Restore original structure: profile-card in left, post-composer in right
+      if(profileCard.parentElement !== sidebarLeft){
+        sidebarLeft.appendChild(profileCard);
+      }
+      if(postComposer.parentElement !== sidebarRight){
+        sidebarRight.appendChild(postComposer);
+      }
+    } else if(newState === 'tablet'){
+      // Move post-composer to sidebar-left (after profile-card)
+      if(postComposer.parentElement !== sidebarLeft){
+        sidebarLeft.appendChild(postComposer);
+      }
+      // Ensure profile-card is in sidebar-left
+      if(profileCard.parentElement !== sidebarLeft){
+        sidebarLeft.insertBefore(profileCard, sidebarLeft.firstChild);
+      }
+    } else if(newState === 'mobile'){
+      // Move both to feed-main
+      // Order: welcome-message (already there), profile-card, post-composer, posts
+      if(welcomeMessage){
+        // Insert profile-card after welcome-message
+        if(profileCard.parentElement !== feedMain){
+          feedMain.insertBefore(profileCard, welcomeMessage.nextSibling);
+        }
+        // Insert post-composer after profile-card
+        if(postComposer.parentElement !== feedMain){
+          feedMain.insertBefore(postComposer, profileCard.nextSibling);
+        }
+      } else {
+        // Fallback if no welcome message
+        if(profileCard.parentElement !== feedMain){
+          feedMain.insertBefore(profileCard, feedMain.firstChild);
+        }
+        if(postComposer.parentElement !== feedMain){
+          feedMain.insertBefore(postComposer, profileCard.nextSibling);
+        }
+      }
+    }
+  }
+  
+  // Debounce resize handler
+  var resizeTimeout;
+  function onResize(){
+    clearTimeout(resizeTimeout);
+    resizeTimeout = setTimeout(handleLayoutChange, 150);
+  }
+  
+  // Initialize on DOM ready
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', initResponsiveLayout);
+  } else {
+    initResponsiveLayout();
+  }
+  
+  window.addEventListener('resize', onResize);
 })();

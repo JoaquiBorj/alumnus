@@ -1,9 +1,20 @@
 /* Community Feed Styles (extracted from frontend.css) */
 .alumnus-community-feed-wrapper {font-family: "Helvetica Neue", Arial, sans-serif; color:var(--alumnus-text-heading); background:var(--alumnus-bg-page);}
 .alumnus-feed-layout {display:grid; grid-template-columns:300px minmax(0,1fr) 300px; gap:24px; max-width:1500px !important; margin:0 auto; padding:16px 24px;}
-@media (max-width:1024px){.alumnus-feed-layout {grid-template-columns:230px minmax(0,1fr);} .alumnus-feed-sidebar-right {display:none;}}
-@media (max-width:780px){.alumnus-feed-layout {grid-template-columns:1fr; padding:12px;} .alumnus-feed-sidebar-left {order:2;}}
-.alumnus-profile-card {background:var(--alumnus-bg-white); color:var(--alumnus-text-heading); border-radius:8px; padding:16px; position:sticky; top:84px; display:flex; flex-direction:column; gap:12px;}
+@media (max-width:1300px){
+	.alumnus-feed-layout {grid-template-columns:300px minmax(0,1fr);}
+	.alumnus-feed-sidebar-left {display:flex; flex-direction:column; gap:16px;}
+	.alumnus-feed-sidebar-right {display:none;}
+}
+@media (max-width:780px){
+	.alumnus-feed-layout {grid-template-columns:1fr; padding:12px;}
+	.alumnus-feed-sidebar-left {display:none;}
+	.alumnus-feed-sidebar-right {display:none;}
+	.alumnus-feed-main {display:flex; flex-direction:column; gap:16px;}
+	.alumnus-profile-card {position:static;}
+	.alumnus-post-composer {position:static;}
+}
+.alumnus-profile-card {background:var(--alumnus-bg-white); color:var(--alumnus-text-heading); border:1px solid var(--alumnus-border-light); border-radius:8px; padding:16px; position:sticky; top:84px; display:flex; flex-direction:column; gap:12px; box-shadow:0 1px 2px rgba(0,0,0,.06);}
 .apc-header {display:flex; gap:12px; align-items:center;}
 /* Initials-based avatar (match profile style) */
 .apc-avatar {display:flex; align-items:center; justify-content:center; border-radius:50%;
@@ -347,7 +358,7 @@ body.alumnus-modal-open {
 }
 
 /* Responsive Modal Styles */
-@media (max-width: 768px) {
+@media (max-width: 780px) {
 	.alumnus-modal-card, .alumnus-modal {
 		padding: 24px;
 		width: 95%;
