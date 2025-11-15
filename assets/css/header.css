@@ -98,7 +98,6 @@
   }
   
   /* Shared button styles */
-  .ahb-community-feed-btn,
   .ahb-directory-btn,
   .ahb-profile-btn {
     text-decoration: none;
@@ -111,7 +110,6 @@
     transition: opacity 0.2s;
   }
   
-  .ahb-community-feed-btn:hover,
   .ahb-directory-btn:hover,
   .ahb-profile-btn:hover {
     text-decoration: underline;
@@ -319,7 +317,22 @@
 
     /* Hide desktop buttons in header */
     .ahb-right {
+<<<<<<< HEAD
       display: none !important;
+=======
+      gap: 12px;
+    }
+  
+    .ahb-directory-btn,
+    .ahb-profile-btn {
+      font-size: 15px;
+      padding: 6px 10px;
+    }
+  
+    .ahb-logout-btn {
+      font-size: 15px;
+      padding: 6px 16px;
+>>>>>>> parent of dd3a2a6 (Enhance Community Feed Functionality and UI)
     }
   }
 }  
