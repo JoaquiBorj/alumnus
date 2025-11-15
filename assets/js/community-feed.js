@@ -251,7 +251,7 @@
     
     if(!profileCard || !postComposer || !sidebarLeft || !sidebarRight || !feedMain) return;
     
-    var newState = width > 1299 ? 'desktop' : (width > 768 ? 'tablet' : 'mobile');
+    var newState = width > 1300 ? 'desktop' : (width > 780 ? 'tablet' : 'mobile');
     
     if(layoutState === newState) return; // No change needed
     
