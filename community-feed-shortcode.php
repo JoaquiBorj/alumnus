@@ -190,17 +190,29 @@ function alumnus_render_community_feed_shortcode() {
 									<?php
 									// Render latest 3 comments
 									$comments = $wpdb->get_results( $wpdb->prepare(
-										"SELECT c.comment_id, c.user_id, c.content, c.comment_date, a.firstname, a.lastname
+										"SELECT c.comment_id, c.user_id, c.content, c.comment_date, c.comment_time, a.firstname, a.lastname
 										 FROM comments c LEFT JOIN alumni a ON a.user_id=c.user_id
 										 WHERE c.post_id=%d ORDER BY c.comment_id DESC LIMIT 3",
 										 (int)$post_row->post_id
-									));
+										));
 									if ( ! empty( $comments ) ) {
 										echo '<ul class="comments-list">';
 										foreach ( $comments as $cm ) {
 											$cn = trim( (string)$cm->firstname . ' ' . (string)$cm->lastname );
 											if ($cn === '') { $cn = (string)$cm->user_id; }
-											echo '<li class="comment-item"><strong>' . esc_html($cn) . ':</strong> ' . esc_html($cm->content) . '</li>';
+											// Build relative time
+											$__cm_ts = strtotime( (string)$cm->comment_date . ' ' . ( isset($cm->comment_time)? (string)$cm->comment_time : '00:00:00' ) );
+											$__now = current_time('timestamp');
+											$__diff = $__now - $__cm_ts;
+											if ($__diff < 60) { $rel = __('Just now','alumnus'); }
+											elseif ($__diff < 3600) { $rel = sprintf(__('%dm','alumnus'), floor($__diff/60)); }
+											elseif ($__diff < 86400) { $rel = sprintf(__('%dh','alumnus'), floor($__diff/3600)); }
+											elseif ($__diff < 172800) { $rel = __('Yesterday','alumnus'); }
+											elseif ($__diff < 604800) { $rel = sprintf(__('%dd','alumnus'), floor($__diff/86400)); }
+											elseif ($__diff < 2592000) { $rel = sprintf(__('%dw','alumnus'), floor($__diff/604800)); }
+											else { $rel = date_i18n('F j Y', $__cm_ts); }
+											$abs = date_i18n('F j Y \a\t g:i A', $__cm_ts);
+											echo '<li class="comment-item"><div class="comment-bubble"><strong>' . esc_html($cn) . ':</strong> ' . esc_html($cm->content) . '</div><div class="comment-timestamp">' . esc_html($rel) . ' • ' . esc_html($abs) . '</div></li>';
 										}
 										echo '</ul>';
 									} else {
@@ -412,11 +424,12 @@ function alumnus_ajax_add_comment() {
 	if ( function_exists('mb_substr') ) { $content = mb_substr($content, 0, 200, 'UTF-8'); } else { $content = substr($content, 0, 200); }
 
 	$res = $wpdb->insert('comments', array(
-		'post_id' => $post_id,
-		'user_id' => $uid,
-		'content' => $content,
-		'comment_date' => current_time('Y-m-d'),
-	), array('%d','%s','%s','%s'));
+		'post_id'       => $post_id,
+		'user_id'       => $uid,
+		'content'       => $content,
+		'comment_date'  => current_time('Y-m-d'),
+		'comment_time'  => current_time('H:i:s'),
+	), array('%d','%s','%s','%s','%s'));
 	if ( false === $res ) { wp_send_json_error(array('message'=>'db-error'), 500); }
 
 	// Build small HTML snippet for the new comment
@@ -424,7 +437,9 @@ function alumnus_ajax_add_comment() {
 	$name = '';
 	if ($row) { $name = trim( (string)$row->firstname . ' ' . (string)$row->lastname ); }
 	if ($name === '') { $name = $uid; }
-	$html = '<li class="comment-item"><strong>' . esc_html($name) . ':</strong> ' . esc_html($content) . '</li>';
+	$__now_ts = current_time('timestamp');
+	$abs_new = date_i18n('F j Y \a\t g:i A', $__now_ts);
+	$html = '<li class="comment-item"><div class="comment-bubble"><strong>' . esc_html($name) . ':</strong> ' . esc_html($content) . '</div><div class="comment-timestamp">' . esc_html__('Just now','alumnus') . ' • ' . esc_html($abs_new) . '</div></li>';
 
 	$count = (int) $wpdb->get_var( $wpdb->prepare("SELECT COUNT(*) FROM comments WHERE post_id=%d", $post_id) );
 	wp_send_json_success(array('count'=>$count, 'html'=>$html));

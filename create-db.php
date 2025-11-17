@@ -132,6 +132,7 @@ function adm_create_alumni_tables() {
         user_id VARCHAR(100) NOT NULL,
         content VARCHAR(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
         comment_date DATE NOT NULL,
+        comment_time TIME NOT NULL,
         PRIMARY KEY (comment_id),
         KEY idx_comments_post_id (post_id),
         KEY idx_comments_user_id (user_id),
@@ -153,6 +154,8 @@ function adm_create_alumni_tables() {
 
     // Ensure post_time column exists (and remove legacy time_period if present)
     adm_migrate_add_post_time_column();
+    // Ensure comment_time column exists
+    adm_migrate_add_comment_time_column();
     // Ensure username column exists and backfill if needed
     adm_migrate_add_username_column();
 
@@ -446,6 +449,21 @@ function adm_migrate_add_post_time_column() {
     if (!empty($has_time_period)) {
         // Best-effort drop; ignore errors
         $wpdb->query("ALTER TABLE posts DROP COLUMN time_period");
+    }
+}
+
+// =====================================================
+// 🔁 MIGRATION: Add `comment_time` to comments
+// =====================================================
+function adm_migrate_add_comment_time_column() {
+    global $wpdb;
+    $table = $wpdb->get_var("SHOW TABLES LIKE 'comments'");
+    if (!$table) return;
+    $has_comment_time = $wpdb->get_var("SHOW COLUMNS FROM comments LIKE 'comment_time'");
+    if (empty($has_comment_time)) {
+        $wpdb->query("ALTER TABLE comments ADD COLUMN comment_time TIME NOT NULL DEFAULT '00:00:00'");
+        // Backfill existing rows
+        $wpdb->query("UPDATE comments SET comment_time='00:00:00' WHERE comment_time='00:00:00'");
     }
 }
 

@@ -140,6 +140,11 @@
 /* Comments */
 .comments-list {list-style:none; margin:8px 16px; padding:0; display:flex; flex-direction:column; gap:6px;}
 .comment-item {font-size:13px; color: var(--alumnus-text-body);} 
+.comment-item .comment-body {line-height:1.4;}
+.comment-item .comment-meta {font-size:11px; color:var(--alumnus-text-medium); display:flex; gap:8px; padding-top:2px;}
+.comment-item .comment-time {font-weight:500; letter-spacing:.5px;}
+.comment-item .comment-bubble {background:var(--alumnus-bg-page); border:1px solid var(--alumnus-border-light); padding:10px 14px; border-radius:14px; font-size:13px;}
+.comment-item .comment-timestamp {margin:4px 4px 2px 6px; font-size:11px; color:var(--alumnus-text-medium); font-weight:500; letter-spacing:.3px;}
 .comment-form {display:flex; gap:8px; padding:8px 16px 16px;}
 .comment-form input[type="text"] {flex:1; border:1px solid var(--alumnus-border-gray); border-radius:16px; padding:8px 12px;}
 /* Shared post indicator */
