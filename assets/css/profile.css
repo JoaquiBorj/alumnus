@@ -488,82 +488,126 @@ button.aph-nav-btn {
 }
 
 .apc-post {
-	background: var(--alumnus-bg-page);
-	border: 1px solid var(--alumnus-border-medium);
+	background: var(--alumnus-bg-white);
+	border: 1px solid var(--alumnus-border-light);
 	border-radius: 12px;
-	padding: 24px;
+	overflow: hidden;
+	box-shadow: 0 1px 3px var(--alumnus-shadow-md);
 	margin-bottom: 16px;
 }
 
 .apc-post:hover {
-	box-shadow: 0 4px 12px var(--alumnus-shadow-md);
-	border-color: var(--alumnus-border-select);
-	transform: translateY(-2px);
+	transform: none; /* keep interaction subtle like community feed */
 }
 
 .apc-post-header {
 	display: flex;
-	justify-content: space-between;
-	align-items: flex-start;
-	margin-bottom: 12px;
+	gap: 12px;
+	padding: 14px 16px;
+	align-items: center;
+	border-bottom: 1px solid var(--alumnus-border-divider);
 }
 
 .apc-post-title {
-	font-size: 18px;
+	font-size: 15px;
 	font-weight: 600;
 	color: var(--alumnus-text-heading);
+	margin: 0 0 4px 0;
 }
 
 .apc-post-time {
-	font-size: 13px;
-	color: var(--alumnus-text-placeholder);
+	font-size: 12px;
+	color: var(--alumnus-text-slate);
 }
 
 .apc-post-content {
-	color: var(--alumnus-text-secondary);
-	line-height: 1.6;
-	margin-bottom: 16px;
+	background: var(--alumnus-bg-white);
+	padding: 10px 20px;
+	text-align: left;
+	color: var(--alumnus-text-body);
+	font-size: 13px;
+	font-weight: 500;
+	white-space: pre-line;
 }
 
 .apc-post-actions {
 	display: flex;
-	gap: 20px;
-	padding-top: 16px;
-	border-top: 1px solid var(--alumnus-border-medium);
+	gap: 12px;
+	padding: 12px 16px 16px;
+	border-top: 1px solid var(--alumnus-border-divider);
 }
 
 .apc-action-btn {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-	background: none;
+	font-size: 13px;
+	font-weight: 600;
+	letter-spacing: .3px;
+	gap: 6px;
 	border: none;
-	color: var(--alumnus-text-lighter);
-	font-size: 14px;
+	border-radius: 24px;
+	padding: 10px 22px;
 	cursor: pointer;
-	padding: 8px 12px;
-	border-radius: 8px;
-	font-weight: 500;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	background: var(--alumnus-bg-page);
+	color: var(--alumnus-text-medium);
 }
 
 .apc-action-btn:hover {
-	background: var(--alumnus-border-medium);
-	color: var(--alumnus-primary);
+	background: var(--alumnus-primary);
+	color: var(--alumnus-text-on-dark);
 }
 
 .apc-action-btn.liked {
-	color: var(--alumnus-primary);
+	background: var(--alumnus-primary);
+	color: var(--alumnus-text-on-dark);
 }
 
-.apc-action-icon {
-	font-size: 18px;
-}
+.apc-action-icon { font-size: 16px; }
 
 /* Empty State */
 .apc-empty-state {
 	text-align: center;
 	padding: 60px 20px;
 	color: var(--alumnus-text-very-light);
+}
+
+/* --- Community Feed Post Card Styles (embedded for profile recent posts) --- */
+/* Scope only inside posts section to avoid layout interference */
+.apc-posts-section .alumnus-post-card {background:var(--alumnus-bg-white); border:1px solid var(--alumnus-border-light); border-radius:12px; overflow:hidden; box-shadow:0 1px 3px var(--alumnus-shadow-md); width:100%;}
+.apc-posts-section .post-header {display:flex; gap:12px; padding:14px 16px; align-items:center; border-bottom:1px solid var(--alumnus-border-divider);}
+.apc-posts-section .ph-name {margin:0 0 4px; font-size:15px; font-weight:600; color:var(--alumnus-text-heading);}
+.apc-posts-section .ph-date {font-size:12px; color:var(--alumnus-text-slate);}
+.apc-posts-section .post-text {background:var(--alumnus-bg-white); padding:10px 20px; text-align:left; color:var(--alumnus-text-body); font-size:13px; font-weight:500; white-space:pre-line;}
+.apc-posts-section .post-engagement-bar {padding:8px 16px; border-top:1px solid var(--alumnus-border-divider); font-size:12px; background:var(--alumnus-bg-page);}
+.apc-posts-section .post-engagement-bar .pe-stats {display:flex; justify-content:space-between; color:var(--alumnus-text-medium); font-weight:500;}
+.apc-posts-section .post-actions {display:flex; gap:12px; padding:12px 16px 16px; border-top:1px solid var(--alumnus-border-divider);}
+.apc-posts-section .post-actions.compact {justify-content:space-around;}
+.apc-posts-section .btn-light {font-size:13px; font-weight:600; letter-spacing:.3px; gap:6px; border:none; border-radius:24px; padding:10px 22px; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; background:var(--alumnus-bg-page); color:var(--alumnus-text-medium);}
+.apc-posts-section .btn-light:hover, .apc-posts-section .btn-light.is-active {background:var(--alumnus-primary); color:var(--alumnus-text-on-dark);}
+.apc-posts-section .apc-avatar.apc-avatar--sm {width:48px; height:48px; border:3px solid var(--alumnus-secondary); box-shadow:0 2px 6px rgba(0,0,0,.08); display:flex; align-items:center; justify-content:center; background:var(--alumnus-primary); color:var(--alumnus-bg-white); border-radius:50%;}
+.apc-posts-section .apc-avatar--sm .apc-initials {font-size:16px; font-weight:700; letter-spacing:.5px;}
+
+/* Width constraint & centering to match feed column */
+.apc-posts-section {display:flex; flex-direction:column; gap:18px; align-items:center;}
+.apc-posts-section .alumnus-post-card {max-width:860px;}
+
+@media (max-width:1300px){
+	.apc-posts-section .alumnus-post-card {max-width:100%;}
+}
+@media (max-width:780px){
+	.apc-posts-section {gap:16px;}
+	.apc-posts-section .alumnus-post-card {border-radius:8px;}
+	.apc-posts-section .post-text {padding:8px 14px; font-size:12px;}
+	.apc-posts-section .post-header {padding:10px 12px;}
+	.apc-posts-section .ph-name {font-size:14px;}
+	.apc-posts-section .post-actions {padding:8px 12px; flex-wrap:wrap;}
+	.apc-posts-section .post-engagement-bar {padding:6px 12px;}
+	.apc-posts-section .btn-light {font-size:12px; padding:8px 16px;}
+}
+@media (max-width:425px){
+	.apc-posts-section {gap:12px;}
+	.apc-posts-section .alumnus-post-card {width:100%;}
 }
 
 .apc-empty-icon {
