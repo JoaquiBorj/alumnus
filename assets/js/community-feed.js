@@ -1,11 +1,54 @@
 (function(){
+  // Lightweight toast for quick success feedback
+  function showToast(message){
+    try{
+      var toast = document.createElement('div');
+      toast.textContent = message || 'Success';
+      toast.setAttribute('role','status');
+      toast.setAttribute('aria-live','polite');
+      toast.style.position = 'fixed';
+      toast.style.right = '20px';
+      toast.style.bottom = '24px';
+      toast.style.zIndex = '99999';
+      toast.style.background = '#1f2937';
+      toast.style.color = '#fff';
+      toast.style.padding = '10px 14px';
+      toast.style.borderRadius = '8px';
+      toast.style.boxShadow = '0 6px 16px rgba(0,0,0,.25)';
+      toast.style.fontSize = '14px';
+      toast.style.opacity = '0';
+      toast.style.transition = 'opacity .2s ease, transform .2s ease';
+      toast.style.transform = 'translateY(6px)';
+      document.body.appendChild(toast);
+      requestAnimationFrame(function(){
+        toast.style.opacity = '1';
+        toast.style.transform = 'translateY(0)';
+      });
+      setTimeout(function(){
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(6px)';
+        setTimeout(function(){ if(toast && toast.parentNode){ toast.parentNode.removeChild(toast); } }, 250);
+      }, 1200);
+    } catch(e){ /* no-op */ }
+  }
+
   function postForm(url, data){
     return fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
       body: new URLSearchParams(data).toString(),
       credentials: 'same-origin'
-    }).then(function(r){ return r.json(); });
+    }).then(function(r){
+      return r.text().then(function(txt){
+        try {
+          var j = JSON.parse(txt);
+          return j;
+        } catch(e){
+          // Fallback: treat HTTP 2xx as success when JSON parse fails
+          return { success: r.ok === true, data: { raw: txt } };
+        }
+      });
+    });
   }
 
   function updateCount(selector, postId, count){
@@ -151,17 +194,45 @@
     var ta = form.querySelector('textarea[name="content"]');
     var val = (ta && ta.value || '').trim();
     if(!val) return;
-    form.querySelector('button[type="submit"]').disabled = true;
+    var submitBtn = form.querySelector('button[type="submit"]');
+    if(submitBtn){ submitBtn.disabled = true; submitBtn.dataset.originalText = submitBtn.textContent; submitBtn.textContent = 'Posting…'; }
+
+    // Fallback: if response handling fails, still close and refresh
+    var fallbackTimer = setTimeout(function(){
+      try{
+        closeModal(document.getElementById('alumnus-post-modal'));
+        showToast('Post submitted. Refreshing…');
+        setTimeout(function(){ window.location.reload(); }, 800);
+      } catch(_){ }
+    }, 5000);
+
     postForm(AlumnusFeed.ajaxUrl, { action:'alumnus_add_post', nonce:AlumnusFeed.noncePost, content:val })
       .then(function(res){
-        if(res && res.success && res.data && res.data.html){
-          insertNewPost(res.data.html);
+        clearTimeout(fallbackTimer);
+        if(res && res.success){
+          if(res.data && res.data.html){ insertNewPost(res.data.html); }
           ta.value='';
           closeModal(document.getElementById('alumnus-post-modal'));
+          // Indicate success and refresh shortly after
+          showToast('Post published successfully');
+          setTimeout(function(){ try{ window.location.reload(); } catch(_){} }, 1200);
         }
       })
-      .catch(function(){})
-      .finally(function(){ form.querySelector('button[type="submit"]').disabled=false; });
+      .catch(function(){
+        clearTimeout(fallbackTimer);
+        // Network/parse error—close and refresh to reflect potential successful insert
+        try{
+          closeModal(document.getElementById('alumnus-post-modal'));
+          showToast('Refreshing feed…');
+          setTimeout(function(){ window.location.reload(); }, 900);
+        } catch(_){ }
+      })
+      .finally(function(){
+        if(submitBtn){
+          submitBtn.disabled=false;
+          if(submitBtn.dataset.originalText){ submitBtn.textContent = submitBtn.dataset.originalText; }
+        }
+      });
   });
 
   // COMMENT (modal)
