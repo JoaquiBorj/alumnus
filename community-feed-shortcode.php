@@ -211,8 +211,7 @@ function alumnus_render_community_feed_shortcode() {
 											elseif ($__diff < 604800) { $rel = sprintf(__('%dd','alumnus'), floor($__diff/86400)); }
 											elseif ($__diff < 2592000) { $rel = sprintf(__('%dw','alumnus'), floor($__diff/604800)); }
 											else { $rel = date_i18n('F j Y', $__cm_ts); }
-											$abs = date_i18n('F j Y \a\t g:i A', $__cm_ts);
-											echo '<li class="comment-item"><div class="comment-bubble"><strong>' . esc_html($cn) . ':</strong> ' . esc_html($cm->content) . '</div><div class="comment-timestamp">' . esc_html($rel) . ' • ' . esc_html($abs) . '</div></li>';
+											echo '<li class="comment-item"><div class="comment-bubble"><strong>' . esc_html($cn) . ':</strong> ' . esc_html($cm->content) . '</div><div class="comment-timestamp">' . esc_html($rel) . '</div></li>';
 										}
 										echo '</ul>';
 									} else {
@@ -437,9 +436,7 @@ function alumnus_ajax_add_comment() {
 	$name = '';
 	if ($row) { $name = trim( (string)$row->firstname . ' ' . (string)$row->lastname ); }
 	if ($name === '') { $name = $uid; }
-	$__now_ts = current_time('timestamp');
-	$abs_new = date_i18n('F j Y \a\t g:i A', $__now_ts);
-	$html = '<li class="comment-item"><div class="comment-bubble"><strong>' . esc_html($name) . ':</strong> ' . esc_html($content) . '</div><div class="comment-timestamp">' . esc_html__('Just now','alumnus') . ' • ' . esc_html($abs_new) . '</div></li>';
+	$html = '<li class="comment-item"><div class="comment-bubble"><strong>' . esc_html($name) . ':</strong> ' . esc_html($content) . '</div><div class="comment-timestamp">' . esc_html__('Just now','alumnus') . '</div></li>';
 
 	$count = (int) $wpdb->get_var( $wpdb->prepare("SELECT COUNT(*) FROM comments WHERE post_id=%d", $post_id) );
 	wp_send_json_success(array('count'=>$count, 'html'=>$html));
