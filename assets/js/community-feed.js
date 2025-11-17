@@ -64,14 +64,15 @@
 
   function insertNewPost(html){
     var main = document.querySelector('.alumnus-feed-main');
-    var composer = document.querySelector('.alumnus-post-composer');
     if(!main || !html) return;
     var temp = document.createElement('div');
     temp.innerHTML = html.trim();
     var card = temp.firstElementChild;
     if(card){
-      if(composer && composer.nextSibling){
-        main.insertBefore(card, composer.nextSibling);
+      // Insert at the top of the posts list (after any welcome/header blocks)
+      var firstPost = main.querySelector('.alumnus-post-card');
+      if(firstPost){
+        main.insertBefore(card, firstPost);
       } else {
         main.appendChild(card);
       }

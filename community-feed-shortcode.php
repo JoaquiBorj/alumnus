@@ -92,8 +92,8 @@ function alumnus_render_community_feed_shortcode() {
 		$sql = "SELECT p.post_id, p.user_id, $name_fields p.content, p.post_date,
 				$like_count_sql $share_count_sql $liked_by_me_sql $shared_by_me_sql $comment_count_sql
 				FROM posts p $name_join
-				ORDER BY p.post_date DESC
-				LIMIT 20"; // Hard cap for initial feed performance.
+				ORDER BY p.post_date DESC, p.post_id DESC
+				LIMIT 20"; // Hard cap for initial feed performance. Also break ties by newest ID.
 		$params = array();
 		if ($has_likes && $current_alumni_id !== '') { $params[] = $current_alumni_id; }
 		if ($has_shares && $current_alumni_id !== '') { $params[] = $current_alumni_id; }
