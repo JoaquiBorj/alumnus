@@ -73,6 +73,9 @@
 	align-items:center;
 	border-bottom:1px solid var(--alumnus-border-divider);
 }
+/* Clickable author link wrapping avatar + meta */
+.ph-author-link {display:flex; gap:12px; align-items:center; text-decoration:none; color:inherit;}
+.ph-author-link:hover .ph-name {text-decoration:underline;}
 /* Post header avatar wrapper uses the same .apc-avatar styles */
 .ph-avatar {display:flex; align-items:center;}
 .ph-name {margin:0 0 4px; font-size:15px; font-weight:600; color:var(--alumnus-text-heading);}

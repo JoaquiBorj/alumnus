@@ -1012,8 +1012,31 @@ add_action( 'wp_ajax_nopriv_alumnus_update_bio_note', 'alumnus_update_bio_note_a
  */
 if ( ! function_exists( 'alumnus_get_profile_url' ) ) {
 	function alumnus_get_profile_url( $user_id, $profile_page_url = '' ) {
+		// Prefer explicitly passed base URL; otherwise attempt dedicated profile page resolution.
 		if ( empty( $profile_page_url ) ) {
-			$profile_page_url = get_permalink();
+			if ( function_exists( 'alumnus_resolve_profile_page_url' ) ) {
+				$profile_page_url = alumnus_resolve_profile_page_url();
+			} else {
+				// Fallback autodiscovery: find a published page containing [alumni_profile]
+				$found = '';
+				$pages = get_posts( array(
+					'post_type' => 'page',
+					'post_status' => 'publish',
+					'posts_per_page' => 50,
+					'orderby' => 'date',
+					'order' => 'DESC',
+					'suppress_filters' => true,
+				) );
+				if ( $pages ) {
+					foreach ( $pages as $p ) {
+						if ( is_object( $p ) && ! empty( $p->post_content ) && function_exists( 'has_shortcode' ) && has_shortcode( $p->post_content, 'alumni_profile' ) ) {
+							$found = get_permalink( $p->ID );
+							break;
+						}
+					}
+				}
+				$profile_page_url = $found ? $found : home_url( '/' );
+			}
 		}
 		return add_query_arg( 'alumni_id', rawurlencode( $user_id ), $profile_page_url );
 	}

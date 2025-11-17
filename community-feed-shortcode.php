@@ -159,7 +159,14 @@ function alumnus_render_community_feed_shortcode() {
 										$ai1 = strtoupper( substr( (string) $post_row->user_id, 0, 1 ) );
 									}
 									$author_initials = $ai1 . $ai2;
+
+									// Build profile URL if helper exists
+									$profile_url = '';
+									if ( ! empty( $post_row->user_id ) && function_exists( 'alumnus_get_profile_url' ) ) {
+										$profile_url = alumnus_get_profile_url( $post_row->user_id );
+									}
 								?>
+								<?php if ( $profile_url ) : ?><a class="ph-author-link" href="<?php echo esc_url( $profile_url ); ?>" aria-label="<?php echo esc_attr( sprintf( __( 'View %s profile', 'alumnus' ), $display_name ) ); ?>"><?php endif; ?>
 								<div class="apc-avatar apc-avatar--sm"><span class="apc-initials"><?php echo esc_html( $author_initials !== '' ? $author_initials : 'U' ); ?></span></div>
 								<div class="ph-meta">
 									<h5 class="ph-name"><?php echo esc_html( $display_name ); ?></h5>
@@ -170,6 +177,7 @@ function alumnus_render_community_feed_shortcode() {
 										?>
 									</div>
 								</div>
+								<?php if ( $profile_url ) : ?></a><?php endif; ?>
 							</header>
 							<div class="post-text"><?php echo esc_html( $post_row->content ); ?></div>
 							<div class="post-engagement-bar">
