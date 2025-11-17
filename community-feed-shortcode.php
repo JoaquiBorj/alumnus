@@ -89,7 +89,7 @@ function alumnus_render_community_feed_shortcode() {
 		$name_join = $has_alumni ? "LEFT JOIN alumni a ON a.user_id = p.user_id" : "";
 		$name_fields = $has_alumni ? "a.firstname, a.lastname," : "";
 
-		$sql = "SELECT p.post_id, p.user_id, $name_fields p.content, p.post_date,
+		$sql = "SELECT p.post_id, p.user_id, $name_fields p.content, p.post_date, p.post_time,
 				$like_count_sql $share_count_sql $liked_by_me_sql $shared_by_me_sql $comment_count_sql
 				FROM posts p $name_join
 				ORDER BY p.post_date DESC, p.post_id DESC
@@ -164,7 +164,10 @@ function alumnus_render_community_feed_shortcode() {
 								<div class="ph-meta">
 									<h5 class="ph-name"><?php echo esc_html( $display_name ); ?></h5>
 									<div class="ph-date">
-										<?php echo esc_html( date_i18n( 'M j, Y', strtotime( $post_row->post_date ) ) ); ?>
+										<?php 
+										$__ts = strtotime( $post_row->post_date . ' ' . ( isset($post_row->post_time) ? $post_row->post_time : '00:00:00' ) );
+										echo esc_html( date_i18n( 'F j Y \a\t g:i A', $__ts ) );
+										?>
 									</div>
 								</div>
 							</header>
@@ -385,7 +388,8 @@ function alumnus_ajax_share_post() {
 				'user_id'   => $uid,
 				'content'   => $new_content,
 				'post_date' => current_time('Y-m-d'),
-			), array('%s','%s','%s') );
+				'post_time' => current_time('H:i:s'),
+			), array('%s','%s','%s','%s') );
 		}
 	}
 	$count = (int) $wpdb->get_var( $wpdb->prepare("SELECT COUNT(*) FROM shares WHERE post_id=%d", $post_id) );
@@ -441,12 +445,13 @@ function alumnus_ajax_add_post() {
 	if ( $content === '' ) { wp_send_json_error(array('message'=>'empty'), 400); }
 	if ( function_exists('mb_substr') ) { $content = mb_substr($content, 0, 500, 'UTF-8'); } else { $content = substr($content, 0, 500); }
 
-	// Insert post
+	// Insert post with date + time
 	$res = $wpdb->insert( 'posts', array(
 		'user_id'   => $uid,
 		'content'   => $content,
 		'post_date' => current_time('Y-m-d'),
-	), array('%s','%s','%s') );
+		'post_time' => current_time('H:i:s'),
+	), array('%s','%s','%s','%s') );
 	if ( false === $res ) { wp_send_json_error(array('message'=>'db-error'), 500); }
 	$post_id = (int) $wpdb->insert_id;
 
@@ -468,7 +473,7 @@ function alumnus_ajax_add_post() {
 	$author_initials = $ai1 . $ai2;
 
 	// Build HTML (counts all start at 0; liked/shared state false)
-	$date_display = esc_html( date_i18n( 'M j, Y', strtotime( current_time('Y-m-d') ) ) );
+	$date_display = esc_html( date_i18n( 'F j Y \a\t g:i A', current_time('timestamp') ) );
 	ob_start();
 	?>
 	<article class="alumnus-post-card" data-post-id="<?php echo (int) $post_id; ?>">

@@ -93,6 +93,7 @@ function adm_create_alumni_tables() {
         user_id VARCHAR(100) NOT NULL,
         content VARCHAR(40) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
         post_date DATE NOT NULL,
+        post_time TIME NOT NULL,
         PRIMARY KEY (post_id),
         KEY idx_posts_user_id (user_id),
         CONSTRAINT fk_posts_alumni FOREIGN KEY (user_id) REFERENCES alumni(user_id) ON DELETE CASCADE ON UPDATE CASCADE
@@ -150,6 +151,8 @@ function adm_create_alumni_tables() {
     dbDelta($sql_likes);
     dbDelta($sql_comments);
 
+    // Ensure post_time column exists (and remove legacy time_period if present)
+    adm_migrate_add_post_time_column();
     // Ensure username column exists and backfill if needed
     adm_migrate_add_username_column();
 
@@ -397,6 +400,53 @@ function adm_migrate_experience_to_alumni_link() {
 
         // Add new FK to alumni
         $wpdb->query("ALTER TABLE experience ADD CONSTRAINT fk_experience_alumni FOREIGN KEY (user_id) REFERENCES alumni(user_id) ON DELETE CASCADE ON UPDATE CASCADE");
+}
+
+// =====================================================
+// 🔁 MIGRATION: Add `time_period` column to `posts` and backfill
+// =====================================================
+function adm_migrate_add_time_period_column() {
+    global $wpdb;
+
+    // Check if `posts` table exists
+    $table = $wpdb->get_var("SHOW TABLES LIKE 'posts'");
+    if (!$table) return;
+
+    // Check if time_period column exists
+    $has_col = $wpdb->get_var("SHOW COLUMNS FROM posts LIKE 'time_period'");
+    if (empty($has_col)) {
+        // Add column with safe default to avoid NULLs
+        $wpdb->query("ALTER TABLE posts ADD COLUMN time_period ENUM('Am','Pm') NOT NULL DEFAULT 'Am'");
+    }
+
+    // Backfill any rows that somehow have empty/NULL values
+    $wpdb->query("UPDATE posts SET time_period = 'Am' WHERE time_period IS NULL OR time_period = ''");
+
+    // Note: we cannot accurately infer original post times because `post_date` is stored as DATE.
+    // This migration ensures the column exists and has a valid value for all rows.
+}
+
+// =====================================================
+// 🔁 MIGRATION: Add `post_time` column and drop legacy `time_period`
+// =====================================================
+function adm_migrate_add_post_time_column() {
+    global $wpdb;
+    $table = $wpdb->get_var("SHOW TABLES LIKE 'posts'");
+    if (!$table) return;
+
+    $has_post_time = $wpdb->get_var("SHOW COLUMNS FROM posts LIKE 'post_time'");
+    if (empty($has_post_time)) {
+        $wpdb->query("ALTER TABLE posts ADD COLUMN post_time TIME NOT NULL DEFAULT '00:00:00'");
+        // Backfill existing rows with 00:00:00 (no historical time info stored).
+        $wpdb->query("UPDATE posts SET post_time = '00:00:00' WHERE post_time = '00:00:00'");
+    }
+
+    // Drop legacy time_period if it exists
+    $has_time_period = $wpdb->get_var("SHOW COLUMNS FROM posts LIKE 'time_period'");
+    if (!empty($has_time_period)) {
+        // Best-effort drop; ignore errors
+        $wpdb->query("ALTER TABLE posts DROP COLUMN time_period");
+    }
 }
 
 // =====================================================
