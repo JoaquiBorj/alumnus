@@ -263,21 +263,23 @@ button.aph-nav-btn {
 	overflow-wrap: break-word;
 }
 
-.apc-name {
-	font-size: 32px;
-	font-weight: 700;
-	color: var(--alumnus-text-heading);
-	margin-bottom: 0px;
+/* Scope large avatar styling to the profile header card only so it doesn't affect
+   smaller avatars used in post cards within the profile page. */
+.alumnus-profile-card .apc-avatar {
+	width: 140px;
+	height: 140px;
+	border-radius: 50%;
+	border: 5px solid var(--alumnus-secondary);
+	box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: var(--alumnus-primary);
 }
 
-.apc-email {
-	font-size: 15px;
-	color: var(--alumnus-text-lighter);
-	margin-bottom: 12px;
+.alumnus-profile-card .apc-initials {
+	font-size: 48px;
 }
-
-.apc-subtitle {
-	font-size: 18px;
 	color: var(--alumnus-text-secondary);
 	margin-bottom: 8px;
 }

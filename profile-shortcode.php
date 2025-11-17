@@ -59,6 +59,20 @@ function alumnus_enqueue_profile_styles() {
 		true // Load in footer
 	);
 
+	// Also enqueue the community feed interactions (likes/comments/shares) for profile posts UI
+	$feed_js_rel = 'assets/js/community-feed.js';
+	$feed_js_path = plugin_dir_path( __FILE__ ) . $feed_js_rel;
+	$feed_js_ver  = file_exists( $feed_js_path ) ? filemtime( $feed_js_path ) : '1.0.0';
+	wp_enqueue_style( 'font-awesome', 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css', array(), '6.5.1' );
+	wp_enqueue_script( 'alumnus-community-feed', plugin_dir_url( __FILE__ ) . $feed_js_rel, array(), $feed_js_ver, true );
+	wp_localize_script( 'alumnus-community-feed', 'AlumnusFeed', array(
+		'ajaxUrl'      => admin_url('admin-ajax.php'),
+		'nonceLike'    => wp_create_nonce('alumnus_like_toggle'),
+		'nonceShare'   => wp_create_nonce('alumnus_share'),
+		'nonceComment' => wp_create_nonce('alumnus_add_comment'),
+		'noncePost'    => wp_create_nonce('alumnus_add_post'),
+	) );
+
 	// Localize script with translatable strings
 	wp_localize_script(
 		'alumnus-profile',
@@ -169,7 +183,8 @@ function alumnus_render_profile_shortcode($atts = array()) {
 	}
 
 	// Feature flag: control Recent Posts visibility (disabled by default; enable via filter)
-	$alumnus_show_recent_posts = apply_filters('alumnus_profile_show_posts', false, $alumni_data, $is_own_profile);
+	// Activate posts area by default; allow filters to override
+	$alumnus_show_recent_posts = apply_filters('alumnus_profile_show_posts', true, $alumni_data, $is_own_profile);
 
 	// Generate initials for avatar
 	$initials = '';
@@ -195,9 +210,37 @@ function alumnus_render_profile_shortcode($atts = array()) {
 		$skills_array = array_values( array_filter( array_map( 'trim', (array) $skills_array ) ) );
 	}
 
-	// Fetch user posts (from community feed or custom posts table if exists)
-	// For now, we'll show placeholder posts. You can integrate with your posts table later
-	$posts = array(); // This can be populated from your database
+	// Fetch user posts with engagement stats (reuse community feed logic, scoped to user)
+	$posts = array();
+	$has_posts   = $wpdb->get_var("SHOW TABLES LIKE 'posts'");
+	$has_likes   = $wpdb->get_var("SHOW TABLES LIKE 'likes'");
+	$has_shares  = $wpdb->get_var("SHOW TABLES LIKE 'shares'");
+	$has_alumni  = $wpdb->get_var("SHOW TABLES LIKE 'alumni'");
+	$has_comments= $wpdb->get_var("SHOW TABLES LIKE 'comments'");
+	$current_alumni_id = '';
+	if ( function_exists('alumnus_is_logged_in') && function_exists('alumnus_current_username') && alumnus_is_logged_in() ) {
+		$current_alumni_id = (string) alumnus_current_username();
+	}
+	if ( $has_posts ) {
+		$like_count_sql    = $has_likes    ? "(SELECT COUNT(*) FROM likes  l WHERE l.post_id = p.post_id) AS like_count,"   : "0 AS like_count,";
+		$share_count_sql   = $has_shares   ? "(SELECT COUNT(*) FROM shares s WHERE s.post_id = p.post_id) AS share_count," : "0 AS share_count,";
+		$comment_count_sql = $has_comments ? "(SELECT COUNT(*) FROM comments c WHERE c.post_id = p.post_id) AS comment_count" : "0 AS comment_count";
+		$liked_by_me_sql   = ($has_likes && $current_alumni_id !== '')  ? "(SELECT COUNT(*) FROM likes  l2 WHERE l2.post_id=p.post_id AND l2.user_id=%s) AS liked_by_me,"  : "0 AS liked_by_me,";
+		$shared_by_me_sql  = ($has_shares && $current_alumni_id !== '') ? "(SELECT COUNT(*) FROM shares s2 WHERE s2.post_id=p.post_id AND s2.user_id=%s) AS shared_by_me," : "0 AS shared_by_me,";
+		$name_join   = $has_alumni ? "LEFT JOIN alumni a ON a.user_id = p.user_id" : "";
+		$name_fields = $has_alumni ? "a.firstname, a.lastname," : "";
+		$sql = "SELECT p.post_id, p.user_id, {$name_fields} p.content, p.post_date, p.post_time,
+				{$like_count_sql} {$share_count_sql} {$liked_by_me_sql} {$shared_by_me_sql} {$comment_count_sql}
+				FROM posts p {$name_join}
+				WHERE p.user_id = %s
+				ORDER BY p.post_date DESC, p.post_id DESC
+				LIMIT 20";
+		$params = array();
+		if ($has_likes && $current_alumni_id !== '') { $params[] = $current_alumni_id; }
+		if ($has_shares && $current_alumni_id !== '') { $params[] = $current_alumni_id; }
+		$params[] = $user_id;
+		$posts = $wpdb->get_results( $wpdb->prepare($sql, $params) );
+	}
 
 	// Fetch Experience rows by alumni user_id (string)
 	$experiences = $wpdb->get_results(
@@ -428,39 +471,91 @@ function alumnus_render_profile_shortcode($atts = array()) {
 					<!-- Recent Posts Section -->
 					<div class="apc-posts-section">
 						<h2 class="apc-section-title">Recent Posts</h2>
-						<?php if (empty($posts)): ?>
+						<?php if ( empty( $posts ) ) : ?>
 							<div class="apc-empty-state">
 								<div class="apc-empty-icon">📝</div>
 								<p class="apc-empty-text"><?php echo esc_html__('No posts yet.', 'alumnus'); ?></p>
-								<?php if ($is_own_profile): ?>
+								<?php if ( $is_own_profile ): ?>
 									<p class="apc-empty-subtext"><?php echo esc_html__('Share your thoughts with the community!', 'alumnus'); ?></p>
 								<?php endif; ?>
 							</div>
-						<?php else: ?>
-							<?php foreach ($posts as $post): ?>
-								<div class="apc-post">
-									<div class="apc-post-header">
-										<div class="apc-post-title"><?php echo esc_html($post['title']); ?></div>
-										<div class="apc-post-time"><?php echo esc_html($post['time']); ?></div>
+						<?php else : ?>
+							<?php foreach ( $posts as $post_row ) :
+								$full_name = '';
+								if ( isset( $post_row->firstname ) || isset( $post_row->lastname ) ) {
+									$full_name = trim( (string) $post_row->firstname . ' ' . (string) $post_row->lastname );
+								}
+								$display_name = $full_name !== '' ? $full_name : $post_row->user_id;
+							?>
+							<article class="alumnus-post-card" data-post-id="<?php echo (int) $post_row->post_id; ?>">
+								<header class="post-header">
+									<?php
+										$ai1 = '';
+										$ai2 = '';
+										if ( ! empty( $post_row->firstname ) || ! empty( $post_row->lastname ) ) {
+											$ai1 = ! empty( $post_row->firstname ) ? strtoupper( substr( (string) $post_row->firstname, 0, 1 ) ) : '';
+											$ai2 = ! empty( $post_row->lastname )  ? strtoupper( substr( (string) $post_row->lastname, 0, 1 ) )  : '';
+										} else {
+											$ai1 = strtoupper( substr( (string) $post_row->user_id, 0, 1 ) );
+										}
+										$author_initials = $ai1 . $ai2;
+									?>
+									<div class="apc-avatar apc-avatar--sm"><span class="apc-initials"><?php echo esc_html( $author_initials !== '' ? $author_initials : 'U' ); ?></span></div>
+									<div class="ph-meta">
+										<h5 class="ph-name"><?php echo esc_html( $display_name ); ?></h5>
+										<div class="ph-date">
+											<?php $__ts = strtotime( $post_row->post_date . ' ' . ( isset($post_row->post_time) ? $post_row->post_time : '00:00:00' ) ); echo esc_html( date_i18n( 'F j Y \a\t g:i A', $__ts ) ); ?>
+										</div>
 									</div>
-									<?php if (!empty($post['content'])): ?>
-										<div class="apc-post-content"><?php echo wp_kses_post($post['content']); ?></div>
-									<?php endif; ?>
-									<div class="apc-post-actions">
-										<button class="apc-action-btn" onclick="alumnus_toggleLike(this)">
-											<span class="apc-action-icon">👍</span>
-											<span class="apc-action-text">Like</span>
-										</button>
-										<button class="apc-action-btn" onclick="alert('Comment feature coming soon')">
-											<span class="apc-action-icon">💬</span>
-											<span class="apc-action-text">Comment</span>
-										</button>
-										<button class="apc-action-btn" onclick="alert('Share feature coming soon')">
-											<span class="apc-action-icon">🔗</span>
-											<span class="apc-action-text">Share</span>
-										</button>
+								</header>
+								<div class="post-text"><?php echo esc_html( $post_row->content ); ?></div>
+								<div class="post-engagement-bar">
+									<div class="pe-stats">
+										<span class="pe-icon pe-like-count" data-post-id="<?php echo (int) $post_row->post_id; ?>" title="<?php esc_attr_e( 'Likes', 'alumnus' ); ?>"><i class="fa-solid fa-thumbs-up"></i> <?php echo (int) $post_row->like_count; ?></span>
+										<span class="pe-icon pe-comment-count" data-post-id="<?php echo (int) $post_row->post_id; ?>" title="<?php esc_attr_e( 'Comments', 'alumnus' ); ?>"><i class="fa-solid fa-comment"></i> <?php echo (int) $post_row->comment_count; ?></span>
+										<span class="pe-icon pe-share-count" data-post-id="<?php echo (int) $post_row->post_id; ?>" title="<?php esc_attr_e( 'Shares', 'alumnus' ); ?>"><i class="fa-solid fa-share"></i> <?php echo (int) $post_row->share_count; ?></span>
 									</div>
 								</div>
+								<div class="post-actions compact">
+									<button class="btn-light btn-like <?php echo (!empty($post_row->liked_by_me) ? 'is-active' : ''); ?>" data-post-id="<?php echo (int) $post_row->post_id; ?>"><i class="fa-solid fa-thumbs-up"></i> <?php echo !empty($post_row->liked_by_me) ? esc_html__('Liked','alumnus') : esc_html__('Like','alumnus'); ?></button>
+									<button class="btn-light btn-comment" data-post-id="<?php echo (int) $post_row->post_id; ?>"><i class="fa-solid fa-comment"></i> <?php esc_html_e( 'Comment', 'alumnus' ); ?></button>
+									<button class="btn-light btn-share <?php echo (!empty($post_row->shared_by_me) ? 'is-active' : ''); ?>" data-post-id="<?php echo (int) $post_row->post_id; ?>"><i class="fa-solid fa-share"></i> <?php echo !empty($post_row->shared_by_me) ? esc_html__('Shared','alumnus') : esc_html__('Share','alumnus'); ?></button>
+								</div>
+
+								<?php if ( $has_comments ): ?>
+									<div class="post-comments" id="comments-<?php echo (int) $post_row->post_id; ?>">
+										<?php
+										$comments = $wpdb->get_results( $wpdb->prepare(
+											"SELECT c.comment_id, c.user_id, c.content, c.comment_date, c.comment_time, a.firstname, a.lastname
+											 FROM comments c LEFT JOIN alumni a ON a.user_id=c.user_id
+											 WHERE c.post_id=%d ORDER BY c.comment_id DESC LIMIT 3",
+											 (int)$post_row->post_id
+											));
+										if ( ! empty( $comments ) ) {
+											echo '<ul class="comments-list">';
+											foreach ( $comments as $cm ) {
+												$cn = trim( (string)$cm->firstname . ' ' . (string)$cm->lastname );
+												if ($cn === '') { $cn = (string)$cm->user_id; }
+												$__cm_ts = strtotime( (string)$cm->comment_date . ' ' . ( isset($cm->comment_time)? (string)$cm->comment_time : '00:00:00' ) );
+												$__now = current_time('timestamp');
+												$__diff = $__now - $__cm_ts;
+												if ($__diff < 60) { $rel = __('Just now','alumnus'); }
+												elseif ($__diff < 3600) { $rel = sprintf(__('%dm','alumnus'), floor($__diff/60)); }
+												elseif ($__diff < 86400) { $rel = sprintf(__('%dh','alumnus'), floor($__diff/3600)); }
+												elseif ($__diff < 172800) { $rel = __('Yesterday','alumnus'); }
+												elseif ($__diff < 604800) { $rel = sprintf(__('%dd','alumnus'), floor($__diff/86400)); }
+												elseif ($__diff < 2592000) { $rel = sprintf(__('%dw','alumnus'), floor($__diff/604800)); }
+												else { $rel = date_i18n('F j Y', $__cm_ts); }
+												echo '<li class="comment-item"><div class="comment-bubble"><strong>' . esc_html($cn) . ':</strong> ' . esc_html($cm->content) . '</div><div class="comment-timestamp">' . esc_html($rel) . '</div></li>';
+											}
+											echo '</ul>';
+										} else {
+											echo '<div class="apc-placeholder">' . esc_html__('No comments yet.','alumnus') . '</div>';
+										}
+										?>
+									</div>
+								<?php endif; ?>
+							</article>
 							<?php endforeach; ?>
 						<?php endif; ?>
 					</div>
@@ -489,6 +584,37 @@ function alumnus_render_profile_shortcode($atts = array()) {
 						<button type="button" class="aph-nav-btn alumnus-modal-btn-cancel" id="alumnus-modal-cancel"><?php echo esc_html__('Cancel', 'alumnus'); ?></button>
 					</div>
 				</div>
+			</div>
+		</div>
+
+		<!-- Comment Modal reused from community feed for interactions -->
+		<div class="alumnus-modal-overlay" id="alumnus-comment-modal" aria-hidden="true">
+			<div class="alumnus-modal alumnus-modal--comment" role="dialog" aria-modal="true" aria-labelledby="alumnus-comment-modal-title">
+				<header class="alumnus-modal-header">
+					<h3 id="alumnus-comment-modal-title" class="alumnus-modal-title"><?php esc_html_e("Anonymous participant's Post",'alumnus'); ?></h3>
+					<button type="button" class="alumnus-modal-close" data-close-modal aria-label="<?php esc_attr_e('Close','alumnus'); ?>">&times;</button>
+				</header>
+				<div class="alumnus-modal-content">
+					<div class="alumnus-comment-modal-post" id="alumnus-comment-modal-post"><!-- cloned post card inserted here --></div>
+					<div class="alumnus-modal-comments" id="alumnus-comment-list-wrapper">
+						<div class="alumnus-modal-comments-empty">
+							<div class="alumnus-modal-comments-empty-icon"><i class="fa-solid fa-comments"></i></div>
+							<p class="alumnus-modal-comments-empty-text"><?php esc_html_e('No comments yet','alumnus'); ?></p>
+							<p class="alumnus-modal-comments-empty-sub"><?php esc_html_e('Be the first to comment.','alumnus'); ?></p>
+						</div>
+					</div>
+				</div>
+				<?php if ( $has_comments && function_exists('alumnus_is_logged_in') && alumnus_is_logged_in() ) : ?>
+				<form id="alumnus-comment-modal-form" class="alumnus-modal-composer">
+					<input type="hidden" name="postId" value="" />
+					<div class="alumnus-modal-composer-inner">
+						<div class="amc-input-wrap"><input type="text" name="comment" maxlength="200" placeholder="<?php echo esc_attr( sprintf( __('Comment as %s','alumnus'), esc_html( $full_name ) ) ); ?>" required /></div>
+						<div class="amc-actions-wrap">
+							<button type="submit" class="btn-primary amc-submit" aria-label="<?php esc_attr_e('Submit comment','alumnus'); ?>">➤</button>
+						</div>
+					</div>
+				</form>
+				<?php endif; ?>
 			</div>
 		</div>
 
