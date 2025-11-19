@@ -97,9 +97,18 @@ function alumnus_generate_unique_username($first_name, $last_name, $user_table) 
  * Check if `username` column exists in the given user table
  */
 function alumnus_user_table_has_username($user_table) {
-	global $wpdb;
-	$col = $wpdb->get_var($wpdb->prepare("SHOW COLUMNS FROM {$user_table} LIKE %s", 'username'));
-	return !empty($col);
+    global $wpdb;
+    $col = $wpdb->get_var($wpdb->prepare("SHOW COLUMNS FROM {$user_table} LIKE %s", 'username'));
+    return !empty($col);
+}
+
+/**
+ * Check if `existed` column exists in the given user table
+ */
+function alumnus_user_table_has_existed($user_table) {
+    global $wpdb;
+    $col = $wpdb->get_var($wpdb->prepare("SHOW COLUMNS FROM {$user_table} LIKE %s", 'existed'));
+    return !empty($col);
 }
 
 /**
@@ -368,13 +377,18 @@ function alumnus_handle_post() {
 				'year' => $batch_year,
 				'password' => $password_hash,
 			];
-			$user_insert_formats = ['%s', '%d', '%d', '%s'];
-		if (alumnus_user_table_has_username($tables['user'])) {
-			$username = alumnus_generate_unique_username($first_name, $last_name, $tables['user']);
-			$user_insert_data['username'] = $username;
-			$user_insert_formats[] = '%s';
-		}
-		$insert_user = $wpdb->insert($tables['user'], $user_insert_data, $user_insert_formats);
+            $user_insert_formats = ['%s', '%d', '%d', '%s'];
+            if (alumnus_user_table_has_username($tables['user'])) {
+                $username = alumnus_generate_unique_username($first_name, $last_name, $tables['user']);
+                $user_insert_data['username'] = $username;
+                $user_insert_formats[] = '%s';
+            }
+            // Set existed=1 for new alumni where column exists (default is 1 in table but set explicitly)
+            if (alumnus_user_table_has_existed($tables['user'])) {
+                $user_insert_data['existed'] = 1;
+                $user_insert_formats[] = '%d';
+            }
+            $insert_user = $wpdb->insert($tables['user'], $user_insert_data, $user_insert_formats);
 		
 		if ($insert_user === false) {
 				$wpdb->delete($tables['alumni'], ['user_id' => $alumni_id], ['%s']);
@@ -503,13 +517,18 @@ function alumnus_handle_post() {
 					'year' => $batch_year,
 					'password' => $password_hash,
 				];
-				$user_insert_formats = ['%s', '%d', '%d', '%s'];
-				if (alumnus_user_table_has_username($tables['user'])) {
-					$username = alumnus_generate_unique_username($first_name, $last_name, $tables['user']);
-					$user_insert_data['username'] = $username;
-					$user_insert_formats[] = '%s';
-				}
-				$insert_user = $wpdb->insert($tables['user'], $user_insert_data, $user_insert_formats);
+                $user_insert_formats = ['%s', '%d', '%d', '%s'];
+                if (alumnus_user_table_has_username($tables['user'])) {
+                    $username = alumnus_generate_unique_username($first_name, $last_name, $tables['user']);
+                    $user_insert_data['username'] = $username;
+                    $user_insert_formats[] = '%s';
+                }
+                // Bulk import: also set existed flag if the column exists
+                if (alumnus_user_table_has_existed($tables['user'])) {
+                    $user_insert_data['existed'] = 1;
+                    $user_insert_formats[] = '%d';
+                }
+                $insert_user = $wpdb->insert($tables['user'], $user_insert_data, $user_insert_formats);
 				
 				if ($insert_alumni && $insert_user) {
 					$success_count++;
