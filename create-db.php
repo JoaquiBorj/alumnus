@@ -105,6 +105,8 @@ function adm_create_alumni_tables() {
         share_id INT(11) NOT NULL AUTO_INCREMENT,
         post_id INT(11) NOT NULL,
         user_id VARCHAR(100) NOT NULL,
+        share_date DATE NOT NULL,
+        share_time TIME NOT NULL,
         PRIMARY KEY (share_id),
         UNIQUE KEY uniq_share_post_user (post_id, user_id),
         KEY idx_shares_post_id (post_id),
@@ -157,6 +159,8 @@ function adm_create_alumni_tables() {
     adm_migrate_add_post_time_column();
     // Ensure comment_time column exists
     adm_migrate_add_comment_time_column();
+    // Ensure shares table has date/time columns if upgrading
+    adm_migrate_add_share_datetime_columns();
     // Ensure username column exists and backfill if needed
     adm_migrate_add_username_column();
 
@@ -465,6 +469,26 @@ function adm_migrate_add_comment_time_column() {
         $wpdb->query("ALTER TABLE comments ADD COLUMN comment_time TIME NOT NULL DEFAULT '00:00:00'");
         // Backfill existing rows
         $wpdb->query("UPDATE comments SET comment_time='00:00:00' WHERE comment_time='00:00:00'");
+    }
+}
+
+// =====================================================
+// 🔁 MIGRATION: Add share_date/share_time to shares
+// =====================================================
+function adm_migrate_add_share_datetime_columns() {
+    global $wpdb;
+    $table = $wpdb->get_var("SHOW TABLES LIKE 'shares'");
+    if (!$table) return;
+    $has_share_date = $wpdb->get_var("SHOW COLUMNS FROM shares LIKE 'share_date'");
+    $has_share_time = $wpdb->get_var("SHOW COLUMNS FROM shares LIKE 'share_time'");
+    if (empty($has_share_date)) {
+        $wpdb->query("ALTER TABLE shares ADD COLUMN share_date DATE NOT NULL DEFAULT '1970-01-01'");
+        // Backfill with today's date for historical shares lacking date context
+        $wpdb->query($wpdb->prepare("UPDATE shares SET share_date=%s WHERE share_date='1970-01-01'", current_time('Y-m-d')));
+    }
+    if (empty($has_share_time)) {
+        $wpdb->query("ALTER TABLE shares ADD COLUMN share_time TIME NOT NULL DEFAULT '00:00:00'");
+        $wpdb->query("UPDATE shares SET share_time='00:00:00' WHERE share_time='00:00:00'");
     }
 }
 

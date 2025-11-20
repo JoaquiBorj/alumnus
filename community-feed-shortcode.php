@@ -231,6 +231,100 @@ function alumnus_render_community_feed_shortcode() {
 							<?php endif; ?>
 						</article>
 					<?php endforeach; ?>
+
+					<?php
+					// Render share cards from shares table (persisted without duplicating posts)
+					if ( $has_shares ) {
+						$like_count_sql_sh  = $has_likes ? "(SELECT COUNT(*) FROM likes l WHERE l.post_id = p.post_id) AS like_count," : "0 AS like_count,";
+						$comment_count_sql_sh = $has_comments ? "(SELECT COUNT(*) FROM comments c WHERE c.post_id = p.post_id) AS comment_count," : "0 AS comment_count,";
+						$share_count_sql_sh = "(SELECT COUNT(*) FROM shares sx WHERE sx.post_id = p.post_id) AS share_count,"; // has_shares true
+						$liked_by_me_sql_sh = ($has_likes && $current_alumni_id !== '') ? "(SELECT COUNT(*) FROM likes l2 WHERE l2.post_id=p.post_id AND l2.user_id=%s) AS liked_by_me," : "0 AS liked_by_me,";
+						$shared_by_me_sql_sh = ($current_alumni_id !== '') ? "(SELECT COUNT(*) FROM shares s2 WHERE s2.post_id=p.post_id AND s2.user_id=%s) AS shared_by_me," : "0 AS shared_by_me,";
+						// Sharer and original author name fields
+						$name_fields_sharer = $has_alumni ? "sh.firstname AS sharer_firstname, sh.lastname AS sharer_lastname," : "";
+						$name_fields_orig   = $has_alumni ? "orig.firstname AS orig_firstname, orig.lastname AS orig_lastname," : "";
+						$sql_shares = "SELECT s.share_id, s.post_id, s.user_id AS sharer_user_id, s.share_date, s.share_time, p.user_id AS orig_user_id, p.content, p.post_date, p.post_time, "
+							. $name_fields_sharer . $name_fields_orig
+							. $like_count_sql_sh . $share_count_sql_sh . $liked_by_me_sql_sh . $shared_by_me_sql_sh . rtrim($comment_count_sql_sh, ',') . " 
+							FROM shares s 
+							JOIN posts p ON p.post_id = s.post_id 
+							LEFT JOIN alumni sh ON sh.user_id = s.user_id 
+							LEFT JOIN alumni orig ON orig.user_id = p.user_id 
+							ORDER BY s.share_date DESC, s.share_time DESC, s.share_id DESC 
+							LIMIT 20";
+						$params_sh = array();
+						if ($has_likes && $current_alumni_id !== '') { $params_sh[] = $current_alumni_id; }
+						if ($current_alumni_id !== '') { $params_sh[] = $current_alumni_id; }
+						$share_rows = ! empty($params_sh) ? $wpdb->get_results( $wpdb->prepare($sql_shares, $params_sh) ) : $wpdb->get_results($sql_shares);
+						if ( ! empty($share_rows) ) {
+							foreach ( $share_rows as $sr ) {
+								// Sharer name + initials
+								$sh_name = '';
+								if ( isset($sr->sharer_firstname) || isset($sr->sharer_lastname) ) { $sh_name = trim( (string)$sr->sharer_firstname . ' ' . (string)$sr->sharer_lastname ); }
+								if ( $sh_name === '' ) { $sh_name = (string)$sr->sharer_user_id; }
+								$sh_i1 = ! empty($sr->sharer_firstname) ? strtoupper(substr((string)$sr->sharer_firstname,0,1)) : strtoupper(substr((string)$sr->sharer_user_id,0,1));
+								$sh_i2 = ! empty($sr->sharer_lastname) ? strtoupper(substr((string)$sr->sharer_lastname,0,1)) : '';
+								$sh_initials = $sh_i1 . $sh_i2;
+								// Original author name + initials
+								$orig_name = '';
+								if ( isset($sr->orig_firstname) || isset($sr->orig_lastname) ) { $orig_name = trim( (string)$sr->orig_firstname . ' ' . (string)$sr->orig_lastname ); }
+								if ( $orig_name === '' ) { $orig_name = (string)$sr->orig_user_id; }
+								$orig_i1 = ! empty($sr->orig_firstname) ? strtoupper(substr((string)$sr->orig_firstname,0,1)) : strtoupper(substr((string)$sr->orig_user_id,0,1));
+								$orig_i2 = ! empty($sr->orig_lastname) ? strtoupper(substr((string)$sr->orig_lastname,0,1)) : '';
+								$orig_initials = $orig_i1 . $orig_i2;
+								$orig_ts = strtotime( (string)$sr->post_date . ' ' . ( isset($sr->post_time)? (string)$sr->post_time : '00:00:00' ) );
+								$orig_date_display = esc_html( date_i18n( 'F j Y \a\t g:i A', $orig_ts ) );
+								// Engagement counts from row
+								$like_c = isset($sr->like_count)? (int)$sr->like_count : 0;
+								$share_c = isset($sr->share_count)? (int)$sr->share_count : 0;
+								$comment_c = isset($sr->comment_count)? (int)$sr->comment_count : 0;
+								$liked_me = !empty($sr->liked_by_me);
+								$shared_me = !empty($sr->shared_by_me);
+								?>
+								<article class="alumnus-post-card alumnus-post-card--share" data-share-origin-post="<?php echo (int)$sr->post_id; ?>" data-share-id="<?php echo (int)$sr->share_id; ?>">
+									<header class="post-header share-header">
+										<div class="apc-avatar apc-avatar--sm"><span class="apc-initials"><?php echo esc_html( $sh_initials !== '' ? $sh_initials : 'U' ); ?></span></div>
+										<div class="ph-meta">
+											<h5 class="ph-name"><?php echo esc_html( $sh_name ); ?> <span class="ph-share-action"><?php esc_html_e('reposted this','alumnus'); ?></span></h5>
+											<div class="ph-date"><?php 
+												$__share_ts = strtotime( (string)$sr->share_date . ' ' . ( isset($sr->share_time)? (string)$sr->share_time : '00:00:00' ) );
+												echo esc_html( date_i18n( 'F j Y \a\t g:i A', $__share_ts ) );
+											?></div>
+										</div>
+									</header>
+									<div class="shared-original-wrapper">
+										<div class="shared-original-card">
+											<header class="post-header original-header">
+												<div class="apc-avatar apc-avatar--xs"><span class="apc-initials"><?php echo esc_html( $orig_initials !== '' ? $orig_initials : 'U' ); ?></span></div>
+												<div class="ph-meta">
+													<h6 class="ph-name"><?php echo esc_html( $orig_name ); ?></h6>
+													<div class="ph-date"><?php echo $orig_date_display; ?></div>
+												</div>
+											</header>
+											<div class="post-text shared-text"><?php echo esc_html( (string)$sr->content ); ?></div>
+										</div>
+									</div>
+									<div class="post-engagement-bar">
+										<div class="pe-stats">
+											<span class="pe-icon pe-like-count" data-post-id="<?php echo (int)$sr->post_id; ?>" title="<?php esc_attr_e('Likes','alumnus'); ?>"><i class="fa-solid fa-thumbs-up"></i> <?php echo (int)$like_c; ?></span>
+											<span class="pe-icon pe-comment-count" data-post-id="<?php echo (int)$sr->post_id; ?>" title="<?php esc_attr_e('Comments','alumnus'); ?>"><i class="fa-solid fa-comment"></i> <?php echo (int)$comment_c; ?></span>
+											<span class="pe-icon pe-share-count" data-post-id="<?php echo (int)$sr->post_id; ?>" title="<?php esc_attr_e('Shares','alumnus'); ?>"><i class="fa-solid fa-share"></i> <?php echo (int)$share_c; ?></span>
+										</div>
+									</div>
+									<div class="post-actions compact">
+										<button class="btn-light btn-like <?php echo ( $liked_me ? 'is-active' : '' ); ?>" data-post-id="<?php echo (int)$sr->post_id; ?>"><i class="fa-solid fa-thumbs-up"></i> <?php echo $liked_me? esc_html__('Liked','alumnus'): esc_html__('Like','alumnus'); ?></button>
+										<button class="btn-light btn-comment" data-post-id="<?php echo (int)$sr->post_id; ?>"><i class="fa-solid fa-comment"></i> <?php esc_html_e('Comment','alumnus'); ?></button>
+										<button class="btn-light btn-share <?php echo ( $shared_me ? 'is-active' : '' ); ?>" data-post-id="<?php echo (int)$sr->post_id; ?>"><i class="fa-solid fa-share"></i> <?php echo $shared_me? esc_html__('Shared','alumnus'): esc_html__('Share','alumnus'); ?></button>
+									</div>
+									<div class="post-comments" id="comments-<?php echo (int)$sr->post_id; ?>">
+										<div class="apc-placeholder"><?php esc_html_e('Comments hidden. Open original to view.','alumnus'); ?></div>
+									</div>
+								</article>
+								<?php
+							}
+						}
+					}
+					?>
 				<?php endif; ?>
 			</main>
 
@@ -378,41 +472,91 @@ function alumnus_ajax_share_post() {
 	$uid = ( function_exists('alumnus_is_logged_in') && alumnus_is_logged_in() && function_exists('alumnus_current_username') ) ? (string) alumnus_current_username() : '';
 	if ( $post_id <= 0 || $uid === '' ) { wp_send_json_error(array('message'=>'forbidden'), 403); }
 
+	// Insert share row if not already shared by this user
 	$exists = (int) $wpdb->get_var( $wpdb->prepare("SELECT COUNT(*) FROM shares WHERE post_id=%d AND user_id=%s", $post_id, $uid) );
 	if ( $exists === 0 ) {
-		$wpdb->insert('shares', array('post_id'=>$post_id, 'user_id'=>$uid), array('%d','%s'));
-		// Repost logic: duplicate original post content as a new post credited to sharing user.
-		$orig = $wpdb->get_row( $wpdb->prepare(
-			"SELECT p.content, p.user_id, a.firstname, a.lastname 
-			 FROM posts p 
-			 LEFT JOIN alumni a ON a.user_id = p.user_id 
-			 WHERE p.post_id=%d", 
-			$post_id
-		) );
-		if ( $orig && isset($orig->content) ) {
-			// Get original poster's name
-			$poster_name = '';
-			if ( isset($orig->firstname) || isset($orig->lastname) ) {
-				$poster_name = trim( (string) $orig->firstname . ' ' . (string) $orig->lastname );
-			}
-			if ( $poster_name === '' ) {
-				$poster_name = (string) $orig->user_id;
-			}
-			
-			// Format: Shared Poster Name:\nPost text
-			$new_content = 'Shared ' . $poster_name . '\'s post: ' . "\n" . (string) $orig->content;
-			// Enforce 500-char limit of posts.content
-			if ( function_exists('mb_substr') ) { $new_content = mb_substr($new_content, 0, 500, 'UTF-8'); } else { $new_content = substr($new_content, 0, 500); }
-			$wpdb->insert( 'posts', array(
-				'user_id'   => $uid,
-				'content'   => $new_content,
-				'post_date' => current_time('Y-m-d'),
-				'post_time' => current_time('H:i:s'),
-			), array('%s','%s','%s','%s') );
-		}
+		$wpdb->insert('shares', array(
+			'post_id'=>$post_id,
+			'user_id'=>$uid,
+			'share_date'=>current_time('Y-m-d'),
+			'share_time'=>current_time('H:i:s')
+		), array('%d','%s','%s','%s'));
+	}
+
+	// Fetch original post + names for rendering share card
+	$orig = $wpdb->get_row( $wpdb->prepare(
+		"SELECT p.content, p.user_id, p.post_date, p.post_time, a.firstname, a.lastname
+		 FROM posts p LEFT JOIN alumni a ON a.user_id = p.user_id WHERE p.post_id=%d",
+		$post_id
+	) );
+	$sharer_row = $wpdb->get_row( $wpdb->prepare("SELECT firstname, lastname FROM alumni WHERE user_id=%s", $uid) );
+	$sharer_name = '';
+	if ( $sharer_row ) { $sharer_name = trim( (string)$sharer_row->firstname . ' ' . (string)$sharer_row->lastname ); }
+	if ( $sharer_name === '' ) { $sharer_name = $uid; }
+	$sharer_initials = '';
+	if ( $sharer_row ) {
+		$sharer_initials = ( ! empty($sharer_row->firstname) ? strtoupper(substr((string)$sharer_row->firstname,0,1)) : '' ) . ( ! empty($sharer_row->lastname) ? strtoupper(substr((string)$sharer_row->lastname,0,1)) : '' );
+	} else { $sharer_initials = strtoupper(substr($uid,0,1)); }
+
+	$html = '';
+	if ( $orig && isset($orig->content) ) {
+		$orig_initials = '';
+		if ( ! empty($orig->firstname) || ! empty($orig->lastname) ) {
+			$orig_initials = ( ! empty($orig->firstname) ? strtoupper(substr((string)$orig->firstname,0,1)) : '' ) . ( ! empty($orig->lastname) ? strtoupper(substr((string)$orig->lastname,0,1)) : '' );
+		} else { $orig_initials = strtoupper(substr((string)$orig->user_id,0,1)); }
+		$orig_name = '';
+		if ( isset($orig->firstname) || isset($orig->lastname) ) { $orig_name = trim( (string)$orig->firstname . ' ' . (string)$orig->lastname ); }
+		if ( $orig_name === '' ) { $orig_name = (string)$orig->user_id; }
+		$share_date_display = esc_html( date_i18n( 'F j Y \a\t g:i A', current_time('timestamp') ) );
+		$orig_ts = strtotime( (string)$orig->post_date . ' ' . ( isset($orig->post_time)? (string)$orig->post_time : '00:00:00' ) );
+		$orig_date_display = esc_html( date_i18n( 'F j Y \a\t g:i A', $orig_ts ) );
+		$like_count = (int) $wpdb->get_var( $wpdb->prepare("SELECT COUNT(*) FROM likes WHERE post_id=%d", $post_id) );
+		$comment_count = (int) $wpdb->get_var( $wpdb->prepare("SELECT COUNT(*) FROM comments WHERE post_id=%d", $post_id) );
+		$share_count = (int) $wpdb->get_var( $wpdb->prepare("SELECT COUNT(*) FROM shares WHERE post_id=%d", $post_id) );
+		$liked_by_me = (int) $wpdb->get_var( $wpdb->prepare("SELECT COUNT(*) FROM likes WHERE post_id=%d AND user_id=%s", $post_id, $uid) );
+		$shared_by_me = (int) $wpdb->get_var( $wpdb->prepare("SELECT COUNT(*) FROM shares WHERE post_id=%d AND user_id=%s", $post_id, $uid) );
+		ob_start(); ?>
+		<article class="alumnus-post-card alumnus-post-card--share" data-share-origin-post="<?php echo (int)$post_id; ?>" data-share-user="<?php echo esc_attr($uid); ?>">
+			<header class="post-header share-header">
+				<div class="apc-avatar apc-avatar--sm"><span class="apc-initials"><?php echo esc_html( $sharer_initials !== '' ? $sharer_initials : 'U' ); ?></span></div>
+				<div class="ph-meta">
+					<h5 class="ph-name"><?php echo esc_html( $sharer_name ); ?> <span class="ph-share-action"><?php esc_html_e('reposted this','alumnus'); ?></span></h5>
+					<div class="ph-date"><?php echo $share_date_display; ?></div>
+				</div>
+			</header>
+			<div class="shared-original-wrapper">
+				<div class="shared-original-card">
+					<header class="post-header original-header">
+						<div class="apc-avatar apc-avatar--xs"><span class="apc-initials"><?php echo esc_html( $orig_initials !== '' ? $orig_initials : 'U' ); ?></span></div>
+						<div class="ph-meta">
+							<h6 class="ph-name"><?php echo esc_html( $orig_name ); ?></h6>
+							<div class="ph-date"><?php echo $orig_date_display; ?></div>
+						</div>
+					</header>
+					<div class="post-text shared-text"><?php echo esc_html( (string)$orig->content ); ?></div>
+				</div>
+			</div>
+			<div class="post-engagement-bar">
+				<div class="pe-stats">
+					<span class="pe-icon pe-like-count" data-post-id="<?php echo (int)$post_id; ?>" title="<?php esc_attr_e( 'Likes', 'alumnus' ); ?>"><i class="fa-solid fa-thumbs-up"></i> <?php echo (int)$like_count; ?></span>
+					<span class="pe-icon pe-comment-count" data-post-id="<?php echo (int)$post_id; ?>" title="<?php esc_attr_e( 'Comments', 'alumnus' ); ?>"><i class="fa-solid fa-comment"></i> <?php echo (int)$comment_count; ?></span>
+					<span class="pe-icon pe-share-count" data-post-id="<?php echo (int)$post_id; ?>" title="<?php esc_attr_e( 'Shares', 'alumnus' ); ?>"><i class="fa-solid fa-share"></i> <?php echo (int)$share_count; ?></span>
+				</div>
+			</div>
+			<div class="post-actions compact">
+				<button class="btn-light btn-like <?php echo ( $liked_by_me ? 'is-active' : '' ); ?>" data-post-id="<?php echo (int)$post_id; ?>"><i class="fa-solid fa-thumbs-up"></i> <?php echo $liked_by_me? esc_html__('Liked','alumnus'): esc_html__('Like','alumnus'); ?></button>
+				<button class="btn-light btn-comment" data-post-id="<?php echo (int)$post_id; ?>"><i class="fa-solid fa-comment"></i> <?php esc_html_e( 'Comment', 'alumnus' ); ?></button>
+				<button class="btn-light btn-share <?php echo ( $shared_by_me ? 'is-active' : '' ); ?>" data-post-id="<?php echo (int)$post_id; ?>"><i class="fa-solid fa-share"></i> <?php echo $shared_by_me? esc_html__('Shared','alumnus'): esc_html__('Share','alumnus'); ?></button>
+			</div>
+			<div class="post-comments" id="comments-<?php echo (int)$post_id; ?>">
+				<div class="apc-placeholder"><?php esc_html_e( 'Comments hidden. Open original to view.', 'alumnus' ); ?></div>
+			</div>
+		</article>
+		<?php
+		$html = ob_get_clean();
 	}
 	$count = (int) $wpdb->get_var( $wpdb->prepare("SELECT COUNT(*) FROM shares WHERE post_id=%d", $post_id) );
-	wp_send_json_success(array('count'=>$count));
+	wp_send_json_success(array('count'=>$count, 'html'=>$html));
 }
 add_action('wp_ajax_alumnus_share_post', 'alumnus_ajax_share_post');
 add_action('wp_ajax_nopriv_alumnus_share_post', 'alumnus_ajax_share_post');

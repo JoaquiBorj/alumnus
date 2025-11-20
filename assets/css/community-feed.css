@@ -48,9 +48,11 @@
 }
 .apc-avatar--lg {width:72px; height:72px;}
 .apc-avatar--sm {width:48px; height:48px;}
+.apc-avatar--xs {width:32px; height:32px;}
 .apc-avatar .apc-initials {font-weight:700; letter-spacing:.5px;}
 .apc-avatar--lg .apc-initials {font-size:24px;}
 .apc-avatar--sm .apc-initials {font-size:16px;}
+.apc-avatar--xs .apc-initials {font-size:12px;}
 .apc-name {margin:0; font-size:18px; line-height:1.2;}
 
 .apc-placeholder { 
@@ -153,6 +155,17 @@
 /* Shared post indicator */
 .post-shared .ph-shared-origin {font-size:11px; color: var(--alumnus-text-medium); margin-top:4px; font-style:italic;}
 .post-shared {border-left:4px solid var(--alumnus-secondary);}
+
+/* Shared / Repost card styling */
+.alumnus-post-card--share {background:var(--alumnus-bg-white); border:1px solid var(--alumnus-border-light);}
+.alumnus-post-card--share .share-header {background:var(--alumnus-bg-page); border-bottom:1px solid var(--alumnus-border-divider);}
+.alumnus-post-card--share .ph-share-action {font-weight:400; font-size:12px; color:var(--alumnus-text-medium); margin-left:4px;}
+.shared-original-wrapper {padding:12px 16px 4px;}
+.shared-original-card {border:1px solid var(--alumnus-border-light); border-radius:10px; background:var(--alumnus-bg-white); overflow:hidden;}
+.shared-original-card .original-header {padding:10px 12px; border-bottom:1px solid var(--alumnus-border-light); gap:10px;}
+.shared-original-card .post-text.shared-text {padding:10px 14px; font-size:13px; white-space:pre-line;}
+.alumnus-post-card--share .post-engagement-bar {background:var(--alumnus-bg-page);}
+.alumnus-post-card--share .post-actions {background:var(--alumnus-bg-white);}
 
 /* Modals */
 /* 1. The Dark Background Overlay */
