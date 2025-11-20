@@ -130,202 +130,202 @@ function alumnus_render_community_feed_shortcode() {
 					<h2><?php esc_html_e( 'Welcome to the Community Feed', 'alumnus' ); ?></h2>
 				</div>
 
-				<?php if ( empty( $posts ) ) : ?>
+				<?php
+				// Build unified chronological feed (posts + shares)
+				$share_rows = array();
+				if ( $has_shares ) {
+					$like_count_sql_sh  = $has_likes ? "(SELECT COUNT(*) FROM likes l WHERE l.post_id = p.post_id) AS like_count," : "0 AS like_count,";
+					$comment_count_sql_sh = $has_comments ? "(SELECT COUNT(*) FROM comments c WHERE c.post_id = p.post_id) AS comment_count," : "0 AS comment_count,";
+					$share_count_sql_sh = "(SELECT COUNT(*) FROM shares sx WHERE sx.post_id = p.post_id) AS share_count,";
+					$liked_by_me_sql_sh = ($has_likes && $current_alumni_id !== '') ? "(SELECT COUNT(*) FROM likes l2 WHERE l2.post_id=p.post_id AND l2.user_id=%s) AS liked_by_me," : "0 AS liked_by_me,";
+					$shared_by_me_sql_sh = ($current_alumni_id !== '') ? "(SELECT COUNT(*) FROM shares s2 WHERE s2.post_id=p.post_id AND s2.user_id=%s) AS shared_by_me," : "0 AS shared_by_me,";
+					$name_fields_sharer = $has_alumni ? "sh.firstname AS sharer_firstname, sh.lastname AS sharer_lastname," : "";
+					$name_fields_orig   = $has_alumni ? "orig.firstname AS orig_firstname, orig.lastname AS orig_lastname," : "";
+					$sql_shares = "SELECT s.share_id, s.post_id, s.user_id AS sharer_user_id, s.share_date, s.share_time, p.user_id AS orig_user_id, p.content, p.post_date, p.post_time, "
+						. $name_fields_sharer . $name_fields_orig
+						. $like_count_sql_sh . $share_count_sql_sh . $liked_by_me_sql_sh . $shared_by_me_sql_sh . rtrim($comment_count_sql_sh, ',') . " 
+						FROM shares s 
+						JOIN posts p ON p.post_id = s.post_id 
+						LEFT JOIN alumni sh ON sh.user_id = s.user_id 
+						LEFT JOIN alumni orig ON orig.user_id = p.user_id 
+						ORDER BY s.share_date DESC, s.share_time DESC, s.share_id DESC 
+						LIMIT 20";
+					$params_sh = array();
+					if ($has_likes && $current_alumni_id !== '') { $params_sh[] = $current_alumni_id; }
+					if ($current_alumni_id !== '') { $params_sh[] = $current_alumni_id; }
+					$share_rows = ! empty($params_sh) ? $wpdb->get_results( $wpdb->prepare($sql_shares, $params_sh) ) : $wpdb->get_results($sql_shares);
+				}
+
+				$feed_items = array();
+				// Normalize posts
+				if ( ! empty( $posts ) ) {
+					foreach ( $posts as $p_row ) {
+						$__ts = strtotime( (string)$p_row->post_date . ' ' . ( isset($p_row->post_time)? (string)$p_row->post_time : '00:00:00' ) );
+						$feed_items[] = array( 'type' => 'post', 'ts' => $__ts, 'row' => $p_row );
+					}
+				}
+				// Normalize shares
+				if ( ! empty( $share_rows ) ) {
+					foreach ( $share_rows as $s_row ) {
+						$__sts = strtotime( (string)$s_row->share_date . ' ' . ( isset($s_row->share_time)? (string)$s_row->share_time : '00:00:00' ) );
+						$feed_items[] = array( 'type' => 'share', 'ts' => $__sts, 'row' => $s_row );
+					}
+				}
+
+				// Sort newest first
+				usort( $feed_items, function( $a, $b ) {
+					if ( $a['ts'] === $b['ts'] ) { return 0; }
+					return ($a['ts'] > $b['ts']) ? -1 : 1;
+				});
+
+				// Hard cap overall (same as individual limits combined)
+				$feed_items = array_slice( $feed_items, 0, 40 );
+
+				if ( empty( $feed_items ) ) : ?>
 					<article class="alumnus-post-card">
-						<div class="post-text"><?php esc_html_e( 'No posts yet. Be the first to share!', 'alumnus' ); ?></div>
+						<div class="post-text"><?php esc_html_e( 'No activity yet. Be the first to share or post!', 'alumnus' ); ?></div>
 						<div class="post-actions compact">
 							<button class="btn-light" disabled><i class="fa-solid fa-thumbs-up"></i> <?php esc_html_e( 'Like', 'alumnus' ); ?></button>
 							<button class="btn-light" disabled><i class="fa-solid fa-comment"></i> <?php esc_html_e( 'Comment', 'alumnus' ); ?></button>
 							<button class="btn-light" disabled><i class="fa-solid fa-share"></i> <?php esc_html_e( 'Share', 'alumnus' ); ?></button>
 						</div>
 					</article>
-				<?php else : ?>
-					<?php foreach ( $posts as $post_row ) :
-						$full_name = '';
-						if ( isset( $post_row->firstname ) || isset( $post_row->lastname ) ) {
-							$full_name = trim( (string) $post_row->firstname . ' ' . (string) $post_row->lastname );
-						}
-						$display_name = $full_name !== '' ? $full_name : $post_row->user_id;
-						?>
-						<article class="alumnus-post-card" data-post-id="<?php echo (int) $post_row->post_id; ?>">
-							<header class="post-header">
-								<?php
-									$ai1 = '';
-									$ai2 = '';
-									if ( ! empty( $post_row->firstname ) || ! empty( $post_row->lastname ) ) {
-										$ai1 = ! empty( $post_row->firstname ) ? strtoupper( substr( (string) $post_row->firstname, 0, 1 ) ) : '';
-										$ai2 = ! empty( $post_row->lastname )  ? strtoupper( substr( (string) $post_row->lastname, 0, 1 ) )  : '';
-									} else {
-										$ai1 = strtoupper( substr( (string) $post_row->user_id, 0, 1 ) );
-									}
-									$author_initials = $ai1 . $ai2;
-
-									// Build profile URL if helper exists
-									$profile_url = '';
-									if ( ! empty( $post_row->user_id ) && function_exists( 'alumnus_get_profile_url' ) ) {
-										$profile_url = alumnus_get_profile_url( $post_row->user_id );
-									}
-								?>
-								<?php if ( $profile_url ) : ?><a class="ph-author-link" href="<?php echo esc_url( $profile_url ); ?>" aria-label="<?php echo esc_attr( sprintf( __( 'View %s profile', 'alumnus' ), $display_name ) ); ?>"><?php endif; ?>
-								<div class="apc-avatar apc-avatar--sm"><span class="apc-initials"><?php echo esc_html( $author_initials !== '' ? $author_initials : 'U' ); ?></span></div>
-								<div class="ph-meta">
-									<h5 class="ph-name"><?php echo esc_html( $display_name ); ?></h5>
-									<div class="ph-date">
-										<?php 
-										$__ts = strtotime( $post_row->post_date . ' ' . ( isset($post_row->post_time) ? $post_row->post_time : '00:00:00' ) );
-										echo esc_html( date_i18n( 'F j Y \a\t g:i A', $__ts ) );
+				<?php else :
+					foreach ( $feed_items as $item ) :
+						if ( $item['type'] === 'post' ) {
+							$post_row = $item['row'];
+							$full_name = '';
+							if ( isset( $post_row->firstname ) || isset( $post_row->lastname ) ) { $full_name = trim( (string)$post_row->firstname . ' ' . (string)$post_row->lastname ); }
+							$display_name = $full_name !== '' ? $full_name : $post_row->user_id;
+							$ai1 = '';
+							$ai2 = '';
+							if ( ! empty( $post_row->firstname ) || ! empty( $post_row->lastname ) ) {
+								$ai1 = ! empty( $post_row->firstname ) ? strtoupper( substr( (string)$post_row->firstname, 0, 1 ) ) : '';
+								$ai2 = ! empty( $post_row->lastname ) ? strtoupper( substr( (string)$post_row->lastname, 0, 1 ) ) : '';
+							} else {
+								$ai1 = strtoupper( substr( (string)$post_row->user_id, 0, 1 ) );
+							}
+							$author_initials = $ai1 . $ai2;
+							$profile_url = '';
+							if ( ! empty( $post_row->user_id ) && function_exists( 'alumnus_get_profile_url' ) ) { $profile_url = alumnus_get_profile_url( $post_row->user_id ); }
+							?>
+							<article class="alumnus-post-card" data-post-id="<?php echo (int)$post_row->post_id; ?>">
+								<header class="post-header">
+									<?php if ( $profile_url ) : ?><a class="ph-author-link" href="<?php echo esc_url( $profile_url ); ?>" aria-label="<?php echo esc_attr( sprintf( __( 'View %s profile', 'alumnus' ), $display_name ) ); ?>"><?php endif; ?>
+									<div class="apc-avatar apc-avatar--sm"><span class="apc-initials"><?php echo esc_html( $author_initials !== '' ? $author_initials : 'U' ); ?></span></div>
+									<div class="ph-meta">
+										<h5 class="ph-name"><?php echo esc_html( $display_name ); ?></h5>
+										<div class="ph-date"><?php echo esc_html( date_i18n( 'F j Y \a\t g:i A', $item['ts'] ) ); ?></div>
+									</div>
+									<?php if ( $profile_url ) : ?></a><?php endif; ?>
+								</header>
+								<div class="post-text"><?php echo esc_html( $post_row->content ); ?></div>
+								<div class="post-engagement-bar"><div class="pe-stats">
+									<span class="pe-icon pe-like-count" data-post-id="<?php echo (int)$post_row->post_id; ?>" title="<?php esc_attr_e( 'Likes', 'alumnus' ); ?>"><i class="fa-solid fa-thumbs-up"></i> <?php echo (int)$post_row->like_count; ?></span>
+									<span class="pe-icon pe-comment-count" data-post-id="<?php echo (int)$post_row->post_id; ?>" title="<?php esc_attr_e( 'Comments', 'alumnus' ); ?>"><i class="fa-solid fa-comment"></i> <?php echo (int)$post_row->comment_count; ?></span>
+									<span class="pe-icon pe-share-count" data-post-id="<?php echo (int)$post_row->post_id; ?>" title="<?php esc_attr_e( 'Shares', 'alumnus' ); ?>"><i class="fa-solid fa-share"></i> <?php echo (int)$post_row->share_count; ?></span>
+								</div></div>
+								<div class="post-actions compact">
+									<button class="btn-light btn-like <?php echo (!empty($post_row->liked_by_me) ? 'is-active' : ''); ?>" data-post-id="<?php echo (int)$post_row->post_id; ?>"><i class="fa-solid fa-thumbs-up"></i> <?php echo !empty($post_row->liked_by_me) ? esc_html__('Liked','alumnus') : esc_html__('Like','alumnus'); ?></button>
+									<button class="btn-light btn-comment" data-post-id="<?php echo (int)$post_row->post_id; ?>"><i class="fa-solid fa-comment"></i> <?php esc_html_e( 'Comment', 'alumnus' ); ?></button>
+									<button class="btn-light btn-share <?php echo (!empty($post_row->shared_by_me) ? 'is-active' : ''); ?>" data-post-id="<?php echo (int)$post_row->post_id; ?>"><i class="fa-solid fa-share"></i> <?php echo !empty($post_row->shared_by_me) ? esc_html__('Shared','alumnus') : esc_html__('Share','alumnus'); ?></button>
+								</div>
+								<?php if ( $has_comments ): ?>
+									<div class="post-comments" id="comments-<?php echo (int)$post_row->post_id; ?>">
+										<?php
+										$comments = $wpdb->get_results( $wpdb->prepare(
+											"SELECT c.comment_id, c.user_id, c.content, c.comment_date, c.comment_time, a.firstname, a.lastname
+											 FROM comments c LEFT JOIN alumni a ON a.user_id=c.user_id
+											 WHERE c.post_id=%d ORDER BY c.comment_id DESC LIMIT 3",
+											(int)$post_row->post_id
+										));
+										if ( ! empty( $comments ) ) {
+											echo '<ul class="comments-list">';
+											foreach ( $comments as $cm ) {
+												$cn = trim( (string)$cm->firstname . ' ' . (string)$cm->lastname );
+												if ($cn === '') { $cn = (string)$cm->user_id; }
+												$__cm_ts = strtotime( (string)$cm->comment_date . ' ' . ( isset($cm->comment_time)? (string)$cm->comment_time : '00:00:00' ) );
+												$__now = current_time('timestamp');
+												$__diff = $__now - $__cm_ts;
+												if ($__diff < 60) { $rel = __('Just now','alumnus'); }
+												elseif ($__diff < 3600) { $rel = sprintf(__('%dm','alumnus'), floor($__diff/60)); }
+												elseif ($__diff < 86400) { $rel = sprintf(__('%dh','alumnus'), floor($__diff/3600)); }
+												elseif ($__diff < 172800) { $rel = __('Yesterday','alumnus'); }
+												elseif ($__diff < 604800) { $rel = sprintf(__('%dd','alumnus'), floor($__diff/86400)); }
+												elseif ($__diff < 2592000) { $rel = sprintf(__('%dw','alumnus'), floor($__diff/604800)); }
+												else { $rel = date_i18n('F j Y', $__cm_ts); }
+												echo '<li class="comment-item"><div class="comment-bubble"><strong>' . esc_html($cn) . ':</strong> ' . esc_html($cm->content) . '</div><div class="comment-timestamp">' . esc_html($rel) . '</div></li>';
+											}
+											echo '</ul>';
+										} else {
+											echo '<div class="apc-placeholder">' . esc_html__('No comments yet.','alumnus') . '</div>';
+										}
 										?>
 									</div>
+								<?php endif; ?>
+							</article>
+							<?php
+						} else { // share item
+							$sr = $item['row'];
+							$sh_name = '';
+							if ( isset($sr->sharer_firstname) || isset($sr->sharer_lastname) ) { $sh_name = trim( (string)$sr->sharer_firstname . ' ' . (string)$sr->sharer_lastname ); }
+							if ( $sh_name === '' ) { $sh_name = (string)$sr->sharer_user_id; }
+							$sh_i1 = ! empty($sr->sharer_firstname) ? strtoupper(substr((string)$sr->sharer_firstname,0,1)) : strtoupper(substr((string)$sr->sharer_user_id,0,1));
+							$sh_i2 = ! empty($sr->sharer_lastname) ? strtoupper(substr((string)$sr->sharer_lastname,0,1)) : '';
+							$sh_initials = $sh_i1 . $sh_i2;
+							$orig_name = '';
+							if ( isset($sr->orig_firstname) || isset($sr->orig_lastname) ) { $orig_name = trim( (string)$sr->orig_firstname . ' ' . (string)$sr->orig_lastname ); }
+							if ( $orig_name === '' ) { $orig_name = (string)$sr->orig_user_id; }
+							$orig_i1 = ! empty($sr->orig_firstname) ? strtoupper(substr((string)$sr->orig_firstname,0,1)) : strtoupper(substr((string)$sr->orig_user_id,0,1));
+							$orig_i2 = ! empty($sr->orig_lastname) ? strtoupper(substr((string)$sr->orig_lastname,0,1)) : '';
+							$orig_initials = $orig_i1 . $orig_i2;
+							$orig_ts = strtotime( (string)$sr->post_date . ' ' . ( isset($sr->post_time)? (string)$sr->post_time : '00:00:00' ) );
+							$orig_date_display = esc_html( date_i18n( 'F j Y \a\t g:i A', $orig_ts ) );
+							$like_c = isset($sr->like_count)? (int)$sr->like_count : 0;
+							$share_c = isset($sr->share_count)? (int)$sr->share_count : 0;
+							$comment_c = isset($sr->comment_count)? (int)$sr->comment_count : 0;
+							$liked_me = !empty($sr->liked_by_me);
+							$shared_me = !empty($sr->shared_by_me);
+							?>
+							<article class="alumnus-post-card alumnus-post-card--share" data-share-origin-post="<?php echo (int)$sr->post_id; ?>" data-share-id="<?php echo (int)$sr->share_id; ?>">
+								<header class="post-header share-header">
+									<div class="apc-avatar apc-avatar--sm"><span class="apc-initials"><?php echo esc_html( $sh_initials !== '' ? $sh_initials : 'U' ); ?></span></div>
+									<div class="ph-meta">
+										<h5 class="ph-name"><?php echo esc_html( $sh_name ); ?> <span class="ph-share-action"><?php esc_html_e('reposted this','alumnus'); ?></span></h5>
+										<div class="ph-date"><?php echo esc_html( date_i18n( 'F j Y \a\t g:i A', $item['ts'] ) ); ?></div>
+									</div>
+								</header>
+								<div class="shared-original-wrapper">
+									<div class="shared-original-card">
+										<header class="post-header original-header">
+											<div class="apc-avatar apc-avatar--xs"><span class="apc-initials"><?php echo esc_html( $orig_initials !== '' ? $orig_initials : 'U' ); ?></span></div>
+											<div class="ph-meta">
+												<h6 class="ph-name"><?php echo esc_html( $orig_name ); ?></h6>
+												<div class="ph-date"><?php echo $orig_date_display; ?></div>
+											</div>
+										</header>
+										<div class="post-text shared-text"><?php echo esc_html( (string)$sr->content ); ?></div>
+									</div>
 								</div>
-								<?php if ( $profile_url ) : ?></a><?php endif; ?>
-							</header>
-							<div class="post-text"><?php echo esc_html( $post_row->content ); ?></div>
-							<div class="post-engagement-bar">
-								<div class="pe-stats">
-									<span class="pe-icon pe-like-count" data-post-id="<?php echo (int) $post_row->post_id; ?>" title="<?php esc_attr_e( 'Likes', 'alumnus' ); ?>"><i class="fa-solid fa-thumbs-up"></i> <?php echo (int) $post_row->like_count; ?></span>
-									<span class="pe-icon pe-comment-count" data-post-id="<?php echo (int) $post_row->post_id; ?>" title="<?php esc_attr_e( 'Comments', 'alumnus' ); ?>"><i class="fa-solid fa-comment"></i> <?php echo (int) $post_row->comment_count; ?></span>
-									<span class="pe-icon pe-share-count" data-post-id="<?php echo (int) $post_row->post_id; ?>" title="<?php esc_attr_e( 'Shares', 'alumnus' ); ?>"><i class="fa-solid fa-share"></i> <?php echo (int) $post_row->share_count; ?></span>
+								<div class="post-engagement-bar"><div class="pe-stats">
+									<span class="pe-icon pe-like-count" data-post-id="<?php echo (int)$sr->post_id; ?>" title="<?php esc_attr_e('Likes','alumnus'); ?>"><i class="fa-solid fa-thumbs-up"></i> <?php echo (int)$like_c; ?></span>
+									<span class="pe-icon pe-comment-count" data-post-id="<?php echo (int)$sr->post_id; ?>" title="<?php esc_attr_e('Comments','alumnus'); ?>"><i class="fa-solid fa-comment"></i> <?php echo (int)$comment_c; ?></span>
+									<span class="pe-icon pe-share-count" data-post-id="<?php echo (int)$sr->post_id; ?>" title="<?php esc_attr_e('Shares','alumnus'); ?>"><i class="fa-solid fa-share"></i> <?php echo (int)$share_c; ?></span>
+								</div></div>
+								<div class="post-actions compact">
+									<button class="btn-light btn-like <?php echo ( $liked_me ? 'is-active' : '' ); ?>" data-post-id="<?php echo (int)$sr->post_id; ?>"><i class="fa-solid fa-thumbs-up"></i> <?php echo $liked_me? esc_html__('Liked','alumnus'): esc_html__('Like','alumnus'); ?></button>
+									<button class="btn-light btn-comment" data-post-id="<?php echo (int)$sr->post_id; ?>"><i class="fa-solid fa-comment"></i> <?php esc_html_e('Comment','alumnus'); ?></button>
+									<button class="btn-light btn-share <?php echo ( $shared_me ? 'is-active' : '' ); ?>" data-post-id="<?php echo (int)$sr->post_id; ?>"><i class="fa-solid fa-share"></i> <?php echo $shared_me? esc_html__('Shared','alumnus'): esc_html__('Share','alumnus'); ?></button>
 								</div>
-							</div>
-							<div class="post-actions compact">
-								<button class="btn-light btn-like <?php echo (!empty($post_row->liked_by_me) ? 'is-active' : ''); ?>" data-post-id="<?php echo (int) $post_row->post_id; ?>"><i class="fa-solid fa-thumbs-up"></i> <?php echo !empty($post_row->liked_by_me) ? esc_html__('Liked','alumnus') : esc_html__('Like','alumnus'); ?></button>
-								<button class="btn-light btn-comment" data-post-id="<?php echo (int) $post_row->post_id; ?>"><i class="fa-solid fa-comment"></i> <?php esc_html_e( 'Comment', 'alumnus' ); ?></button>
-								<button class="btn-light btn-share <?php echo (!empty($post_row->shared_by_me) ? 'is-active' : ''); ?>" data-post-id="<?php echo (int) $post_row->post_id; ?>"><i class="fa-solid fa-share"></i> <?php echo !empty($post_row->shared_by_me) ? esc_html__('Shared','alumnus') : esc_html__('Share','alumnus'); ?></button>
-							</div>
-
-							<?php if ( $has_comments ): ?>
-								<div class="post-comments" id="comments-<?php echo (int) $post_row->post_id; ?>">
-									<?php
-									// Render latest 3 comments
-									$comments = $wpdb->get_results( $wpdb->prepare(
-										"SELECT c.comment_id, c.user_id, c.content, c.comment_date, c.comment_time, a.firstname, a.lastname
-										 FROM comments c LEFT JOIN alumni a ON a.user_id=c.user_id
-										 WHERE c.post_id=%d ORDER BY c.comment_id DESC LIMIT 3",
-										 (int)$post_row->post_id
-										));
-									if ( ! empty( $comments ) ) {
-										echo '<ul class="comments-list">';
-										foreach ( $comments as $cm ) {
-											$cn = trim( (string)$cm->firstname . ' ' . (string)$cm->lastname );
-											if ($cn === '') { $cn = (string)$cm->user_id; }
-											// Build relative time
-											$__cm_ts = strtotime( (string)$cm->comment_date . ' ' . ( isset($cm->comment_time)? (string)$cm->comment_time : '00:00:00' ) );
-											$__now = current_time('timestamp');
-											$__diff = $__now - $__cm_ts;
-											if ($__diff < 60) { $rel = __('Just now','alumnus'); }
-											elseif ($__diff < 3600) { $rel = sprintf(__('%dm','alumnus'), floor($__diff/60)); }
-											elseif ($__diff < 86400) { $rel = sprintf(__('%dh','alumnus'), floor($__diff/3600)); }
-											elseif ($__diff < 172800) { $rel = __('Yesterday','alumnus'); }
-											elseif ($__diff < 604800) { $rel = sprintf(__('%dd','alumnus'), floor($__diff/86400)); }
-											elseif ($__diff < 2592000) { $rel = sprintf(__('%dw','alumnus'), floor($__diff/604800)); }
-											else { $rel = date_i18n('F j Y', $__cm_ts); }
-											echo '<li class="comment-item"><div class="comment-bubble"><strong>' . esc_html($cn) . ':</strong> ' . esc_html($cm->content) . '</div><div class="comment-timestamp">' . esc_html($rel) . '</div></li>';
-										}
-										echo '</ul>';
-									} else {
-										echo '<div class="apc-placeholder">' . esc_html__('No comments yet.','alumnus') . '</div>';
-									}
-									// Comment form removed – now handled by modal.
-									?>
+								<div class="post-comments" id="comments-<?php echo (int)$sr->post_id; ?>">
+									<div class="apc-placeholder"><?php esc_html_e('Comments hidden. Open original to view.','alumnus'); ?></div>
 								</div>
-							<?php endif; ?>
-						</article>
-					<?php endforeach; ?>
-
-					<?php
-					// Render share cards from shares table (persisted without duplicating posts)
-					if ( $has_shares ) {
-						$like_count_sql_sh  = $has_likes ? "(SELECT COUNT(*) FROM likes l WHERE l.post_id = p.post_id) AS like_count," : "0 AS like_count,";
-						$comment_count_sql_sh = $has_comments ? "(SELECT COUNT(*) FROM comments c WHERE c.post_id = p.post_id) AS comment_count," : "0 AS comment_count,";
-						$share_count_sql_sh = "(SELECT COUNT(*) FROM shares sx WHERE sx.post_id = p.post_id) AS share_count,"; // has_shares true
-						$liked_by_me_sql_sh = ($has_likes && $current_alumni_id !== '') ? "(SELECT COUNT(*) FROM likes l2 WHERE l2.post_id=p.post_id AND l2.user_id=%s) AS liked_by_me," : "0 AS liked_by_me,";
-						$shared_by_me_sql_sh = ($current_alumni_id !== '') ? "(SELECT COUNT(*) FROM shares s2 WHERE s2.post_id=p.post_id AND s2.user_id=%s) AS shared_by_me," : "0 AS shared_by_me,";
-						// Sharer and original author name fields
-						$name_fields_sharer = $has_alumni ? "sh.firstname AS sharer_firstname, sh.lastname AS sharer_lastname," : "";
-						$name_fields_orig   = $has_alumni ? "orig.firstname AS orig_firstname, orig.lastname AS orig_lastname," : "";
-						$sql_shares = "SELECT s.share_id, s.post_id, s.user_id AS sharer_user_id, s.share_date, s.share_time, p.user_id AS orig_user_id, p.content, p.post_date, p.post_time, "
-							. $name_fields_sharer . $name_fields_orig
-							. $like_count_sql_sh . $share_count_sql_sh . $liked_by_me_sql_sh . $shared_by_me_sql_sh . rtrim($comment_count_sql_sh, ',') . " 
-							FROM shares s 
-							JOIN posts p ON p.post_id = s.post_id 
-							LEFT JOIN alumni sh ON sh.user_id = s.user_id 
-							LEFT JOIN alumni orig ON orig.user_id = p.user_id 
-							ORDER BY s.share_date DESC, s.share_time DESC, s.share_id DESC 
-							LIMIT 20";
-						$params_sh = array();
-						if ($has_likes && $current_alumni_id !== '') { $params_sh[] = $current_alumni_id; }
-						if ($current_alumni_id !== '') { $params_sh[] = $current_alumni_id; }
-						$share_rows = ! empty($params_sh) ? $wpdb->get_results( $wpdb->prepare($sql_shares, $params_sh) ) : $wpdb->get_results($sql_shares);
-						if ( ! empty($share_rows) ) {
-							foreach ( $share_rows as $sr ) {
-								// Sharer name + initials
-								$sh_name = '';
-								if ( isset($sr->sharer_firstname) || isset($sr->sharer_lastname) ) { $sh_name = trim( (string)$sr->sharer_firstname . ' ' . (string)$sr->sharer_lastname ); }
-								if ( $sh_name === '' ) { $sh_name = (string)$sr->sharer_user_id; }
-								$sh_i1 = ! empty($sr->sharer_firstname) ? strtoupper(substr((string)$sr->sharer_firstname,0,1)) : strtoupper(substr((string)$sr->sharer_user_id,0,1));
-								$sh_i2 = ! empty($sr->sharer_lastname) ? strtoupper(substr((string)$sr->sharer_lastname,0,1)) : '';
-								$sh_initials = $sh_i1 . $sh_i2;
-								// Original author name + initials
-								$orig_name = '';
-								if ( isset($sr->orig_firstname) || isset($sr->orig_lastname) ) { $orig_name = trim( (string)$sr->orig_firstname . ' ' . (string)$sr->orig_lastname ); }
-								if ( $orig_name === '' ) { $orig_name = (string)$sr->orig_user_id; }
-								$orig_i1 = ! empty($sr->orig_firstname) ? strtoupper(substr((string)$sr->orig_firstname,0,1)) : strtoupper(substr((string)$sr->orig_user_id,0,1));
-								$orig_i2 = ! empty($sr->orig_lastname) ? strtoupper(substr((string)$sr->orig_lastname,0,1)) : '';
-								$orig_initials = $orig_i1 . $orig_i2;
-								$orig_ts = strtotime( (string)$sr->post_date . ' ' . ( isset($sr->post_time)? (string)$sr->post_time : '00:00:00' ) );
-								$orig_date_display = esc_html( date_i18n( 'F j Y \a\t g:i A', $orig_ts ) );
-								// Engagement counts from row
-								$like_c = isset($sr->like_count)? (int)$sr->like_count : 0;
-								$share_c = isset($sr->share_count)? (int)$sr->share_count : 0;
-								$comment_c = isset($sr->comment_count)? (int)$sr->comment_count : 0;
-								$liked_me = !empty($sr->liked_by_me);
-								$shared_me = !empty($sr->shared_by_me);
-								?>
-								<article class="alumnus-post-card alumnus-post-card--share" data-share-origin-post="<?php echo (int)$sr->post_id; ?>" data-share-id="<?php echo (int)$sr->share_id; ?>">
-									<header class="post-header share-header">
-										<div class="apc-avatar apc-avatar--sm"><span class="apc-initials"><?php echo esc_html( $sh_initials !== '' ? $sh_initials : 'U' ); ?></span></div>
-										<div class="ph-meta">
-											<h5 class="ph-name"><?php echo esc_html( $sh_name ); ?> <span class="ph-share-action"><?php esc_html_e('reposted this','alumnus'); ?></span></h5>
-											<div class="ph-date"><?php 
-												$__share_ts = strtotime( (string)$sr->share_date . ' ' . ( isset($sr->share_time)? (string)$sr->share_time : '00:00:00' ) );
-												echo esc_html( date_i18n( 'F j Y \a\t g:i A', $__share_ts ) );
-											?></div>
-										</div>
-									</header>
-									<div class="shared-original-wrapper">
-										<div class="shared-original-card">
-											<header class="post-header original-header">
-												<div class="apc-avatar apc-avatar--xs"><span class="apc-initials"><?php echo esc_html( $orig_initials !== '' ? $orig_initials : 'U' ); ?></span></div>
-												<div class="ph-meta">
-													<h6 class="ph-name"><?php echo esc_html( $orig_name ); ?></h6>
-													<div class="ph-date"><?php echo $orig_date_display; ?></div>
-												</div>
-											</header>
-											<div class="post-text shared-text"><?php echo esc_html( (string)$sr->content ); ?></div>
-										</div>
-									</div>
-									<div class="post-engagement-bar">
-										<div class="pe-stats">
-											<span class="pe-icon pe-like-count" data-post-id="<?php echo (int)$sr->post_id; ?>" title="<?php esc_attr_e('Likes','alumnus'); ?>"><i class="fa-solid fa-thumbs-up"></i> <?php echo (int)$like_c; ?></span>
-											<span class="pe-icon pe-comment-count" data-post-id="<?php echo (int)$sr->post_id; ?>" title="<?php esc_attr_e('Comments','alumnus'); ?>"><i class="fa-solid fa-comment"></i> <?php echo (int)$comment_c; ?></span>
-											<span class="pe-icon pe-share-count" data-post-id="<?php echo (int)$sr->post_id; ?>" title="<?php esc_attr_e('Shares','alumnus'); ?>"><i class="fa-solid fa-share"></i> <?php echo (int)$share_c; ?></span>
-										</div>
-									</div>
-									<div class="post-actions compact">
-										<button class="btn-light btn-like <?php echo ( $liked_me ? 'is-active' : '' ); ?>" data-post-id="<?php echo (int)$sr->post_id; ?>"><i class="fa-solid fa-thumbs-up"></i> <?php echo $liked_me? esc_html__('Liked','alumnus'): esc_html__('Like','alumnus'); ?></button>
-										<button class="btn-light btn-comment" data-post-id="<?php echo (int)$sr->post_id; ?>"><i class="fa-solid fa-comment"></i> <?php esc_html_e('Comment','alumnus'); ?></button>
-										<button class="btn-light btn-share <?php echo ( $shared_me ? 'is-active' : '' ); ?>" data-post-id="<?php echo (int)$sr->post_id; ?>"><i class="fa-solid fa-share"></i> <?php echo $shared_me? esc_html__('Shared','alumnus'): esc_html__('Share','alumnus'); ?></button>
-									</div>
-									<div class="post-comments" id="comments-<?php echo (int)$sr->post_id; ?>">
-										<div class="apc-placeholder"><?php esc_html_e('Comments hidden. Open original to view.','alumnus'); ?></div>
-									</div>
-								</article>
-								<?php
-							}
+							</article>
+							<?php
 						}
-					}
-					?>
-				<?php endif; ?>
+						endforeach; // feed_items loop
+				endif; // empty feed_items
+				?>
 			</main>
 
 			<!-- Right Sidebar -->
