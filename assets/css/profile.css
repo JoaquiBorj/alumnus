@@ -218,6 +218,50 @@ button.aph-nav-btn {
 	overflow: hidden;
 }
 
+/* Reposts Section Overrides */
+.apc-reposts-section {margin-top:32px;}
+.apc-reposts-section .alumnus-post-card--share {margin-bottom:24px; box-shadow:0 1px 3px rgba(0,0,0,.08); border-radius:12px;}
+.apc-reposts-section .alumnus-post-card--share .share-header {padding:14px 16px;}
+.apc-reposts-section .shared-original-wrapper {padding:12px 16px 6px;}
+.apc-reposts-section .shared-original-card {border-radius:10px;}
+.apc-reposts-section .shared-original-card .original-header {background:var(--alumnus-bg-page);}
+.apc-reposts-section .post-actions {padding:12px 16px 16px;}
+.apc-reposts-section .post-engagement-bar {padding:8px 16px;}
+.apc-reposts-section .alumnus-post-card--share:last-child {margin-bottom:0;}
+
+/* Scoped repost card foundational styles (avoid importing global feed CSS) */
+.apc-reposts-section .alumnus-post-card {background:var(--alumnus-bg-white); border:1px solid var(--alumnus-border-light); border-radius:12px; overflow:hidden;}
+.apc-reposts-section .alumnus-post-card .post-header {display:flex; gap:12px; padding:14px 16px; align-items:center; border-bottom:1px solid var(--alumnus-border-divider);}
+.apc-reposts-section .ph-name {margin:0 0 4px; font-size:15px; font-weight:600; color:var(--alumnus-text-heading);} 
+.apc-reposts-section .ph-date {font-size:12px; color:var(--alumnus-text-medium);} 
+.apc-reposts-section .post-text {background:var(--alumnus-bg-white); padding:10px 20px; font-size:13px; font-weight:500; color:var(--alumnus-text-body); white-space:pre-line;}
+.apc-reposts-section .post-engagement-bar {padding:8px 16px; border-top:1px solid var(--alumnus-border-divider); font-size:12px; background:var(--alumnus-bg-page);} 
+.apc-reposts-section .post-engagement-bar .pe-stats {display:flex; justify-content:space-between; color:var(--alumnus-text-medium); font-weight:500;} 
+.apc-reposts-section .post-engagement-bar .pe-stats .pe-like-count {margin-right:auto;} 
+.apc-reposts-section .post-engagement-bar .pe-stats .pe-comment-count, .apc-reposts-section .post-engagement-bar .pe-stats .pe-share-count {margin-left:18px;} 
+.apc-reposts-section .post-actions {display:flex; gap:12px; border-top:1px solid var(--alumnus-border-divider);} 
+.apc-reposts-section .post-actions.compact {justify-content:space-around;} 
+
+/* Buttons scoped */
+.apc-reposts-section .btn-light {font-size:13px; font-weight:600; letter-spacing:.3px; gap:6px; border:none; border-radius:24px; padding:10px 22px; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; background:var(--alumnus-bg-page); color:var(--alumnus-text-medium);} 
+.apc-reposts-section .btn-light:hover, .apc-reposts-section .btn-light.is-active {background:var(--alumnus-primary); color:var(--alumnus-text-on-dark);} 
+
+/* Shared card inner elements */
+.apc-reposts-section .alumnus-post-card--share .share-header {background:var(--alumnus-bg-page);} 
+.apc-reposts-section .alumnus-post-card--share .ph-share-action {font-weight:400; font-size:12px; color:var(--alumnus-text-medium); margin-left:4px;} 
+.apc-reposts-section .shared-original-card {border:1px solid var(--alumnus-border-light); background:var(--alumnus-bg-white);} 
+.apc-reposts-section .shared-original-card .original-header {padding:10px 12px; border-bottom:1px solid var(--alumnus-border-light); gap:10px;} 
+.apc-reposts-section .shared-original-card .post-text.shared-text {padding:10px 14px; font-size:13px;} 
+.apc-reposts-section .apc-placeholder {padding:10px 16px; font-size:12px; opacity:.8;} 
+
+/* Avatar size modifiers (scoped so global profile layout unaffected) */
+.apc-reposts-section .apc-avatar {display:flex; align-items:center; justify-content:center; border-radius:50%; background:var(--alumnus-primary); color:var(--alumnus-bg-white); border:3px solid var(--alumnus-secondary); box-shadow:0 2px 6px rgba(0,0,0,.08);}
+.apc-reposts-section .apc-avatar--sm {width:48px; height:48px;}
+.apc-reposts-section .apc-avatar--xs {width:32px; height:32px;}
+.apc-reposts-section .apc-avatar .apc-initials {font-weight:700; letter-spacing:.5px;}
+.apc-reposts-section .apc-avatar--sm .apc-initials {font-size:16px;}
+.apc-reposts-section .apc-avatar--xs .apc-initials {font-size:12px;}
+
 .apc-avatar-wrapper {
 	position: absolute;
 	top: -70px;
