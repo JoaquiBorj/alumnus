@@ -66,6 +66,7 @@ function adm_create_alumni_tables() {
         year INT(11) NOT NULL,
         password VARCHAR(150) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
         username VARCHAR(191) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+         existed TINYINT(1) NOT NULL DEFAULT 0,
         PRIMARY KEY (user),
         UNIQUE KEY uniq_username (username),
         FOREIGN KEY (user) REFERENCES alumni(user_id) ON DELETE CASCADE ON UPDATE CASCADE,
