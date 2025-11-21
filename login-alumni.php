@@ -161,8 +161,9 @@ function coenect_login_form_shortcode() {
                         alumnus_set_login_state($user, (bool) $remember_me);
                     }
 
-                    // If password is default 123456 -> show reset modal
-                    if ($password === '123456') {
+                    // If `existed` column present and equals 1 -> require password reset modal
+                    $existed_col = $db->get_var($db->prepare("SHOW COLUMNS FROM `{$tables['user']}` LIKE %s", 'existed'));
+                    if (!empty($existed_col) && isset($user->existed) && (int)$user->existed === 1) {
                         ?>
                         <script>
                             document.addEventListener("DOMContentLoaded", function() {
@@ -206,12 +207,21 @@ function coenect_login_form_shortcode() {
                 // Find the account by username or user id first
                 $user_row = $get_user_by_identifier($username);
                 if ($user_row) {
-                    // Update using primary key column `user`
+                    // Build update payload; include existed=0 if column exists
+                    $has_existed = $db->get_var($db->prepare("SHOW COLUMNS FROM `{$tables['user']}` LIKE %s", 'existed'));
+
+                    $update_data = ['password' => $hashed_password];
+                    $update_formats = ['%s'];
+                    if (!empty($has_existed)) {
+                        $update_data['existed'] = 0;
+                        $update_formats[] = '%d';
+                    }
+
                     $updated = $db->update(
                         $tables['user'],
-                        ['password' => $hashed_password],
+                        $update_data,
                         ['user' => $user_row->user],
-                        ['%s'],
+                        $update_formats,
                         ['%s']
                     );
 
