@@ -302,103 +302,51 @@ function alumnus_handle_post() {
 	
 	// Add Alumni
 	if ($_POST['alumnus_action'] === 'add_alumni') {
-		check_admin_referer('alumnus_add_alumni');
-		$course_id = isset($_POST['course_id']) ? intval($_POST['course_id']) : 0;
-		$first_name = isset($_POST['first_name']) ? sanitize_text_field(wp_unslash($_POST['first_name'])) : '';
-		$last_name = isset($_POST['last_name']) ? sanitize_text_field(wp_unslash($_POST['last_name'])) : '';
-		$batch_year = isset($_POST['batch_year']) ? intval($_POST['batch_year']) : 0;
-		
-		$errors = [];
-		if ($course_id <= 0) $errors[] = __('Course is required.', 'alumnus');
-		if ($first_name === '' || $last_name === '') $errors[] = __('First and last name are required.', 'alumnus');
-		if ($batch_year < 1900 || $batch_year > date('Y')) $errors[] = __('Invalid batch year.', 'alumnus');
-		
-		if (!empty($errors)) {
-			foreach ($errors as $e) add_settings_error('alumnus', 'alumni_error', $e, 'error');
-			return;
-		}
-		
-		$plain_password = alumnus_generate_password();
-		$password_hash = function_exists('wp_hash_password') ? wp_hash_password($plain_password) : password_hash($plain_password, PASSWORD_DEFAULT);
-		
-		// Get alumni table columns to ensure we only insert fields that exist
-		$alumni_columns = $wpdb->get_results("SHOW COLUMNS FROM {$tables['alumni']}");
-		$alumni_column_names = array_column($alumni_columns, 'Field');
-        
-			// Prepare alumni data; generate user_id per-year and attempt insert with retry on collision
-			$alumni_data_core = [
-				'year' => $batch_year,
-				'course_id' => $course_id,
-				'firstname' => $first_name,
-				'lastname' => $last_name,
-				'email' => '',
-				'contact_info' => 0,
-				'bio_note' => ''
-			];
-			// Remove fields that don't exist in the table
-			$alumni_data_core = array_filter($alumni_data_core, function($key) use ($alumni_column_names) {
-				return in_array($key, $alumni_column_names);
-			}, ARRAY_FILTER_USE_KEY);
+    check_admin_referer('alumnus_add_alumni');
+    $course_id = isset($_POST['course_id']) ? intval($_POST['course_id']) : 0;
+    $first_name = isset($_POST['first_name']) ? sanitize_text_field(wp_unslash($_POST['first_name'])) : '';
+    $last_name = isset($_POST['last_name']) ? sanitize_text_field(wp_unslash($_POST['last_name'])) : '';
+    $batch_year = isset($_POST['batch_year']) ? intval($_POST['batch_year']) : 0;
 
-			$max_attempts = 10;
-			$attempt = 0;
-			$alumni_id = '';
-			$insert_alumni = false;
-			while ($attempt < $max_attempts) {
-				$attempt++;
-				$candidate_id = alumnus_generate_yearly_user_id($batch_year, $tables['alumni']);
-				$alumni_data = array_merge(['user_id' => $candidate_id], $alumni_data_core);
-				// Build formats (treat user_id as string)
-				$alumni_formats = [];
-				foreach (array_keys($alumni_data) as $key) {
-					$alumni_formats[] = in_array($key, ['year', 'course_id', 'contact_info']) ? '%d' : '%s';
-				}
-				$insert_alumni = $wpdb->insert($tables['alumni'], $alumni_data, $alumni_formats);
-				if ($insert_alumni !== false) {
-					$alumni_id = $candidate_id;
-					break; // success
-				}
-				// If duplicate key, retry; otherwise, fail
-				$err = (string) $wpdb->last_error;
-				if (stripos($err, 'Duplicate') === false && stripos($err, 'duplicate') === false) {
-					break;
-				}
-			}
+    $errors = [];
+    if ($course_id <= 0) $errors[] = __('Course is required.', 'alumnus');
+    if ($first_name === '' || $last_name === '') $errors[] = __('First and last name are required.', 'alumnus');
+    if ($batch_year < 1900 || $batch_year > date('Y')) $errors[] = __('Invalid batch year.', 'alumnus');
 
-			if ($insert_alumni === false) {
-				add_settings_error('alumnus', 'alumni_insert_fail', sprintf(__('Failed to add alumni. Error: %s', 'alumnus'), esc_html($wpdb->last_error)), 'error');
-				return;
-			}
-        
-			// Compute username after alumni row is added
-			$user_insert_data = [
-				'user' => $alumni_id,
-				'course_id' => $course_id,
-				'year' => $batch_year,
-				'password' => $password_hash,
-			];
-            $user_insert_formats = ['%s', '%d', '%d', '%s'];
-            if (alumnus_user_table_has_username($tables['user'])) {
-                $username = alumnus_generate_unique_username($first_name, $last_name, $tables['user']);
-                $user_insert_data['username'] = $username;
-                $user_insert_formats[] = '%s';
-            }
-            // Set existed=1 for new alumni where column exists (default is 1 in table but set explicitly)
-            if (alumnus_user_table_has_existed($tables['user'])) {
-                $user_insert_data['existed'] = 1;
-                $user_insert_formats[] = '%d';
-            }
-            $insert_user = $wpdb->insert($tables['user'], $user_insert_data, $user_insert_formats);
-		
-		if ($insert_user === false) {
-				$wpdb->delete($tables['alumni'], ['user_id' => $alumni_id], ['%s']);
-			add_settings_error('alumnus', 'user_insert_fail', __('Failed to add user credentials.', 'alumnus'), 'error');
-			return;
-		}
-		
-		set_transient('alumnus_new_password_' . $alumni_id, $plain_password, 300);
-		add_settings_error('alumnus', 'alumni_insert_ok', sprintf(__('Alumni added successfully. Password: <span class="alumnus-password-display">%s</span>', 'alumnus'), $plain_password), 'updated');
-	}
+    if (!empty($errors)) {
+        foreach ($errors as $e) add_settings_error('alumnus', 'alumni_error', $e, 'error');
+        return;
+    }
+
+    // Generate alumni_id based on year and count
+    $alumni_count = $wpdb->get_var($wpdb->prepare(
+        "SELECT COUNT(*) FROM {$tables['alumni']} WHERE `year` = %d",
+        $batch_year
+    ));
+    $alumni_id = sprintf('%d%03d', $batch_year, $alumni_count + 1); // Format: Year + Count
+
+    // Prepare alumni data
+    $alumni_data = [
+        'user_id' => $alumni_id,
+        'year' => $batch_year,
+        'course_id' => $course_id,
+        'firstname' => $first_name,
+        'lastname' => $last_name,
+        'email' => '',
+        'contact_info' => 0,
+        'bio_note' => ''
+    ];
+
+    // Insert alumni data into the database
+    $insert_alumni = $wpdb->insert($tables['alumni'], $alumni_data, ['%s', '%d', '%d', '%s', '%s', '%s', '%d', '%s']);
+    
+    if ($insert_alumni === false) {
+        add_settings_error('alumnus', 'alumni_insert_fail', sprintf(__('Failed to add alumni. Error: %s', 'alumnus'), esc_html($wpdb->last_error)), 'error');
+        return;
+    }
+
+    add_settings_error('alumnus', 'alumni_insert_ok', __('Alumni added successfully.', 'alumnus'), 'updated');
+}
 	
 	// Edit Alumni
 	if ($_POST['alumnus_action'] === 'edit_alumni') {
@@ -419,132 +367,170 @@ function alumnus_handle_post() {
 	
 	// Delete Alumni
 	if ($_POST['alumnus_action'] === 'delete_alumni') {
-		check_admin_referer('alumnus_delete_alumni');
-		$alumni_id = isset($_POST['alumni_id']) ? intval($_POST['alumni_id']) : 0;
-		$wpdb->delete($tables['user'], ['user' => $alumni_id], ['%s']);
-		$wpdb->delete($tables['alumni'], ['user_id' => $alumni_id], ['%s']);
-		add_settings_error('alumnus', 'alumni_delete_ok', __('Alumni deleted successfully.', 'alumnus'), 'updated');
-	}
-	
-	// Bulk Import JSON
-	if ($_POST['alumnus_action'] === 'bulk_import') {
-		check_admin_referer('alumnus_bulk_import');
-		$json_data = isset($_POST['json_data']) ? wp_unslash($_POST['json_data']) : '';
-		$data = json_decode($json_data, true);
-		
-		if (json_last_error() !== JSON_ERROR_NONE) {
-			add_settings_error('alumnus', 'json_error', __('Invalid JSON format.', 'alumnus'), 'error');
-			return;
-		}
-		
-		$success_count = 0;
-		$error_count = 0;
-		$passwords = [];
-		
-		foreach ($data as $index => $record) {
-			$type = isset($record['type']) ? $record['type'] : '';
-			
-			if ($type === 'course') {
-				$course_id = isset($record['course_id']) ? intval($record['course_id']) : 0;
-				$course_name = isset($record['course_name']) ? sanitize_text_field($record['course_name']) : '';
-				
-				if ($course_id <= 0 || $course_name === '') {
-					$error_count++;
-					continue;
-				}
-				
-				$exists = $wpdb->get_var($wpdb->prepare("SELECT course_id FROM {$tables['courses']} WHERE course_id = %d LIMIT 1", $course_id));
-				if ($exists) {
-					$error_count++;
-					continue;
-				}
-				
-				$inserted = $wpdb->insert($tables['courses'], ['course_id' => $course_id, 'course' => $course_name], ['%d', '%s']);
-				if ($inserted) $success_count++; else $error_count++;
-				
-			} elseif ($type === 'alumni') {
-				$alumni_id = isset($record['alumni_id']) ? (string)$record['alumni_id'] : '';
-				$course_id = isset($record['course_id']) ? intval($record['course_id']) : 0;
-				$first_name = isset($record['first_name']) ? sanitize_text_field($record['first_name']) : '';
-				$last_name = isset($record['last_name']) ? sanitize_text_field($record['last_name']) : '';
-				$batch_year = isset($record['batch_year']) ? intval($record['batch_year']) : 0;
-				
-				if ($course_id <= 0 || $first_name === '' || $last_name === '' || $batch_year < 1900) {
-					$error_count++;
-					continue;
-				}
-				
-				// If alumni_id is empty/missing, generate per-year; else, honor provided value if not taken
-				if ($alumni_id === '' || $alumni_id === '0') {
-					$alumni_id = alumnus_generate_yearly_user_id($batch_year, $tables['alumni']);
-				} else {
-					$exists = $wpdb->get_var($wpdb->prepare("SELECT user_id FROM {$tables['alumni']} WHERE user_id = %s LIMIT 1", $alumni_id));
-					if ($exists) {
-						$error_count++;
-						continue;
-					}
-				}
-				
-				$plain_password = alumnus_generate_password();
-				$password_hash = function_exists('wp_hash_password') ? wp_hash_password($plain_password) : password_hash($plain_password, PASSWORD_DEFAULT);
-				
-				// Get alumni table columns
-				$alumni_columns = $wpdb->get_results("SHOW COLUMNS FROM {$tables['alumni']}");
-				$alumni_column_names = array_column($alumni_columns, 'Field');
-				
-			$alumni_data = [
-				'user_id' => $alumni_id, 'year' => $batch_year, 'course_id' => $course_id,
-				'firstname' => $first_name, 'lastname' => $last_name, 'email' => '',
-				'contact_info' => 0, 'bio_note' => ''
-			];
-				
-				// Remove fields that don't exist
-				$alumni_data = array_filter($alumni_data, function($key) use ($alumni_column_names) {
-					return in_array($key, $alumni_column_names);
-				}, ARRAY_FILTER_USE_KEY);
-				
-				$alumni_formats = [];
-				foreach (array_keys($alumni_data) as $key) {
-					$alumni_formats[] = in_array($key, ['year', 'course_id', 'contact_info']) ? '%d' : '%s';
-				}
-				
-				$insert_alumni = $wpdb->insert($tables['alumni'], $alumni_data, $alumni_formats);
+        check_admin_referer('alumnus_delete_alumni');
+        $alumni_id = isset($_POST['alumni_id']) ? intval($_POST['alumni_id']) : 0;
+        $wpdb->delete($tables['user'], ['user' => $alumni_id], ['%s']);
+        $wpdb->delete($tables['alumni'], ['user_id' => $alumni_id], ['%s']);
+        add_settings_error('alumnus', 'alumni_delete_ok', __('Alumni deleted successfully.', 'alumnus'), 'updated');
+    }
 
-				// Prepare user insert with possible username
-				$user_insert_data = [
-					'user' => $alumni_id,
-					'course_id' => $course_id,
-					'year' => $batch_year,
-					'password' => $password_hash,
-				];
-                $user_insert_formats = ['%s', '%d', '%d', '%s'];
-                if (alumnus_user_table_has_username($tables['user'])) {
-                    $username = alumnus_generate_unique_username($first_name, $last_name, $tables['user']);
-                    $user_insert_data['username'] = $username;
-                    $user_insert_formats[] = '%s';
-                }
-                // Bulk import: also set existed flag if the column exists
-                if (alumnus_user_table_has_existed($tables['user'])) {
-                    $user_insert_data['existed'] = 1;
-                    $user_insert_formats[] = '%d';
-                }
-                $insert_user = $wpdb->insert($tables['user'], $user_insert_data, $user_insert_formats);
-				
-				if ($insert_alumni && $insert_user) {
-					$success_count++;
-					$passwords[] = "ID {$alumni_id}: {$plain_password}";
-				} else {
-					$error_count++;
-				}
-			}
-		}
-		
-		$message = sprintf(__('Import complete. Success: %d, Errors: %d', 'alumnus'), $success_count, $error_count);
-		if (!empty($passwords)) {
-			$message .= '<br><strong>Generated Passwords:</strong><br>' . implode('<br>', $passwords);
-		}
-		add_settings_error('alumnus', 'bulk_import_complete', $message, $error_count > 0 ? 'error' : 'updated');
-	}
+    // Delete All Alumni & User Accounts (NEW)
+    if ($_POST['alumnus_action'] === 'delete_all_alumni') {
+        check_admin_referer('alumnus_delete_all_alumni');
+
+        // Delete all rows from user and alumni tables.
+        // Use DELETE instead of TRUNCATE for broader permission compatibility.
+        $deleted_users  = $wpdb->query("DELETE FROM {$tables['user']}");
+        $deleted_alumni = $wpdb->query("DELETE FROM {$tables['alumni']}");
+
+        if ($deleted_users === false || $deleted_alumni === false) {
+            add_settings_error('alumnus', 'delete_all_fail', __('Failed to delete all records. Check DB permissions.', 'alumnus'), 'error');
+        } else {
+            $deleted_users  = (int) $deleted_users;
+            $deleted_alumni = (int) $deleted_alumni;
+            add_settings_error('alumnus', 'delete_all_ok', sprintf(__('Deleted %d user rows and %d alumni rows.', 'alumnus'), $deleted_users, $deleted_alumni), 'updated');
+        }
+    }
+    
+    // Bulk Import CSV (uploaded file)
+    if ($_POST['alumnus_action'] === 'bulk_import') {
+        check_admin_referer('alumnus_bulk_import');
+        $success_count = 0;
+        $error_count = 0;
+        $passwords = [];
+
+        // require uploaded CSV file
+        if ( empty($_FILES['csv_file']['tmp_name']) || ! is_uploaded_file($_FILES['csv_file']['tmp_name']) ) {
+            add_settings_error('alumnus', 'csv_missing', __('Please upload a CSV file.', 'alumnus'), 'error');
+            return;
+        }
+
+        $fp = fopen($_FILES['csv_file']['tmp_name'], 'r');
+        if ($fp === false) {
+            add_settings_error('alumnus', 'csv_open_fail', __('Failed to open uploaded CSV file.', 'alumnus'), 'error');
+            return;
+        }
+
+        $headers = fgetcsv($fp);
+        if ($headers === false) {
+            fclose($fp);
+            add_settings_error('alumnus', 'csv_header', __('CSV header row is required.', 'alumnus'), 'error');
+            return;
+        }
+
+        // normalize headers (remove BOM, lowercase, trim)
+        $headers[0] = preg_replace('/^\xEF\xBB\xBF/', '', $headers[0]);
+        $headers = array_map(function($h){ return strtolower(trim($h)); }, $headers);
+
+        // required columns for this CSV import
+        $required = ['course_id','first_name','last_name','year'];
+        foreach ($required as $r) {
+            if (!in_array($r, $headers, true)) {
+                fclose($fp);
+                add_settings_error('alumnus', 'csv_missing_cols', sprintf(__('CSV must contain headers: %s', 'alumnus'), implode(', ', $required)), 'error');
+                return;
+            }
+        }
+
+        global $wpdb;
+        $tables = alumnus_get_table_names();
+
+        while (($row = fgetcsv($fp)) !== false) {
+            // skip empty rows
+            $all_empty = true;
+            foreach ($row as $cell) { if (trim((string)$cell) !== '') { $all_empty = false; break; } }
+            if ($all_empty) continue;
+
+            // pad/truncate to headers length
+            if (count($row) < count($headers)) $row = array_pad($row, count($headers), '');
+            if (count($row) > count($headers)) $row = array_slice($row, 0, count($headers));
+
+            $record = array_combine($headers, $row);
+            if ($record === false) { $error_count++; continue; }
+
+            $course_id  = isset($record['course_id']) ? intval($record['course_id']) : 0;
+            $first_name = isset($record['first_name']) ? sanitize_text_field($record['first_name']) : '';
+            $last_name  = isset($record['last_name']) ? sanitize_text_field($record['last_name']) : '';
+            $batch_year = isset($record['year']) ? intval($record['year']) : 0;
+
+            // basic validation
+            if ($course_id <= 0 || $first_name === '' || $last_name === '' || $batch_year < 1900) {
+                $error_count++;
+                continue;
+            }
+
+            // generate alumni id for the year
+            $alumni_id = alumnus_generate_yearly_user_id($batch_year, $tables['alumni']);
+
+            // prepare plain password and hash
+            $plain_password = alumnus_generate_password();
+            $password_hash = function_exists('wp_hash_password') ? wp_hash_password($plain_password) : password_hash($plain_password, PASSWORD_DEFAULT);
+
+            // build alumni row using existing alumni table columns
+            $alumni_columns = $wpdb->get_results("SHOW COLUMNS FROM {$tables['alumni']}");
+            $alumni_column_names = array_column($alumni_columns, 'Field');
+            $alumni_data = [
+                'user_id' => $alumni_id,
+                'year' => $batch_year,
+                'course_id' => $course_id,
+                'firstname' => $first_name,
+                'lastname' => $last_name,
+                'email' => '',
+                'contact_info' => 0,
+                'bio_note' => ''
+            ];
+            $alumni_data = array_filter($alumni_data, function($key) use ($alumni_column_names) {
+                return in_array($key, $alumni_column_names, true);
+            }, ARRAY_FILTER_USE_KEY);
+            $alumni_formats = [];
+            foreach (array_keys($alumni_data) as $key) {
+                $alumni_formats[] = in_array($key, ['year','course_id','contact_info'], true) ? '%d' : '%s';
+            }
+
+            $insert_alumni = $wpdb->insert($tables['alumni'], $alumni_data, $alumni_formats);
+
+            // prepare user row: username = firstname+lastname (unique), password = hash, existed = 1 (if column present)
+            $user_insert_data = [
+                'user' => $alumni_id,
+                'course_id' => $course_id,
+                'year' => $batch_year,
+                'password' => $password_hash,
+            ];
+            $user_insert_formats = ['%s','%d','%d','%s'];
+
+            if (alumnus_user_table_has_username($tables['user'])) {
+                $username = alumnus_generate_unique_username($first_name, $last_name, $tables['user']);
+                $user_insert_data['username'] = $username;
+                $user_insert_formats[] = '%s';
+            }
+            if (alumnus_user_table_has_existed($tables['user'])) {
+                $user_insert_data['existed'] = 1;
+                $user_insert_formats[] = '%d';
+            }
+
+            $insert_user = $wpdb->insert($tables['user'], $user_insert_data, $user_insert_formats);
+
+            if ($insert_alumni && $insert_user) {
+                $success_count++;
+                $passwords[] = "ID {$alumni_id}: {$plain_password}";
+                // keep plain password for short time for admin to view
+                set_transient('alumnus_new_password_' . $alumni_id, $plain_password, HOUR_IN_SECONDS);
+            } else {
+                // cleanup partial inserts
+                if ($insert_alumni && ! $insert_user) { $wpdb->delete($tables['alumni'], ['user_id' => $alumni_id], ['%s']); }
+                if (! $insert_alumni && $insert_user) { $wpdb->delete($tables['user'], ['user' => $alumni_id], ['%s']); }
+                $error_count++;
+            }
+        }
+
+        fclose($fp);
+
+        $message = sprintf(__('Import complete. Success: %d, Errors: %d', 'alumnus'), $success_count, $error_count);
+        if (!empty($passwords)) {
+            $message .= '<br><strong>Generated Passwords:</strong><br>' . implode('<br>', $passwords);
+        }
+        add_settings_error('alumnus', 'bulk_import_complete', $message, $error_count > 0 ? 'error' : 'updated');
+    }
 }
 add_action('admin_init', 'alumnus_handle_post');
 
@@ -644,8 +630,16 @@ function alumnus_render_admin_page() {
 	echo '</table>';
 	if (!empty($courses)) submit_button('Add Alumni');
 	echo '</form>';
-	
-	echo '<h2>Alumni List</h2>';
+
+    // Delete All form (dangerous) — requires explicit confirmation
+    echo '<h3 style="color:#a00;">Danger Zone: Delete All Alumni & User Accounts</h3>';
+    echo '<form method="post" onsubmit="return confirm(\'Are you sure? This will permanently delete ALL alumni records and their user accounts. This action cannot be undone.\');">';
+    wp_nonce_field('alumnus_delete_all_alumni');
+    echo '<input type="hidden" name="alumnus_action" value="delete_all_alumni" />';
+    submit_button('Delete All Alumni & Users', 'delete');
+    echo '</form>';
+
+    echo '<h2>Alumni List</h2>';
 	if (!empty($alumni_list)) {
 		echo '<table class="wp-list-table widefat fixed striped alumnus-table">';
 		echo '<thead><tr><th>User ID</th><th>Name</th>' . ($has_username ? '<th>Username</th>' : '') . '<th>Course</th><th>Year</th><th>Default Password</th><th>Actions</th></tr></thead><tbody>';
@@ -668,29 +662,22 @@ function alumnus_render_admin_page() {
 	
 	// Import Tab
 	echo '<div id="tab-import" class="alumnus-tab-content">';
-	echo '<h2>Bulk Import JSON</h2>';
-	echo '<p>Import courses and alumni in JSON format. Each record should have a "type" field ("course" or "alumni").</p>';
-	echo '<h3>Example JSON Format:</h3>';
-	echo '<pre>[
-	{
-		"type": "course",
-		"course_id": 1,
-		"course_name": "Computer Science"
-	},
-	{
-		"type": "alumni",
-		"course_id": 1,
-		"first_name": "John",
-		"last_name": "Doe",
-		"batch_year": 2020
-		// alumni_id is optional; if omitted, it will be generated as {year}{count}
-	}
-]</pre>';
-	echo '<form method="post">';
+	
+	echo '</form>';
+	
+	// Bulk Import CSV
+	echo '<h2>Bulk Import CSV</h2>';
+	echo '<p>Upload a CSV file. Required headers (case-insensitive): <code>course_id,first_name,last_name,year</code>.</p>';
+	echo '<h3>Example CSV (first row = headers):</h3>';
+	echo '<pre>course_id,first_name,last_name,year
+1,John,Doe,2024
+1,Jane,Smith,2024
+2,Alan,Turing,2023</pre>';
+	echo '<form method="post" enctype="multipart/form-data">';
 	wp_nonce_field('alumnus_bulk_import');
 	echo '<input type="hidden" name="alumnus_action" value="bulk_import" />';
-	echo '<textarea name="json_data" class="alumnus-json-textarea" required></textarea>';
-	submit_button('Import JSON');
+	echo '<input type="file" name="csv_file" accept=".csv,text/csv" required />';
+	submit_button('Import CSV');
 	echo '</form>';
 	echo '</div>';
 	
