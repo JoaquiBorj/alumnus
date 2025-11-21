@@ -88,6 +88,61 @@ function adm_create_alumni_tables() {
         CONSTRAINT fk_experience_alumni FOREIGN KEY (user_id) REFERENCES alumni(user_id) ON DELETE CASCADE ON UPDATE CASCADE
     ) ENGINE=InnoDB $charset_collate;";
 
+    // === POSTS TABLE ===
+    $sql_posts = "CREATE TABLE IF NOT EXISTS posts (
+        post_id INT(11) NOT NULL AUTO_INCREMENT,
+        user_id VARCHAR(100) NOT NULL,
+        content VARCHAR(40) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+        post_date DATE NOT NULL,
+        post_time TIME NOT NULL,
+        PRIMARY KEY (post_id),
+        KEY idx_posts_user_id (user_id),
+        CONSTRAINT fk_posts_alumni FOREIGN KEY (user_id) REFERENCES alumni(user_id) ON DELETE CASCADE ON UPDATE CASCADE
+    ) ENGINE=InnoDB $charset_collate;";
+
+    // === SHARES TABLE ===
+    $sql_shares = "CREATE TABLE IF NOT EXISTS shares (
+        share_id INT(11) NOT NULL AUTO_INCREMENT,
+        post_id INT(11) NOT NULL,
+        user_id VARCHAR(100) NOT NULL,
+        share_date DATE NOT NULL,
+        share_time TIME NOT NULL,
+        PRIMARY KEY (share_id),
+        UNIQUE KEY uniq_share_post_user (post_id, user_id),
+        KEY idx_shares_post_id (post_id),
+        KEY idx_shares_user_id (user_id),
+        CONSTRAINT fk_shares_post FOREIGN KEY (post_id) REFERENCES posts(post_id) ON DELETE CASCADE ON UPDATE CASCADE,
+        CONSTRAINT fk_shares_alumni FOREIGN KEY (user_id) REFERENCES alumni(user_id) ON DELETE CASCADE ON UPDATE CASCADE
+    ) ENGINE=InnoDB $charset_collate;";
+
+    // === LIKES TABLE ===
+    $sql_likes = "CREATE TABLE IF NOT EXISTS likes (
+        like_id INT(11) NOT NULL AUTO_INCREMENT,
+        post_id INT(11) NOT NULL,
+        user_id VARCHAR(100) NOT NULL,
+        PRIMARY KEY (like_id),
+        UNIQUE KEY uniq_like_post_user (post_id, user_id),
+        KEY idx_likes_post_id (post_id),
+        KEY idx_likes_user_id (user_id),
+        CONSTRAINT fk_likes_post FOREIGN KEY (post_id) REFERENCES posts(post_id) ON DELETE CASCADE ON UPDATE CASCADE,
+        CONSTRAINT fk_likes_alumni FOREIGN KEY (user_id) REFERENCES alumni(user_id) ON DELETE CASCADE ON UPDATE CASCADE
+    ) ENGINE=InnoDB $charset_collate;";
+
+    // === COMMENTS TABLE ===
+    $sql_comments = "CREATE TABLE IF NOT EXISTS comments (
+        comment_id INT(11) NOT NULL AUTO_INCREMENT,
+        post_id INT(11) NOT NULL,
+        user_id VARCHAR(100) NOT NULL,
+        content VARCHAR(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+        comment_date DATE NOT NULL,
+        comment_time TIME NOT NULL,
+        PRIMARY KEY (comment_id),
+        KEY idx_comments_post_id (post_id),
+        KEY idx_comments_user_id (user_id),
+        CONSTRAINT fk_comments_post FOREIGN KEY (post_id) REFERENCES posts(post_id) ON DELETE CASCADE ON UPDATE CASCADE,
+        CONSTRAINT fk_comments_alumni FOREIGN KEY (user_id) REFERENCES alumni(user_id) ON DELETE CASCADE ON UPDATE CASCADE
+    ) ENGINE=InnoDB $charset_collate;";
+
     require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
     dbDelta($sql_course);
     dbDelta($sql_alumni);
@@ -95,7 +150,17 @@ function adm_create_alumni_tables() {
     dbDelta($sql_alumni_skills);
     dbDelta($sql_user_account);
     dbDelta($sql_experience);
+    dbDelta($sql_posts);
+    dbDelta($sql_shares);
+    dbDelta($sql_likes);
+    dbDelta($sql_comments);
 
+    // Ensure post_time column exists (and remove legacy time_period if present)
+    adm_migrate_add_post_time_column();
+    // Ensure comment_time column exists
+    adm_migrate_add_comment_time_column();
+    // Ensure shares table has date/time columns if upgrading
+    adm_migrate_add_share_datetime_columns();
     // Ensure username column exists and backfill if needed
     adm_migrate_add_username_column();
 
@@ -125,6 +190,10 @@ function adm_plugin_deactivate() {
     $wpdb->query("DROP TABLE IF EXISTS experience");
     $wpdb->query("DROP TABLE IF EXISTS alumni");
     $wpdb->query("DROP TABLE IF EXISTS course");
+    $wpdb->query("DROP TABLE IF EXISTS likes");
+    $wpdb->query("DROP TABLE IF EXISTS shares");
+    $wpdb->query("DROP TABLE IF EXISTS posts");
+    $wpdb->query("DROP TABLE IF EXISTS comments");
 }
 register_deactivation_hook(__FILE__, 'adm_plugin_deactivate');
 
@@ -189,6 +258,10 @@ function adm_admin_page_content() {
             <li>• <code>alumni_skills</code></li>
             <li>• <code>user</code></li>
             <li>• <code>experience</code></li>
+            <li>• <code>posts</code></li>
+            <li>• <code>shares</code></li>
+            <li>• <code>likes</code></li>
+            <li>• <code>comments</code></li>
         </ul>
     </div>
 
@@ -335,6 +408,88 @@ function adm_migrate_experience_to_alumni_link() {
 
         // Add new FK to alumni
         $wpdb->query("ALTER TABLE experience ADD CONSTRAINT fk_experience_alumni FOREIGN KEY (user_id) REFERENCES alumni(user_id) ON DELETE CASCADE ON UPDATE CASCADE");
+}
+
+// =====================================================
+// 🔁 MIGRATION: Add `time_period` column to `posts` and backfill
+// =====================================================
+function adm_migrate_add_time_period_column() {
+    global $wpdb;
+
+    // Check if `posts` table exists
+    $table = $wpdb->get_var("SHOW TABLES LIKE 'posts'");
+    if (!$table) return;
+
+    // Check if time_period column exists
+    $has_col = $wpdb->get_var("SHOW COLUMNS FROM posts LIKE 'time_period'");
+    if (empty($has_col)) {
+        // Add column with safe default to avoid NULLs
+        $wpdb->query("ALTER TABLE posts ADD COLUMN time_period ENUM('Am','Pm') NOT NULL DEFAULT 'Am'");
+    }
+
+    // Backfill any rows that somehow have empty/NULL values
+    $wpdb->query("UPDATE posts SET time_period = 'Am' WHERE time_period IS NULL OR time_period = ''");
+
+    // Note: we cannot accurately infer original post times because `post_date` is stored as DATE.
+    // This migration ensures the column exists and has a valid value for all rows.
+}
+
+// =====================================================
+// 🔁 MIGRATION: Add `post_time` column and drop legacy `time_period`
+// =====================================================
+function adm_migrate_add_post_time_column() {
+    global $wpdb;
+    $table = $wpdb->get_var("SHOW TABLES LIKE 'posts'");
+    if (!$table) return;
+
+    $has_post_time = $wpdb->get_var("SHOW COLUMNS FROM posts LIKE 'post_time'");
+    if (empty($has_post_time)) {
+        $wpdb->query("ALTER TABLE posts ADD COLUMN post_time TIME NOT NULL DEFAULT '00:00:00'");
+        // Backfill existing rows with 00:00:00 (no historical time info stored).
+        $wpdb->query("UPDATE posts SET post_time = '00:00:00' WHERE post_time = '00:00:00'");
+    }
+
+    // Drop legacy time_period if it exists
+    $has_time_period = $wpdb->get_var("SHOW COLUMNS FROM posts LIKE 'time_period'");
+    if (!empty($has_time_period)) {
+        // Best-effort drop; ignore errors
+        $wpdb->query("ALTER TABLE posts DROP COLUMN time_period");
+    }
+}
+
+// =====================================================
+// 🔁 MIGRATION: Add `comment_time` to comments
+// =====================================================
+function adm_migrate_add_comment_time_column() {
+    global $wpdb;
+    $table = $wpdb->get_var("SHOW TABLES LIKE 'comments'");
+    if (!$table) return;
+    $has_comment_time = $wpdb->get_var("SHOW COLUMNS FROM comments LIKE 'comment_time'");
+    if (empty($has_comment_time)) {
+        $wpdb->query("ALTER TABLE comments ADD COLUMN comment_time TIME NOT NULL DEFAULT '00:00:00'");
+        // Backfill existing rows
+        $wpdb->query("UPDATE comments SET comment_time='00:00:00' WHERE comment_time='00:00:00'");
+    }
+}
+
+// =====================================================
+// 🔁 MIGRATION: Add share_date/share_time to shares
+// =====================================================
+function adm_migrate_add_share_datetime_columns() {
+    global $wpdb;
+    $table = $wpdb->get_var("SHOW TABLES LIKE 'shares'");
+    if (!$table) return;
+    $has_share_date = $wpdb->get_var("SHOW COLUMNS FROM shares LIKE 'share_date'");
+    $has_share_time = $wpdb->get_var("SHOW COLUMNS FROM shares LIKE 'share_time'");
+    if (empty($has_share_date)) {
+        $wpdb->query("ALTER TABLE shares ADD COLUMN share_date DATE NOT NULL DEFAULT '1970-01-01'");
+        // Backfill with today's date for historical shares lacking date context
+        $wpdb->query($wpdb->prepare("UPDATE shares SET share_date=%s WHERE share_date='1970-01-01'", current_time('Y-m-d')));
+    }
+    if (empty($has_share_time)) {
+        $wpdb->query("ALTER TABLE shares ADD COLUMN share_time TIME NOT NULL DEFAULT '00:00:00'");
+        $wpdb->query("UPDATE shares SET share_time='00:00:00' WHERE share_time='00:00:00'");
+    }
 }
 
 // =====================================================

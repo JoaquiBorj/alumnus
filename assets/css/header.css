@@ -98,6 +98,7 @@
   }
   
   /* Shared button styles */
+  .ahb-community-feed-btn,
   .ahb-directory-btn,
   .ahb-profile-btn {
     text-decoration: none;
@@ -110,6 +111,7 @@
     transition: opacity 0.2s;
   }
   
+  .ahb-community-feed-btn:hover,
   .ahb-directory-btn:hover,
   .ahb-profile-btn:hover {
     text-decoration: underline;
@@ -126,6 +128,10 @@
     padding: 10px 15px;
     border-radius: 50px;
     transition: opacity 0.2s;
+  }
+
+  .ahb-logout-btn:hover {
+    opacity: 0.9;
   }
 
   /* -------------------- 
