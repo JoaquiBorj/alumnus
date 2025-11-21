@@ -302,51 +302,88 @@ function alumnus_handle_post() {
 	
 	// Add Alumni
 	if ($_POST['alumnus_action'] === 'add_alumni') {
-    check_admin_referer('alumnus_add_alumni');
-    $course_id = isset($_POST['course_id']) ? intval($_POST['course_id']) : 0;
-    $first_name = isset($_POST['first_name']) ? sanitize_text_field(wp_unslash($_POST['first_name'])) : '';
-    $last_name = isset($_POST['last_name']) ? sanitize_text_field(wp_unslash($_POST['last_name'])) : '';
-    $batch_year = isset($_POST['batch_year']) ? intval($_POST['batch_year']) : 0;
+        check_admin_referer('alumnus_add_alumni');
+        $course_id = isset($_POST['course_id']) ? intval($_POST['course_id']) : 0;
+        $first_name = isset($_POST['first_name']) ? sanitize_text_field(wp_unslash($_POST['first_name'])) : '';
+        $last_name = isset($_POST['last_name']) ? sanitize_text_field(wp_unslash($_POST['last_name'])) : '';
+        $batch_year = isset($_POST['batch_year']) ? intval($_POST['batch_year']) : 0;
 
-    $errors = [];
-    if ($course_id <= 0) $errors[] = __('Course is required.', 'alumnus');
-    if ($first_name === '' || $last_name === '') $errors[] = __('First and last name are required.', 'alumnus');
-    if ($batch_year < 1900 || $batch_year > date('Y')) $errors[] = __('Invalid batch year.', 'alumnus');
+        $errors = [];
+        if ($course_id <= 0) $errors[] = __('Course is required.', 'alumnus');
+        if ($first_name === '' || $last_name === '') $errors[] = __('First and last name are required.', 'alumnus');
+        if ($batch_year < 1900 || $batch_year > date('Y')) $errors[] = __('Invalid batch year.', 'alumnus');
 
-    if (!empty($errors)) {
-        foreach ($errors as $e) add_settings_error('alumnus', 'alumni_error', $e, 'error');
-        return;
+        if (!empty($errors)) {
+            foreach ($errors as $e) add_settings_error('alumnus', 'alumni_error', $e, 'error');
+            return;
+        }
+
+        // Generate alumni_id using yearly generator (avoids collisions after deletions)
+        $alumni_id = alumnus_generate_yearly_user_id($batch_year, $tables['alumni']);
+
+        // Build alumni row using existing alumni table columns
+        $alumni_columns = $wpdb->get_results("SHOW COLUMNS FROM {$tables['alumni']}");
+        $alumni_column_names = array_column($alumni_columns, 'Field');
+        $alumni_full = [
+            'user_id' => $alumni_id,
+            'year' => $batch_year,
+            'course_id' => $course_id,
+            'firstname' => $first_name,
+            'lastname' => $last_name,
+            'email' => '',
+            'contact_info' => 0,
+            'bio_note' => ''
+        ];
+        $alumni_data = array_filter($alumni_full, function($key) use ($alumni_column_names) {
+            return in_array($key, $alumni_column_names, true);
+        }, ARRAY_FILTER_USE_KEY);
+        $alumni_formats = [];
+        foreach (array_keys($alumni_data) as $key) {
+            $alumni_formats[] = in_array($key, ['year','course_id','contact_info'], true) ? '%d' : '%s';
+        }
+
+        $insert_alumni = $wpdb->insert($tables['alumni'], $alumni_data, $alumni_formats);
+        if ($insert_alumni === false) {
+            add_settings_error('alumnus', 'alumni_insert_fail', sprintf(__('Failed to add alumni. Error: %s', 'alumnus'), esc_html($wpdb->last_error)), 'error');
+            return;
+        }
+
+        // Generate password and hash
+        $plain_password = alumnus_generate_password();
+        $password_hash = function_exists('wp_hash_password') ? wp_hash_password($plain_password) : password_hash($plain_password, PASSWORD_DEFAULT);
+
+        // Prepare user row
+        $user_insert_data = [
+            'user' => $alumni_id,
+            'course_id' => $course_id,
+            'year' => $batch_year,
+            'password' => $password_hash,
+        ];
+        $user_insert_formats = ['%s','%d','%d','%s'];
+
+        if (alumnus_user_table_has_username($tables['user'])) {
+            $username = alumnus_generate_unique_username($first_name, $last_name, $tables['user']);
+            $user_insert_data['username'] = $username;
+            $user_insert_formats[] = '%s';
+        }
+        if (alumnus_user_table_has_existed($tables['user'])) {
+            $user_insert_data['existed'] = 1;
+            $user_insert_formats[] = '%d';
+        }
+
+        $insert_user = $wpdb->insert($tables['user'], $user_insert_data, $user_insert_formats);
+        if ($insert_user === false) {
+            // rollback alumni insert on failure to create user
+            $wpdb->delete($tables['alumni'], ['user_id' => $alumni_id], ['%s']);
+            add_settings_error('alumnus', 'user_insert_fail', sprintf(__('Failed to create user account. Error: %s', 'alumnus'), esc_html($wpdb->last_error)), 'error');
+            return;
+        }
+
+        // store plain password temporarily for admin to view
+        set_transient('alumnus_new_password_' . $alumni_id, $plain_password, HOUR_IN_SECONDS);
+
+        add_settings_error('alumnus', 'alumni_insert_ok', __('Alumni and user account created successfully.', 'alumnus'), 'updated');
     }
-
-    // Generate alumni_id based on year and count
-    $alumni_count = $wpdb->get_var($wpdb->prepare(
-        "SELECT COUNT(*) FROM {$tables['alumni']} WHERE `year` = %d",
-        $batch_year
-    ));
-    $alumni_id = sprintf('%d%03d', $batch_year, $alumni_count + 1); // Format: Year + Count
-
-    // Prepare alumni data
-    $alumni_data = [
-        'user_id' => $alumni_id,
-        'year' => $batch_year,
-        'course_id' => $course_id,
-        'firstname' => $first_name,
-        'lastname' => $last_name,
-        'email' => '',
-        'contact_info' => 0,
-        'bio_note' => ''
-    ];
-
-    // Insert alumni data into the database
-    $insert_alumni = $wpdb->insert($tables['alumni'], $alumni_data, ['%s', '%d', '%d', '%s', '%s', '%s', '%d', '%s']);
-    
-    if ($insert_alumni === false) {
-        add_settings_error('alumnus', 'alumni_insert_fail', sprintf(__('Failed to add alumni. Error: %s', 'alumnus'), esc_html($wpdb->last_error)), 'error');
-        return;
-    }
-
-    add_settings_error('alumnus', 'alumni_insert_ok', __('Alumni added successfully.', 'alumnus'), 'updated');
-}
 	
 	// Edit Alumni
 	if ($_POST['alumnus_action'] === 'edit_alumni') {
